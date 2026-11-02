@@ -13,3 +13,6 @@
 # BouncyCastle. Leaf uses the standard password handler, which runs on plain
 # JCE. Keeping the warning quiet avoids pulling in ~10 MB of crypto jars.
 -dontwarn org.bouncycastle.**
+
+# I do not need to obfuscate or rename the classes since this is an opensource code, I want to make reverse engineering from APK to source easier for inspection.
+-dontobfuscate
