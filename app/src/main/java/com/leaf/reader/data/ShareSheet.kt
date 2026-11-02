@@ -1,0 +1,33 @@
+package com.leaf.reader.data
+
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
+import androidx.core.content.FileProvider
+import com.leaf.reader.R
+import java.io.File
+
+object ShareSheet {
+
+    /**
+     * Shares the cached PDF through FileProvider. ClipData is set as well as the
+     * read flag because some OEM choosers only propagate grants through ClipData.
+     */
+    fun sharePdf(context: Context, file: File) {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file,
+        )
+
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, file.name)
+            clipData = ClipData.newUri(context.contentResolver, file.name, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_via)))
+    }
+}

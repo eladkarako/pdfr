@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Leaf</string>
+
+    <string name="open_pdf">Open a PDF</string>
+    <string name="open_another">Open another PDF</string>
+    <string name="share_pdf">Share PDF</string>
+    <string name="share_via">Share via</string>
+
+    <string name="empty_title">Nothing open</string>
+    <string name="empty_body">Open a PDF to start reading. Leaf also appears in other apps\' “Open with” and “Share” menus.</string>
+
+    <string name="loading">Opening…</string>
+    <string name="error_title">Couldn\'t open that file</string>
+    <string name="error_generic">Something went wrong while reading this file.</string>
+    <string name="try_another">Try another file</string>
+
+    <string name="document_info">Document info</string>
+    <string name="file_name">File name</string>
+    <string name="file_size">File size</string>
+    <string name="page_count">Pages</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <string name="password_protected">Password protected</string>
+    <string name="password_protected_yes">Yes (unlocked)</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="close">Close</string>
+
+    <string name="pdf_metadata">PDF metadata</string>
+    <string name="metadata_title">Title</string>
+    <string name="metadata_author">Author</string>
+    <string name="metadata_subject">Subject</string>
+    <string name="metadata_keywords">Keywords</string>
+    <string name="metadata_creator">Creator</string>
+    <string name="metadata_producer">Producer</string>
+    <string name="metadata_created">Created</string>
+    <string name="metadata_modified">Modified</string>
+
+    <string name="password_title">Password required</string>
+    <string name="password_body">“%1$s” is protected. Enter its password to open it.</string>
+    <string name="password_label">Password</string>
+    <string name="password_wrong">That password didn’t work.</string>
+    <string name="unlock">Unlock</string>
+    <string name="cancel">Cancel</string>
+    <string name="enter_password">Enter password</string>
+    <string name="password_required_title">This PDF is locked</string>
+    <string name="password_required_body">Enter the document password to read it. Leaf keeps the decrypted copy only in its private cache.</string>
+</resources>
