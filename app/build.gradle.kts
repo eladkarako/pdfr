@@ -1,3 +1,4 @@
+import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -5,6 +6,36 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+}
+
+// Set the app version here. Format: major.minor.patch.
+// Example: 26.11.2 becomes base version code 261102.
+val appVersionName = "26.11.2"
+val versionParts = appVersionName.split(".").map(String::toInt)
+
+require(versionParts.size == 3) {
+    "appVersionName must have three parts, like 26.11.2"
+}
+require(versionParts.all { it >= 0 }) {
+    "Version parts must be non-negative"
+}
+require(versionParts[1] in 0..99 && versionParts[2] in 0..99) {
+    "Minor and patch version parts must each be between 0 and 99"
+}
+
+// Pack major.minor.patch into an integer:
+// 26 * 10,000 + 11 * 100 + 2 = 261102
+val baseVersionCode =
+    versionParts[0] * 10_000 +
+        versionParts[1] * 100 +
+        versionParts[2]
+
+// Reserve the final digit for the APK type:
+// 0 = universal APK; 1–4 = ABI-specific APKs.
+val appVersionCode = baseVersionCode * 10
+
+require(appVersionCode in 1..2_100_000_000) {
+    "Generated versionCode is outside Android's supported range"
 }
 
 // PDFBox only uses BouncyCastle for certificate/public-key security handlers.
@@ -30,6 +61,16 @@ val releaseStoreFile = signingValue("storeFile", "LEAF_KEYSTORE_FILE")
     ?.let { rootProject.file(it) }
     ?.takeIf { it.exists() }
 
+// ABI-specific version-code suffixes.
+// Keep these stable across releases so the same ABI always has the same suffix.
+val abiCodes = mapOf(
+    "armeabi-v7a" to 1,
+    "arm64-v8a" to 2,
+    "x86" to 3,
+    "x86_64" to 4,
+)
+
+
 android {
     namespace = "com.leaf.reader"
     compileSdk = 35
@@ -38,11 +79,23 @@ android {
         applicationId = "com.leaf.reader"
         minSdk = 24
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+
+        // Base code is used by the universal APK.
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    // Create one APK per ABI, plus a universal APK containing all ABIs.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true
         }
     }
 
@@ -98,6 +151,24 @@ android {
         }
     }
 }
+
+// Give each ABI APK a unique versionCode.
+// The universal APK has no ABI filter, so it retains the lower base code.
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            val abi = output.filters
+                .find { it.filterType == ABI }
+                ?.identifier
+
+            val abiCode = abiCodes[abi]
+            if (abiCode != null) {
+                output.versionCode.set(baseVersionCode * 10 + abiCode)
+            }
+        }
+    }
+}
+
 
 dependencies {
     implementation("androidx.core:core-ktx:1.15.0")
