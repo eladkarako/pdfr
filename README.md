@@ -1,70 +1,88 @@
-# Leaf
+# 🍃 Leaf
 
-a PDF reader, small. one viewing screen, document details, password unlock, and a share button. no network access. no ads.
+<img width="48" src="icon.svg" /> 
 
-Rendering is built on [`afreakyelf/Pdf-Viewer`](https://github.com/afreakyelf/Pdf-Viewer) (`io.github.afreakyelf:Pdf-Viewer:2.4.0`).
-it draws pages with Android's built-in `android.graphics.pdf.PdfRenderer`.  
-the viewer has no bundled PDF engine and no native payload.  
-
-[PDFBox-Android](https://github.com/TomRoush/PdfBox-Android) is bundled only to read metadata and to make protected files readable; it is never used to render a page.
+## PDF reader for Android.
+- one screen.
+- two buttons - info and share.
 
 <hr/>
 
-viewing:  
-- Keeps one document in cache at a time; the rest is left to the system.
+## 📖 how it can open PDFs:
+- acts as system wide "open with" target for PDF files.
+- appears in send-to menu when you try to use send-to to share a PDF with an application.
+- you can open a PDF directly from the application itself.
+- application holds one cached PDF at a time.
 
-opening:  
-- *Open with* menu (a `content://` URI).
-- *Share to* sheet.
-- in-app document picker.
+<hr/>
 
-showing info:  
-- file name
-- original file size
-- page count
-- is password protected?
-- any PDF metadata (title, author, subject, keywords, creator, producer, created, modified).
+## 🔓 opening a password protected PDF (supported)
+- shows a little password entering input for you.
+- supports both RC4, and AES-128/AES-256 encryption.
+- if password is empty, it just opens it right-away.
+- application holds one cached PDF at a time, once unlocked you can share it as new PDF without password.
 
-unlocking password protected:  
-- password prompt, supporting RC4 and AES-128/AES-256.
-- PDF that is encrypted with an empty user password will open silently.
-- you are able to share the decrypted copy as a file (`ACTION_SEND` + `FileProvider`) to any app. it will use the original filename.
+<hr/>
 
-## Size
+## ℹ️ info button
+- file name.
+- file size.
+- page count.
+- if it is password protected.
+- any PDF metadata - title, author, subject, keywords, creator, producer, created, modified.
 
-Measured on this project: **2.9 MB** for the minified, signed release APK. The unminified debug build is larger. Pdf-Viewer contributes well under 100 KB; most of the rest is Compose, Material 3 and the AndroidX graph.
+<hr/>
 
-PDFBox would normally add several more megabytes. Two deliberate choices keep that in check:
+## 🖨️ share button
+- use it to send it to printer or send it to other applications.
 
-- BouncyCastle is excluded. PDFBox only needs it for certificate/public-key encryption; Leaf's password flow uses the standard security handler, which runs on the platform's own JCE.
-- PDFBox's bundled CMap/font assets are stripped with `androidResources.ignoreAssetsPatterns`. Leaf only parses dictionaries and rewrites decrypted files, so those resources are never opened.
+<hr/>
 
-## Build
+## 👀 privacy
+- no network access.
+- no ads.
+- no analytics.
+- no data-collection.
 
-Requirements: JDK 17 and Android SDK 35.
+<hr/>
 
-```bash
-./gradlew assembleDebug
-# or open the folder in Android Studio and press Run
-```
+### 🤏 minimal interface
+- limited/no dark theme.
+- only left-to-right interface (no `RTL`).
 
-Install the debug build:
+<hr/>
 
-```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
+## 🚧 architecture /  🪶 `APK` size
+- explicitly removing `android:name="android.permission.INTERNET"` and `android:name="android.permission.ACCESS_NETWORK_STATE"`.
+- rendering is based on Android's built-in `android.graphics.pdf.PdfRenderer`, via https://github.com/afreakyelf/Pdf-Viewer (`io.github.afreakyelf:Pdf-Viewer:2.4.0`), it means no text selection, no text copy (and no form filling).  
+- PDFBox-Android - https://github.com/TomRoush/PdfBox-Android is bundled only to read metadata and to make protected files readable; it is never used to render a page (although it can and probably will do a better job).
+- APK is about `~3MB` for release.
+- Pdf-Viewer is about `100KB` most of the rest is Compose, Material 3 and the AndroidX graph.
+- PDFBox would normally add several more megabytes, but BouncyCastle is excluded - so PDFBox only needs it for certificate/public-key encryption; Leaf's password flow uses the standard security handler, which runs on the platform's own JCE, and PDFBox's bundled CMap/font assets are stripped out, with `androidResources.ignoreAssetsPatterns`. Leaf only parses dictionaries and rewrites decrypted files, so those resources are never opened.
 
-`assembleRelease` signs the APK when signing material is available; see
-[Signing](#signing) below. Install it with:
+<hr/>
 
-```bash
-adb install -r app/build/outputs/apk/release/app-release.apk
-```
+### 🔨 build
+- JDK 17 .
+- Android SDK 35 (Android 15.0, "VanillaIceCream", https://dl.google.com/android/repository/source-35_r01.zip ) .
+- gradle 8.3 (self installed) .
 
-`local.properties` (with `sdk.dir`) is generated by Android Studio or by opening the project once; it is git-ignored. Android Studio also accepts the Gradle wrapper on first sync.
+### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)
+1. `pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose"`
+2. `pwsh -Command "Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose"`
+3. `call ".\gradlew.bat" clean --info`
 
-## Layout
+### 📦 debug build / install
+- debug build - `./gradlew assembleDebug` (built in gradle task)
+- install - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 
+### 📦 release build / install
+- release build - `./gradlew assembleRelease`  (built in gradle task that signs the APK when signing data is available).
+- install - `adb install -r app/build/outputs/apk/release/app-release.apk`
+
+<hr/>
+
+## 🗺️ Layout
 ```
 app/src/main/java/com/leaf/reader/
 ├── LeafApplication.kt       # initializes PDFBox's resource loader
@@ -80,23 +98,24 @@ app/src/main/java/com/leaf/reader/
 ```
 
 ### How sharing stays reliable
-
 A PDF received from another app is often a `content://` URI that only Leaf can read. Rather than forwarding that URI (which may not be re-grantable), `DocumentStore` copies the bytes into `cacheDir/documents/<import-id>/` once. A staging file is renamed into place only after the copy succeeds, so a failed or self-referential import cannot truncate the open document. Both the viewer and the share sheet use that cached file, and `FileProvider` (`res/xml/file_paths.xml`) exposes only the `documents/` tree.
 
-### Metadata and passwords
+<hr/>
 
+### ℹ️ Metadata and passwords
 PDFBox loads the cached file with the supplied password (or an empty one). If the document is unencrypted, or its user password is empty, `PdfDocuments` reads the document information dictionary and returns the cache file unchanged.
 
 If a real password is required, the document stays on the `Locked` state and the UI shows a password dialog. A wrong password returns to the same dialog with an error; the correct one marks the PDF as decrypted, saves a readable copy into the same private cache directory, and deletes the encrypted import. The copy is then renamed back to the original file name, so the viewer, the title and the share sheet all keep the name the user opened.
 
 Two consequences are worth knowing:
-
-- The decrypted copy lives in Leaf's private cache until the next import or normal cache eviction. It is not added to the original location.
+- 🔓📄 The decrypted copy lives in Leaf's private cache until the next import or normal cache eviction. It is not added to the original location.
 - Sharing a protected document shares the decrypted copy, under its original file name.
 
-Certificate/public-key encrypted PDFs are not supported. Supporting them would mean re-adding BouncyCastle and roughly doubling the APK again.
+Certificate/public-key encrypted PDFs are not supported (for now). Supporting them would mean re-adding BouncyCastle and roughly doubling the APK again.
 
-## Signing
+<hr/>
+
+## 🔏 Signing
 
 Release builds read their keystore from `keystore.properties` in the project
 root (git-ignored), or from environment variables for CI:
@@ -124,6 +143,8 @@ If no signing material is found, Gradle still builds, but produces an
 **unsigned** APK — verify before distributing. Back up the keystore and its
 password: losing either means future versions can no longer update the installed
 app.
+
+<hr/>
 
 ## Verified
 
@@ -153,7 +174,9 @@ signed release APK:
 without broad storage access cannot read another app's file path, so those
 intents would always fail.
 
-## Tuning
+<hr/>
+
+## Tuning (potential changes)
 
 - Max zoom is `PdfRendererViewCompose(maxZoomScale = 3f)`; pass a different value in `ReaderApp.kt`.
 - Screenshot blocking is available through the library's `pdfView_disableScreenshots` theme attribute if you ever use `PdfViewerActivity` instead of the view.
@@ -161,6 +184,13 @@ intents would always fail.
 - `androidResources.ignoreAssetsPatterns += "!com"` strips PDFBox's font/CMap assets. Remove that line if you start using PDFBox for text extraction or rendering; rendering does not need it, but those features do.
 - If certificate/public-key encrypted PDFs ever matter, remove the BouncyCastle exclusion and the matching `-dontwarn` rule, then expect a much larger APK.
 
+<hr/>
+
 ## License
 
 MIT for this app. Pdf-Viewer is MIT; PDFBox-Android and PDFBox are Apache-2.0.
+
+
+<hr/>
+
+https://paypal.me/31adkarak0
