@@ -1,0 +1,5 @@
+26.11.2
++ initial. written with the help of OpenCode, Ollama, DeepSeep (online) free (and local) with tooling (without rtk to save my tokens)
+https://gist.github.com/eladkarako/8c83db3d8b08db6c3a0a830f191765ed#file-windows-opencode-ollama-deepseek-model-free-online-and-local-token-saving-with-rtk-md .
+* some adjustments were made (mostly configuration and gradle scripts).
+
