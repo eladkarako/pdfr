@@ -1,6 +1,4 @@
-# 🍃 Leaf
-
-<img width="48" src="icon.svg" /> 
+<h1><img width="48" src="icon.svg" /> Leaf</h1>
 
 ## PDF reader for Android.
 - one screen.
