@@ -127,7 +127,7 @@ app/src/main/java/com/karako/pdfr/
 
 ### 🔨 build
 - JDK 17 .
-- Android SDK 35 (Android 15.0, "VanillaIceCream", https://dl.google.com/android/repository/source-35_r01.zip ) .
+- Android SDK 36 (Android 16.0, "Baklava", https://dl.google.com/android/repository/source-36_r01.zip ) .
 - gradle 8.3 (self installed) .
 
 ### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)

@@ -1,10 +1,10 @@
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import java.io.FileInputStream
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -104,12 +104,12 @@ val abiCodes = mapOf(
 // ============================================================================
 android {
     namespace = "com.karako.pdfr"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.karako.pdfr"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
 
         // Base code is used by the universal APK.
         versionCode = appVersionCode
@@ -163,8 +163,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
@@ -229,21 +231,28 @@ tasks.register("createKeystoreIfMissing") {
             println("📍 Using keytool from: $keytoolPath")
             
             // Run keytool to generate the keystore
-            exec {
-                commandLine(
-                    keytoolPath,
-                    "-genkey", "-v",
-                    "-keystore", keystorePath.absolutePath,
-                    "-keyalg", "RSA",
-                    "-keysize", "2048",
-                    "-sigalg", "SHA256withRSA",
-                    "-deststoretype", "PKCS12",
-                    "-validity", "10000",  // Valid for ~27 years
-                    "-alias", signingValue("keyAlias", "PDFR_KEY_ALIAS") ?: "pdfr",
-                    "-storepass", signingValue("storePassword", "PDFR_KEYSTORE_PASSWORD") ?: "password",
-                    "-keypass", signingValue("keyPassword", "PDFR_KEY_PASSWORD") ?: "password",
-                    "-dname", "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, S=Unknown, C=US"
-                )
+            val command = listOf(
+                keytoolPath       ,
+                "-genkey"         ,  "-v",
+                "-keystore"       ,  keystorePath.absolutePath,
+                "-keyalg"         ,  "RSA",
+                "-keysize"        ,  "2048",
+                "-sigalg"         ,  "SHA256withRSA",
+                "-deststoretype"  ,  "PKCS12",
+                "-validity"       ,  "10000",
+                "-alias"          ,  signingValue("keyAlias", "PDFR_KEY_ALIAS") ?: "pdfr",
+                "-storepass"      ,  signingValue("storePassword", "PDFR_KEYSTORE_PASSWORD") ?: "password",
+                "-keypass"        ,  signingValue("keyPassword", "PDFR_KEY_PASSWORD") ?: "password",
+                "-dname"          ,  "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, S=Unknown, C=US",
+            )
+
+            val process = ProcessBuilder(command)
+                .inheritIO()
+                .start()
+
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                throw GradleException("keytool failed with exit code $exitCode")
             }
 
             // Actually verify the keystore file exists
