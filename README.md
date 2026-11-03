@@ -60,41 +60,6 @@
 
 <hr/>
 
-### 🔨 build
-- JDK 17 .
-- Android SDK 35 (Android 15.0, "VanillaIceCream", https://dl.google.com/android/repository/source-35_r01.zip ) .
-- gradle 8.3 (self installed) .
-
-### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)
-1. `pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose"`
-2. `pwsh -Command "Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose"`
-3. `call ".\gradlew.bat" clean --info`
-
-### 📦 debug build / install
-- debug build - `./gradlew assembleDebug` (built in gradle task)
-- install - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
-
-### 📦 release build / install
-- release build - `./gradlew assembleRelease`  (built in gradle task that signs the APK when signing data is available).
-- install - `adb install -r app/build/outputs/apk/release/app-release.apk`
-
-<hr/>
-
-## 🗺️ Layout
-```
-app/src/main/java/com/karako/pdfr/
-├── PDFrApplication.kt       # initializes PDFBox's resource loader
-├── MainActivity.kt          # intent intake (VIEW / SEND / picker)
-├── data/
-│   ├── DocumentStore.kt     # copies the incoming URI into cache
-│   ├── PdfDocuments.kt      # metadata + password decryption
-│   └── ShareSheet.kt        # ACTION_SEND via FileProvider
-└── ui/
-    ├── ReaderViewModel.kt   # reader/locked state, import, unlock
-    ├── ReaderApp.kt         # Compose UI, info and password dialogs
-    └── theme/Theme.kt
-```
-
 ### How sharing stays reliable
 A PDF received from another app is often a `content://` URI that only `PDFr` can read. Rather than forwarding that URI (which may not be re-grantable), `DocumentStore` copies the bytes into `cacheDir/documents/<import-id>/` once. A staging file is renamed into place only after the copy succeeds, so a failed or self-referential import cannot truncate the open document. Both the viewer and the share sheet use that cached file, and `FileProvider` (`res/xml/file_paths.xml`) exposes only the `documents/` tree.
 
@@ -119,9 +84,9 @@ Release builds read their keystore from `keystore.properties` in the project
 root (git-ignored), or from environment variables for CI:
 
 ```properties
-storeFile=keystore/pdfr-release.jks
+storeFile=keystore/release.jks
 storePassword=…
-keyAlias=pdfr
+keyAlias=alias
 keyPassword=…
 ```
 
@@ -141,6 +106,60 @@ If no signing material is found, Gradle still builds, but produces an
 **unsigned** APK — verify before distributing. Back up the keystore and its
 password: losing either means future versions can no longer update the installed
 app.
+
+<hr/>
+
+
+## 🗺️ Layout
+```
+app/src/main/java/com/karako/pdfr/
+├── PDFrApplication.kt       # initializes PDFBox's resource loader
+├── MainActivity.kt          # intent intake (VIEW / SEND / picker)
+├── data/
+│   ├── DocumentStore.kt     # copies the incoming URI into cache
+│   ├── PdfDocuments.kt      # metadata + password decryption
+│   └── ShareSheet.kt        # ACTION_SEND via FileProvider
+└── ui/
+    ├── ReaderViewModel.kt   # reader/locked state, import, unlock
+    ├── ReaderApp.kt         # Compose UI, info and password dialogs
+    └── theme/Theme.kt
+```
+
+<hr/>
+
+### 🔨 build
+- JDK 17 .
+- Android SDK 35 (Android 15.0, "VanillaIceCream", https://dl.google.com/android/repository/source-35_r01.zip ) .
+- gradle 8.3 (self installed) .
+
+### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)
+1. `pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose"`
+2. `pwsh -Command "Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose"`
+3. `call ".\gradlew.bat" clean --info`
+
+### 📦 debug build / install
+- debug build - `./gradlew assembleDebug` (built in gradle task)
+- install - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+
+### 📦 release build / install
+- release build - `./gradlew assembleRelease`  (built in gradle task that signs the APK when signing data is available).
+- install - `adb install -r app/build/outputs/apk/release/app-release.apk`
+
+### rename
+- `local.properties.demo` -> `local.properties` with something like this:  
+```txt
+sdk.dir=C\:\\Users\\Elad\\AppData\\Local\\Android\\Sdk
+```
+- `keystore.properties.demo` -> `keystore.properties` with something like this:  
+```txt
+storeFile=keystore/release.jks
+storePassword=abcdef123456789abcdef123456789ab
+keyAlias=alias
+keyPassword=abcdef123456789abcdef123456789ab
+```
+- note the first time you build without release keystore the keystore will be generated and there would be no signed apk, you should run the command again, I need to fix the `app/build.gradle.kts` since it first check if the file exists (which I can evaluate later).
+
+- signed `.apk` files will be under `/app/build/outputs/apk/release/` .
 
 <hr/>
 
