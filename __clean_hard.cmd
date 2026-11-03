@@ -20,15 +20,11 @@ set "LC_TIME=en_US.UTF-8"
 set "TZ=UTC"
 
 call "taskkill.exe" /F /IM "java.exe"  /T
-timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
 call "taskkill.exe" /F /IM "java.exe"  /T
-timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
-
-:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview
 
 set "NO_COLOR=1"
 
@@ -46,8 +42,11 @@ echo.>>"__clean_hard.log"
 echo.>>"__clean_hard.log"
 
 title gradle clean
-call ".\gradlew.bat" clean --info --max-workers=16 --stacktrace --console=plain 2>&1 | tee --append "__clean_hard.log"
+call ".\gradlew.bat" clean --info --max-workers=16 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__clean_hard.log"
 
-timeout /t 5
+timeout /t 10
+call "taskkill.exe" /F /IM "java.exe"  /T
+call "taskkill.exe" /F /IM "javaw.exe" /T
 popd
 exit /b 0
+:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview  - (adds to the PATH C:\Program Files\coreutils\bin) \tee.exe

@@ -20,19 +20,24 @@ set "LC_TIME=en_US.UTF-8"
 set "TZ=UTC"
 
 call "taskkill.exe" /F /IM "java.exe"  /T
-timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
 call "taskkill.exe" /F /IM "java.exe"  /T
-timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
 
-:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview
-title gradle assembleRelease (multiple build and sign)
-set "NO_COLOR=1"
-call ".\gradlew.bat" assembleRelease --info --max-workers=16 --stacktrace --console=plain 2>&1 | tee "__build.log"
 
-timeout /t 5
+echo.>"__build.log"
+
+set "NO_COLOR=1"
+
+title gradle assembleRelease (multiple build and sign)
+call ".\gradlew.bat" assembleRelease --info --max-workers=16 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
+
+
+timeout /t 10
+call "taskkill.exe" /F /IM "java.exe"  /T
+call "taskkill.exe" /F /IM "javaw.exe" /T
 popd
 exit /b 0
+:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview  - (adds to the PATH C:\Program Files\coreutils\bin) \tee.exe

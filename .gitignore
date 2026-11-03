@@ -18,5 +18,7 @@ captures/
 *.apk
 *.aab
 
+/*.log
 /__build.log
 /__clean_hard.log
+/__verify.log
