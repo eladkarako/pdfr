@@ -22,7 +22,7 @@
 
 ## 🔓 opening a password protected PDF (supported)
 - decrypts PDF with owner password (you enter).
-- you can share it which will use the decrypted PDF (no password, same name of the original one).
+- opened PDF is decrypted (without password) and you can share it from directly from `PDFr` (uses original filename).
 - supports both RC4, and AES-128/AES-256 encryption.
 - if password is empty, it just opens it right-away.
 
