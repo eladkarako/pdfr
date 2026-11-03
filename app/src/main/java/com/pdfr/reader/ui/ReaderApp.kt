@@ -1,4 +1,4 @@
-package com.leaf.reader.ui
+package com.karako.pdfr.ui
 
 import android.text.format.Formatter
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -53,9 +53,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.leaf.reader.R
-import com.leaf.reader.data.PdfDocumentInfo
-import com.leaf.reader.data.ShareSheet
+import com.karako.pdfr.R
+import com.karako.pdfr.data.PdfDocumentInfo
+import com.karako.pdfr.data.ShareSheet
 import com.rajat.pdfviewer.PdfRendererView
 import com.rajat.pdfviewer.compose.PdfRendererViewCompose
 import com.rajat.pdfviewer.util.PdfSource

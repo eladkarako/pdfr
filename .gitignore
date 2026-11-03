@@ -1,5 +1,6 @@
 *.iml
 .gradle/
+.kotlin/
 local.properties
 
 # Release signing material - never commit these.
@@ -7,12 +8,15 @@ keystore.properties
 keystore/release.jks
 *.jks
 *.keystore
+
 .idea/
 .DS_Store
 build/
-!.gitkeep
 captures/
 .externalNativeBuild/
 .cxx/
 *.apk
 *.aab
+
+/__build.log
+/__clean_hard.log

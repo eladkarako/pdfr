@@ -1,4 +1,4 @@
-package com.leaf.reader
+package com.karako.pdfr
 
 import android.content.Intent
 import android.net.Uri
@@ -10,9 +10,9 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.leaf.reader.ui.ReaderApp
-import com.leaf.reader.ui.ReaderViewModel
-import com.leaf.reader.ui.theme.LeafTheme
+import com.karako.pdfr.ui.ReaderApp
+import com.karako.pdfr.ui.ReaderViewModel
+import com.karako.pdfr.ui.theme.PDFrTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            LeafTheme {
+            PDFrTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val documentInfo by viewModel.documentInfo.collectAsStateWithLifecycle()
                 ReaderApp(

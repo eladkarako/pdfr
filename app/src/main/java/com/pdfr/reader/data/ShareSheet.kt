@@ -1,10 +1,10 @@
-package com.leaf.reader.data
+package com.karako.pdfr.data
 
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
-import com.leaf.reader.R
+import com.karako.pdfr.R
 import java.io.File
 
 object ShareSheet {

@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Leaf only opens local files, so strip the network permissions that
+    <!-- PDFr only opens local files, so strip the network permissions that
          Pdf-Viewer declares for its remote-URL feature. -->
     <uses-permission
         android:name="android.permission.INTERNET"
@@ -12,18 +12,18 @@
         tools:node="remove" />
 
     <application
-        android:name=".LeafApplication"
+        android:name=".PDFrApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="false"
-        android:theme="@style/Theme.Leaf">
+        android:theme="@style/Theme.PDFr">
 
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:theme="@style/Theme.Leaf">
+            android:theme="@style/Theme.PDFr">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,7 +44,7 @@
                  app without broad storage access cannot read another app's
                  file path, so those intents would only end in an error. -->
 
-            <!-- "Share to Leaf" from any app. -->
+            <!-- "Share to PDFr" from any app. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />

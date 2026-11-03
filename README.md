@@ -1,4 +1,4 @@
-<h1><img width="48" src="icon.svg" /> Leaf</h1>
+<h1><img width="48" src="icon.svg" /> `PDFr`</h1>
 
 ## PDF reader for Android.
 - one screen.
@@ -56,7 +56,7 @@
 - PDFBox-Android - https://github.com/TomRoush/PdfBox-Android is bundled only to read metadata and to make protected files readable; it is never used to render a page (although it can and probably will do a better job).
 - APK is about `~3MB` for release.
 - Pdf-Viewer is about `100KB` most of the rest is Compose, Material 3 and the AndroidX graph.
-- PDFBox would normally add several more megabytes, but BouncyCastle is excluded - so PDFBox only needs it for certificate/public-key encryption; Leaf's password flow uses the standard security handler, which runs on the platform's own JCE, and PDFBox's bundled CMap/font assets are stripped out, with `androidResources.ignoreAssetsPatterns`. Leaf only parses dictionaries and rewrites decrypted files, so those resources are never opened.
+- PDFBox would normally add several more megabytes, but BouncyCastle is excluded - so PDFBox only needs it for certificate/public-key encryption; `PDFr`'s password flow uses the standard security handler, which runs on the platform's own JCE, and PDFBox's bundled CMap/font assets are stripped out, with `androidResources.ignoreAssetsPatterns`. `PDFr` only parses dictionaries and rewrites decrypted files, so those resources are never opened.
 
 <hr/>
 
@@ -82,8 +82,8 @@
 
 ## 🗺️ Layout
 ```
-app/src/main/java/com/leaf/reader/
-├── LeafApplication.kt       # initializes PDFBox's resource loader
+app/src/main/java/com/karako/pdfr/
+├── PDFrApplication.kt       # initializes PDFBox's resource loader
 ├── MainActivity.kt          # intent intake (VIEW / SEND / picker)
 ├── data/
 │   ├── DocumentStore.kt     # copies the incoming URI into cache
@@ -96,7 +96,7 @@ app/src/main/java/com/leaf/reader/
 ```
 
 ### How sharing stays reliable
-A PDF received from another app is often a `content://` URI that only Leaf can read. Rather than forwarding that URI (which may not be re-grantable), `DocumentStore` copies the bytes into `cacheDir/documents/<import-id>/` once. A staging file is renamed into place only after the copy succeeds, so a failed or self-referential import cannot truncate the open document. Both the viewer and the share sheet use that cached file, and `FileProvider` (`res/xml/file_paths.xml`) exposes only the `documents/` tree.
+A PDF received from another app is often a `content://` URI that only `PDFr` can read. Rather than forwarding that URI (which may not be re-grantable), `DocumentStore` copies the bytes into `cacheDir/documents/<import-id>/` once. A staging file is renamed into place only after the copy succeeds, so a failed or self-referential import cannot truncate the open document. Both the viewer and the share sheet use that cached file, and `FileProvider` (`res/xml/file_paths.xml`) exposes only the `documents/` tree.
 
 <hr/>
 
@@ -106,7 +106,7 @@ PDFBox loads the cached file with the supplied password (or an empty one). If th
 If a real password is required, the document stays on the `Locked` state and the UI shows a password dialog. A wrong password returns to the same dialog with an error; the correct one marks the PDF as decrypted, saves a readable copy into the same private cache directory, and deletes the encrypted import. The copy is then renamed back to the original file name, so the viewer, the title and the share sheet all keep the name the user opened.
 
 Two consequences are worth knowing:
-- 🔓📄 The decrypted copy lives in Leaf's private cache until the next import or normal cache eviction. It is not added to the original location.
+- 🔓📄 The decrypted copy lives in `PDFr`'s private cache until the next import or normal cache eviction. It is not added to the original location.
 - Sharing a protected document shares the decrypted copy, under its original file name.
 
 Certificate/public-key encrypted PDFs are not supported (for now). Supporting them would mean re-adding BouncyCastle and roughly doubling the APK again.
@@ -119,18 +119,18 @@ Release builds read their keystore from `keystore.properties` in the project
 root (git-ignored), or from environment variables for CI:
 
 ```properties
-storeFile=keystore/leaf-release.jks
+storeFile=keystore/pdfr-release.jks
 storePassword=…
-keyAlias=leaf
+keyAlias=pdfr
 keyPassword=…
 ```
 
 | Property | Environment variable |
 | --- | --- |
-| `storeFile` | `LEAF_KEYSTORE_FILE` |
-| `storePassword` | `LEAF_KEYSTORE_PASSWORD` |
-| `keyAlias` | `LEAF_KEY_ALIAS` |
-| `keyPassword` | `LEAF_KEY_PASSWORD` |
+| `storeFile` | `PDFR_KEYSTORE_FILE` |
+| `storePassword` | `PDFR_KEYSTORE_PASSWORD` |
+| `keyAlias` | `PDFR_KEY_ALIAS` |
+| `keyPassword` | `PDFR_KEY_PASSWORD` |
 
 ```bash
 ./gradlew assembleRelease
@@ -162,7 +162,7 @@ signed release APK:
   unlocked (decrypted document and reading position restored),
 - sharing to the Print spooler, which rendered all pages from the shared
   decrypted copy,
-- sharing Leaf's own PDF back to Leaf, which keeps the open document and its
+- sharing `PDFr`'s own PDF back to `PDFr`, which keeps the open document and its
   page position instead of corrupting the cache,
 - re-importing a file with the same display name, which gets a fresh cache
   directory,

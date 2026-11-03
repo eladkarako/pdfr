@@ -1,16 +1,16 @@
-package com.leaf.reader.ui
+package com.karako.pdfr.ui
 
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.leaf.reader.R
-import com.leaf.reader.data.DocumentStore
-import com.leaf.reader.data.PdfDocumentInfo
-import com.leaf.reader.data.PdfDocuments
-import com.leaf.reader.data.PdfPasswordRequiredException
-import com.leaf.reader.data.PdfWrongPasswordException
+import com.karako.pdfr.R
+import com.karako.pdfr.data.DocumentStore
+import com.karako.pdfr.data.PdfDocumentInfo
+import com.karako.pdfr.data.PdfDocuments
+import com.karako.pdfr.data.PdfPasswordRequiredException
+import com.karako.pdfr.data.PdfWrongPasswordException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -63,7 +63,7 @@ class ReaderViewModel(
     fun open(uri: Uri) {
         val app = getApplication<Application>()
 
-        // Sharing Leaf's own PDF back to Leaf would only re-import the file that
+        // Sharing `PDFr`'s own PDF back to `PDFr` would only re-import the file that
         // is already open. Leave the viewer (and its page position) untouched.
         val current = (_state.value as? ReaderState.Ready)?.file
         if (current != null && uri.authority == "${app.packageName}.fileprovider") {

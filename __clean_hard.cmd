@@ -28,16 +28,26 @@ timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
 
+:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview
+
+set "NO_COLOR=1"
+
+::---------------------- cleanup file.
+echo.>"__clean_hard.log"
+
 title gradle cache (local)
-pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue"
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
+echo.>>"__clean_hard.log"
+echo.>>"__clean_hard.log"
 
 title gradle cache (user profile)
-pwsh -Command "Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose -ErrorAction SilentlyContinue"
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
+echo.>>"__clean_hard.log"
+echo.>>"__clean_hard.log"
 
 title gradle clean
-call ".\gradlew.bat" clean --info --max-workers=16
-echo exit-code - [%ErrorLevel%]
+call ".\gradlew.bat" clean --info --max-workers=16 --stacktrace --console=plain 2>&1 | tee --append "__clean_hard.log"
 
-pause
 timeout /t 5
+popd
 exit /b 0

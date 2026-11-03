@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Leaf"
+rootProject.name = "PDFr"
 include(":app")

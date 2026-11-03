@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Leaf</string>
+    <string name="app_name">PDFr</string>
 
     <string name="open_pdf">Open a PDF</string>
     <string name="open_another">Open another PDF</string>
@@ -8,7 +8,7 @@
     <string name="share_via">Share via</string>
 
     <string name="empty_title">Nothing open</string>
-    <string name="empty_body">Open a PDF to start reading. Leaf also appears in other apps\' “Open with” and “Share” menus.</string>
+    <string name="empty_body">Open a PDF to start reading. PDFr also appears in other apps\' “Open with” and “Share” menus.</string>
 
     <string name="loading">Opening…</string>
     <string name="error_title">Couldn\'t open that file</string>
@@ -47,5 +47,5 @@
     <string name="cancel">Cancel</string>
     <string name="enter_password">Enter password</string>
     <string name="password_required_title">This PDF is locked</string>
-    <string name="password_required_body">Enter the document password to read it. Leaf keeps the decrypted copy only in its private cache.</string>
+    <string name="password_required_body">Enter the document password to read it. PDFr keeps the decrypted copy only in its private cache.</string>
 </resources>

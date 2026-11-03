@@ -28,10 +28,11 @@ timeout /t 2
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
 
-title gradle build (assembleRelease - including signing)
-call ".\gradlew.bat" assembleRelease --info --max-workers=16
-echo exit-code - [%ErrorLevel%]
+:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview
+title gradle assembleRelease (multiple build and sign)
+set "NO_COLOR=1"
+call ".\gradlew.bat" assembleRelease --info --max-workers=16 --stacktrace --console=plain 2>&1 | tee "__build.log"
 
-pause
 timeout /t 5
+popd
 exit /b 0
