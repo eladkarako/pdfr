@@ -1,24 +1,30 @@
-<h1><img width="48" src="icon.svg" /> `PDFr`</h1>
+<h1><img width="48" src="icon.svg" /> <code>PDFr</code></h1>
 
 ## PDF reader for Android.
-- one screen.
-- two buttons - info and share.
 
 <hr/>
 
+## 👀 privacy
+- no network access.
+- no ads.
+- no analytics.
+- no data-collection.
+
+## 🖨️ share button
+- use it to share it to printer, or share it with another applications (such as gmail for attaching it to your email).
+
 ## 📖 how it can open PDFs:
-- acts as system wide "open with" target for PDF files.
-- appears in send-to menu when you try to use send-to to share a PDF with an application.
-- you can open a PDF directly from the application itself.
-- application holds one cached PDF at a time.
+- `open-with` PDFr.
+- `share-to` PDFr.
+- use in-app open button to open a PDF file.
 
 <hr/>
 
 ## 🔓 opening a password protected PDF (supported)
-- shows a little password entering input for you.
+- decrypts PDF with owner password (you enter).
+- you can share it which will use the decrypted PDF (no password, same name of the original one).
 - supports both RC4, and AES-128/AES-256 encryption.
 - if password is empty, it just opens it right-away.
-- application holds one cached PDF at a time, once unlocked you can share it as new PDF without password.
 
 <hr/>
 
@@ -31,16 +37,8 @@
 
 <hr/>
 
-## 🖨️ share button
-- use it to send it to printer or send it to other applications.
-
 <hr/>
 
-## 👀 privacy
-- no network access.
-- no ads.
-- no analytics.
-- no data-collection.
 
 <hr/>
 
