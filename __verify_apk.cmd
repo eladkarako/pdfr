@@ -38,13 +38,13 @@ if ["%~1"] neq [""] (
 )
 
 title verify signature (jarsigner)
-call "jarsigner.exe" -verify "-verbose:all" -certs "%TARGET%" 2>&1 | "tee.exe" --append "__verify.log"
+call "jarsigner.exe" -verify "-verbose:all" -certs "%TARGET%" 2>&1 | "tee.exe" --append "__verify_apk.log"
 
-echo.>>"__verify.log"
-echo.>>"__verify.log"
+echo.>>"__verify_apk.log"
+echo.>>"__verify_apk.log"
 
 title verify signature (apksigner)
-call "%LocalAppData%\Android\Sdk\build-tools\35.0.0\apksigner.bat" verify --print-certs --verbose "%TARGET%" 2>&1 | "tee.exe" --append "__verify.log"
+call "%LocalAppData%\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs --verbose "%TARGET%" 2>&1 | "tee.exe" --append "__verify_apk.log"
 
 timeout /t 5
 popd

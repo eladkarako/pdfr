@@ -32,9 +32,12 @@ echo.>"__build.log"
 set "NO_COLOR=1"
 
 title gradle assembleRelease (multiple build and sign)
-call ".\gradlew.bat" assembleRelease --info --max-workers=4 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
+call ".\gradlew.bat" assembleRelease --console=plain 2>&1 | "tee.exe" --append "__build.log"
+::call ".\gradlew.bat" assembleRelease --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
 
 
+timeout /t 2
+call ".\gradlew.bat" --stop
 timeout /t 10
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
