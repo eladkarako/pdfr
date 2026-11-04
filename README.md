@@ -128,7 +128,7 @@ app/src/main/java/com/karako/pdfr/
 ### 🔨 build
 - JDK 17 .
 - Android SDK 36 (Android 16.0, "Baklava", https://dl.google.com/android/repository/source-36_r01.zip ) .
-- gradle 8.3 (self installed) .
+- gradle 9.8.2 ( https://services.gradle.org/distributions/gradle-9.8.2-bin.zip ) .
 
 ### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)
 1. `pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose"`
