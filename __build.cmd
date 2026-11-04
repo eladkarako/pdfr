@@ -32,7 +32,7 @@ echo.>"__build.log"
 set "NO_COLOR=1"
 
 title gradle assembleRelease (multiple build and sign)
-call ".\gradlew.bat" assembleRelease --info --max-workers=16 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
+call ".\gradlew.bat" assembleRelease --info --max-workers=4 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
 
 
 timeout /t 10

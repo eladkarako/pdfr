@@ -42,7 +42,7 @@ echo.>>"__clean_hard.log"
 echo.>>"__clean_hard.log"
 
 title gradle clean
-call ".\gradlew.bat" clean --info --max-workers=16 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__clean_hard.log"
+call ".\gradlew.bat" clean --info --max-workers=4 --stacktrace --console=plain 2>&1 | "tee.exe" --append "__clean_hard.log"
 
 timeout /t 10
 call "taskkill.exe" /F /IM "java.exe"  /T
