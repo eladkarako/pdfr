@@ -11,42 +11,60 @@ plugins {
 // ============================================================================
 // VERSION CONFIGURATION
 // ============================================================================
-// Set the app version here. Format: major.minor.patch.
-// Example: 26.11.3 becomes base version code 261103.
-val appVersionName = "26.11.3"
-val versionParts = appVersionName.split(".").map(String::toInt)
 
-require(versionParts.size == 3) {
-    "appVersionName must have three parts, like 26.11.3"
-}
-require(versionParts.all { it >= 0 }) {
-    "Version parts must be non-negative"
-}
-require(versionParts[1] in 0..99 && versionParts[2] in 0..99) {
-    "Minor and patch version parts must each be between 0 and 99"
+fun parse_and_validate_version(version_string: String): Triple<Int, Int, Int> {
+    println("[VERSION] parse_and_validate_version version_string:$version_string")
+
+    val parts = version_string.split(".").map(String::toInt)
+    
+    require(parts.size == 3) {
+        "appVersionName must have three parts (major.minor.patch), got: $version_string"
+    }
+    println("[VERSION] Parts: major=${parts[0]}, minor=${parts[1]}, patch=${parts[2]}")
+    
+    require(parts.all { it >= 0 }) {
+        "All version parts must be non-negative"
+    }
+    println("[VERSION] All parts are non-negative ✓")
+    
+    require(parts[1] in 0..99 && parts[2] in 0..99) {
+        "Minor and patch must be 0–99, got: ${parts[1]}.${parts[2]}"
+    }
+    println("[VERSION] Minor and patch in valid range (0–99) ✓")
+    
+    return Triple(parts[0], parts[1], parts[2])
 }
 
-// Pack major.minor.patch into an integer:
-// 26 * 10,000 + 11 * 100 + 3 = 261103
-val baseVersionCode =
-    versionParts[0] * 10_000 +
-        versionParts[1] * 100 +
-        versionParts[2]
-
-// Reserve the final digit for the APK type:
-// 0 = universal APK; 1–4 = ABI-specific APKs.
-val appVersionCode = baseVersionCode * 10
-
-require(appVersionCode in 1..2_100_000_000) {
-    "Generated versionCode is outside Android's supported range"
+fun calculate_version_code(major: Int, minor: Int, patch: Int): Int {
+    println("[VERSION] calculate_version_code major:$major, minor:$minor, patch:$patch")
+    
+    val base_version_code = major * 10_000 + minor * 100 + patch
+    println("[VERSION] Base version code: $base_version_code")
+    
+    val app_version_code = base_version_code * 10
+    println("[VERSION] App version code (with APK type suffix): $app_version_code")
+    
+    require(app_version_code in 1..2_100_000_000) {
+        "Generated versionCode is outside Android's supported range: $app_version_code"
+    }
+    println("[VERSION] Version code is within valid range ✓")
+    
+    return base_version_code
 }
+
+val app_version_name = "26.11.3"
+println("[VERSION] ============================================")
+val (version_major, version_minor, version_patch) = parse_and_validate_version(app_version_name)
+val base_version_code = calculate_version_code(version_major, version_minor, version_patch)
+val app_version_code = base_version_code * 10
+println("[VERSION] ============================================\n")
 
 // ============================================================================
 // DEPENDENCY EXCLUSIONS
 // ============================================================================
-// PDFBox only uses BouncyCastle for certificate/public-key security handlers.
-// PDFr's password flow uses the standard handler (platform JCE), so 
-// BouncyCastle is dead weight. Excluding it saves several MB of APK size.
+
+println("[DEPENDENCIES] Excluding BouncyCastle (not needed for password flow)")
+
 configurations.configureEach {
     exclude(group = "org.bouncycastle")
 }
@@ -54,45 +72,93 @@ configurations.configureEach {
 // ============================================================================
 // KEYSTORE CONFIGURATION
 // ============================================================================
-// Load signing credentials from keystore.properties file (git-ignored)
-// or from environment variables (for CI/CD pipelines)
-val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("keystore.properties")
-if (keystorePropertiesFile.exists()) {
-    FileInputStream(keystorePropertiesFile).use { input ->
-        keystoreProperties.load(input)
+
+data class KeystoreConfig(
+    val store_file: String,
+    val store_password: String,
+    val key_alias: String,
+    val key_password: String
+)
+
+fun load_keystore_config(): KeystoreConfig? {
+    println("[KEYSTORE] ============================================")
+    println("[KEYSTORE] Loading keystore configuration...")
+    
+    val properties = Properties()
+    val properties_file = rootProject.file("keystore.properties")
+    
+    if (properties_file.exists()) {
+        println("[KEYSTORE] Found keystore.properties file: ${properties_file.absolutePath}")
+        FileInputStream(properties_file).use(properties::load)
+        println("[KEYSTORE] Loaded properties from file")
+    } else {
+        println("[KEYSTORE] keystore.properties file not found, trying environment variables")
     }
+    
+    fun get_value(property_key: String, env_key: String): String? {
+        val from_file = properties.getProperty(property_key)
+        
+        if (from_file != null) {
+            println("[KEYSTORE] Found '$property_key' in keystore.properties file")
+            return from_file
+        }
+        
+        val from_env = System.getenv(env_key)
+        if (from_env != null) {
+            println("[KEYSTORE] Found '$env_key' in environment variables")
+            return from_env
+        }
+        
+        println("[KEYSTORE] '$property_key' / '$env_key' not found anywhere")
+        return null
+    }
+    
+    val store_file = get_value("keystore_file", "PDFR_KEYSTORE_FILE")
+    
+    if (store_file == null) {
+        println("[KEYSTORE] Keystore file not configured. Using debug signing for release builds.")
+        println("[KEYSTORE] ============================================\n")
+        return null
+    }
+    
+    println("[KEYSTORE] Keystore file configured: $store_file")
+    
+    val store_password = get_value("keystore_file_password", "PDFR_KEYSTORE_FILE_PASSWORD")
+    require(store_password != null) {
+        "keystore_file_password not found in keystore.properties or PDFR_KEYSTORE_FILE_PASSWORD env var"
+    }
+    println("[KEYSTORE] Keystore password configured ✓")
+    
+    val key_alias = get_value("key_alias", "PDFR_KEY_ALIAS")
+    require(key_alias != null) {
+        "key_alias not found in keystore.properties or PDFR_KEY_ALIAS env var"
+    }
+    println("[KEYSTORE] Key alias configured: $key_alias ✓")
+    
+    val key_password = get_value("key_password", "PDFR_KEY_PASSWORD")
+    require(key_password != null) {
+        "key_password not found in keystore.properties or PDFR_KEY_PASSWORD env var"
+    }
+    println("[KEYSTORE] Key password configured ✓")
+    
+    println("[KEYSTORE] All keystore credentials loaded successfully ✓")
+    println("[KEYSTORE] ============================================\n")
+    
+    return KeystoreConfig(
+        store_file = store_file,
+        store_password = store_password,
+        key_alias = key_alias,
+        key_password = key_password
+    )
 }
 
-// Helper function to get signing values from properties file or env vars
-fun signingValue(property: String, env: String): String? =
-    keystoreProperties.getProperty(property) ?: System.getenv(env)
+val keystore_config = load_keystore_config()
 
-// Get the keystore file path WITHOUT checking if it exists yet.
-// This allows the task to create it if missing.
-val releaseStoreFilePath = signingValue("storeFile", "PDFR_KEYSTORE_FILE")
-    ?.let { rootProject.file(it) }
+// ============================================================================
+// ABI CODES
+// ============================================================================
 
-// Validate signing credentials early if keystore is configured
-if (releaseStoreFilePath != null) {
-    require(signingValue("keyAlias", "PDFR_KEY_ALIAS") != null) {
-        "keyAlias must be set in keystore.properties or PDFR_KEY_ALIAS env var"
-    }
-    require(signingValue("storePassword", "PDFR_KEYSTORE_PASSWORD") != null) {
-        "storePassword must be set in keystore.properties or PDFR_KEYSTORE_PASSWORD env var"
-    }
-    require(signingValue("keyPassword", "PDFR_KEY_PASSWORD") != null) {
-        "keyPassword must be set in keystore.properties or PDFR_KEY_PASSWORD env var"
-    }
-}
-
-// For use in signingConfigs, check if the file exists NOW
-// (it will be re-evaluated after the keystore task runs)
-val releaseStoreFile = releaseStoreFilePath?.takeIf { it.exists() }
-
-// ABI-specific version-code suffixes.
-// Keep these stable across releases so the same ABI always has the same suffix.
-val abiCodes = mapOf(
+val abi_codes = mapOf(
     "armeabi-v7a" to 1,
     "arm64-v8a" to 2,
     "x86" to 3,
@@ -102,6 +168,7 @@ val abiCodes = mapOf(
 // ============================================================================
 // ANDROID CONFIGURATION
 // ============================================================================
+
 android {
     namespace = "com.karako.pdfr"
     compileSdk = 36
@@ -110,20 +177,21 @@ android {
         applicationId = "com.karako.pdfr"
         minSdk = 24
         targetSdk = 36
+        versionCode = app_version_code
+        versionName = app_version_name
 
-        // Base code is used by the universal APK.
-        versionCode = appVersionCode
-        versionName = appVersionName
+        println("[ANDROID] App configured: version=$app_version_name (code=$app_version_code)")
 
         vectorDrawables {
             useSupportLibrary = true
         }
     }
 
-    // Create one APK per ABI, plus a universal APK containing all ABIs.
-    // This reduces file size for users by letting them download only their architecture.
     splits {
         abi {
+            println("[ANDROID] ABI splits enabled: armeabi-v7a, arm64-v8a, x86, x86_64")
+            println("[ANDROID] Universal APK enabled for all architectures")
+            
             isEnable = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -131,156 +199,92 @@ android {
         }
     }
 
-    // Signing configuration for release builds
     signingConfigs {
-        // Only create the release config if we have a valid keystore file
-        if (releaseStoreFile != null) {
+        if (keystore_config != null) {
+            println("[SIGNING] Creating release signing config with keystore credentials")
+            
             create("release") {
-                storeFile = releaseStoreFile
-                storePassword = signingValue("storePassword", "PDFR_KEYSTORE_PASSWORD")
-                keyAlias = signingValue("keyAlias", "PDFR_KEY_ALIAS")
-                keyPassword = signingValue("keyPassword", "PDFR_KEY_PASSWORD")
+                storeFile = rootProject.file(keystore_config.store_file)
+                storePassword = keystore_config.store_password
+                keyAlias = keystore_config.key_alias
+                keyPassword = keystore_config.key_password
             }
+            
+            println("[SIGNING] Release signing config created ✓")
+        } else {
+            println("[SIGNING] No keystore configured. Release builds will use debug signing.")
         }
     }
 
     buildTypes {
         release {
-            // Minify and shrink resources to keep APK size small
-            // PDFBox and the viewer library provide their own ProGuard rules
+            println("[BUILD] Configuring release build type...")
+            
             isMinifyEnabled = true
-            isShrinkResources = true
-            signingConfig = signingConfigs.findByName("release")
+            println("[BUILD] Minification enabled")
+            
+            isShrinkResources = false
+            println("[BUILD] Resource shrinking disabled (ProGuard handles minification)")
+
+            if (keystore_config != null) {
+                println("[BUILD] Using release signing config")
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                println("[BUILD] Keystore not configured, falling back to debug signing")
+                signingConfig = signingConfigs.getByName("debug")
+            }
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            println("[BUILD] ProGuard rules configured")
         }
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        println("[COMPILE] Java compatibility set to VERSION_17")
     }
 
     kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
+        println("[COMPILE] Kotlin JVM target set to JVM_17")
     }
 
     buildFeatures {
         compose = true
+        println("[BUILD] Jetpack Compose enabled")
     }
 
-    // ============================================================================
-    // RESOURCE OPTIMIZATION
-    // ============================================================================
     androidResources {
-        // PDFBox ships ~4 MB of CMap/font assets for text extraction/rendering.
-        // PDFr only uses PDFBox for decryption and metadata, not rendering,
-        // so these resources are unused. Excluding them keeps APK smaller.
+        println("[RESOURCES] Optimizing resources...")
+        println("[RESOURCES] Excluding PDFBox CMap/font assets (~4 MB)")
+        
         ignoreAssetsPatterns += "!com"
-
-        // Store binary files uncompressed to avoid unnecessary APK changes
-        // and keep builds reproducible. These formats are already compressed,
-        // so storing them uncompressed prevents re-compression on each build.
-        noCompress += listOf(
-            "png",      // PNG images
-            "jpg",      // JPEG images
-            "jpeg",     // JPEG images (alternate extension)
-            "webp",     // WebP images
-            "m4a",      // Audio files (MP4 audio)
-            "mp4",      // Video files
-            "flac",     // FLAC audio
-            "ogg"       // Ogg Vorbis audio
-        )
+        
+        println("[RESOURCES] Storing binary files uncompressed (already compressed)")
+        noCompress += listOf("png", "jpg", "jpeg", "webp", "m4a", "mp4", "flac", "ogg")
     }
 
     packaging {
         resources {
+            println("[PACKAGING] Excluding license metadata files")
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
 }
 
 // ============================================================================
-// KEYSTORE AUTO-CREATION TASK
-// ============================================================================
-// This task creates the keystore file if it's missing.
-// It runs before every build (via preBuild dependency).
-// If the keystore already exists, it does nothing.
-tasks.register("createKeystoreIfMissing") {
-    doLast {
-        val keystorePath = releaseStoreFilePath
-        
-        // Check if we need to create the keystore
-        if (keystorePath != null && !keystorePath.exists()) {
-            // Ensure the directory exists
-            keystorePath.parentFile?.mkdirs()
-            
-            // Locate keytool in the JDK (not relying on system PATH)
-            val javaHome = System.getProperty("java.home")
-            val keytoolPath = if (System.getProperty("os.name").contains("Windows")) {
-                "$javaHome\\bin\\keytool.exe"
-            } else {
-                "$javaHome/bin/keytool"
-            }
-            
-            println("🔧 Creating keystore at: ${keystorePath.absolutePath}")
-            println("📍 Using keytool from: $keytoolPath")
-            
-            // Run keytool to generate the keystore
-            val command = listOf(
-                keytoolPath       ,
-                "-genkey"         ,  "-v",
-                "-keystore"       ,  keystorePath.absolutePath,
-                "-keyalg"         ,  "RSA",
-                "-keysize"        ,  "2048",
-                "-sigalg"         ,  "SHA256withRSA",
-                "-deststoretype"  ,  "PKCS12",
-                "-validity"       ,  "10000",
-                "-alias"          ,  signingValue("keyAlias", "PDFR_KEY_ALIAS") ?: "pdfr",
-                "-storepass"      ,  signingValue("storePassword", "PDFR_KEYSTORE_PASSWORD") ?: "password",
-                "-keypass"        ,  signingValue("keyPassword", "PDFR_KEY_PASSWORD") ?: "password",
-                "-dname"          ,  "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, S=Unknown, C=US",
-            )
-
-            val process = ProcessBuilder(command)
-                .inheritIO()
-                .start()
-
-            val exitCode = process.waitFor()
-            if (exitCode != 0) {
-                throw GradleException("keytool failed with exit code $exitCode")
-            }
-
-            // Actually verify the keystore file exists
-            if (keystorePath.exists()) {
-                println("✅ Keystore created successfully!")
-            } else {
-                throw GradleException("❌ Keystore creation failed—file not found at ${keystorePath.absolutePath}")
-            }
-
-        } else if (keystorePath != null && keystorePath.exists()) {
-            println("✅ Keystore already exists at: ${keystorePath.absolutePath}")
-        } else {
-            println("⚠️ No keystore configured (PDFR_KEYSTORE_FILE not set)")
-        }
-    }
-}
-
-// Hook the keystore creation task into the build process
-// It runs before preBuild, which runs before any compilation
-tasks.named("preBuild").configure {
-    dependsOn("createKeystoreIfMissing")
-}
-
-// ============================================================================
 // ABI-SPECIFIC VERSION CODES
 // ============================================================================
-// Give each architecture APK a unique versionCode so the Play Store can
-// distinguish between them. The universal APK gets the base code (ends in 0).
+
+println("[ABI] ============================================")
+println("[ABI] Setting up ABI-specific version codes...")
+
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
@@ -288,38 +292,64 @@ androidComponents {
                 .find { it.filterType == ABI }
                 ?.identifier
 
-            val abiCode = abiCodes[abi]
-            if (abiCode != null) {
-                // ABI APKs get: baseVersionCode * 10 + abiCode (1, 2, 3, or 4)
-                output.versionCode.set(baseVersionCode * 10 + abiCode)
+            if (abi != null) {
+                val abi_code = abi_codes[abi]
+                if (abi_code != null) {
+                    val final_version_code = base_version_code * 10 + abi_code
+                    output.versionCode.set(final_version_code)
+                    println("[ABI] $abi: version code = $final_version_code (base=$base_version_code + suffix=$abi_code)")
+                } else {
+                    println("[ABI] $abi: ABI code not found in mapping (skipped)")
+                }
+            } else {
+                println("[ABI] Universal APK: version code = $app_version_code (suffix=0)")
             }
         }
     }
 }
 
+println("[ABI] ============================================\n")
+
 // ============================================================================
 // DEPENDENCIES
 // ============================================================================
+
+println("[DEPS] Adding dependencies...")
+
 dependencies {
-    // AndroidX core libraries
-    implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.activity:activity-compose:1.9.3")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")
-
-    // Jetpack Compose UI framework
+    // Core Android + Kotlin essentials
+    implementation("androidx.core:core-ktx:1.19.1")
+    
+    // Compose framework (essential)
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-
-    // Kotlin coroutines for async work
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.1")
-
-    // PDF viewer library (uses Android's PdfRenderer for rendering)
+    implementation("androidx.compose.ui:ui") {
+        exclude(group = "androidx.compose.foundation", module = "foundation-layout")
+    }
+    
+    // Activity for Compose
+    implementation("androidx.activity:activity-compose:1.13.0") {
+        exclude(group = "androidx.lifecycle", module = "lifecycle-process")
+    }
+    
+    // Lifecycle support (minimal)
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0") {
+        exclude(group = "androidx.lifecycle", module = "lifecycle-common")
+    }
+    
+    // Material Design 3 UI (optional: remove if custom UI)
+    implementation("androidx.compose.material3:material3") {
+        exclude(group = "androidx.compose.material", module = "material-ripple")
+    }
+    
+    // Coroutines for async PDF operations
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    
+    // PDF functionality
     implementation("io.github.afreakyelf:Pdf-Viewer:2.4.0")
-
-    // PDFBox for decryption and metadata extraction
-    // (NOT used for rendering—that's handled by Android's PdfRenderer)
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0") {
+        exclude(group = "org.bouncycastle") // Already excluded globally
+    }
 }
 
+
+println("[DEPS] Dependencies configured ✓")
