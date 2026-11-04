@@ -30,14 +30,21 @@ echo.>"__verify.log"
 
 set "NO_COLOR=1"
 
+set "TARGET="
+if ["%~1"] neq [""] ( 
+  set "TARGET=%~1"
+) else ( 
+  set "TARGET=app\build\outputs\apk\release\app-arm64-v8a-release.apk"
+)
+
 title verify signature (jarsigner)
-call "jarsigner.exe" -verify "-verbose:all" -certs "app\build\outputs\apk\release\app-arm64-v8a-release.apk" 2>&1 | "tee.exe" --append "__verify.log"
+call "jarsigner.exe" -verify "-verbose:all" -certs "%TARGET%" 2>&1 | "tee.exe" --append "__verify.log"
 
 echo.>>"__verify.log"
 echo.>>"__verify.log"
 
 title verify signature (apksigner)
-call "%LocalAppData%\Android\Sdk\build-tools\35.0.0\apksigner.bat" verify --print-certs --verbose "app\build\outputs\apk\release\app-arm64-v8a-release.apk" 2>&1 | "tee.exe" --append "__verify.log"
+call "%LocalAppData%\Android\Sdk\build-tools\35.0.0\apksigner.bat" verify --print-certs --verbose "%TARGET%" 2>&1 | "tee.exe" --append "__verify.log"
 
 timeout /t 5
 popd
