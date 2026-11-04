@@ -69,11 +69,11 @@ object PdfDocuments {
             throw if (password == null) PdfPasswordRequiredException() else PdfWrongPasswordException()
         }
 
-        val info: PdfDocumentInfo
-        var unlocked: File? = null
-        try {
+        // The try block yields the metadata and the decrypted temp file together,
+        // so no nullable variable is needed.
+        val (info, decrypted) = try {
             val wasEncrypted = document.isEncrypted
-            info = readInfo(document, file, displayName, wasEncrypted)
+            val info = readInfo(document, file, displayName, wasEncrypted)
             if (!wasEncrypted) return PreparedPdf(file, info)
 
             val temp = File(file.parentFile, "unlocked-${UUID.randomUUID()}.pdf")
@@ -89,12 +89,11 @@ object PdfDocuments {
                 temp.delete()
                 throw IOException("The decrypted PDF is empty.")
             }
-            unlocked = temp
+
+            info to temp
         } finally {
             document.close()
         }
-
-        val decrypted = unlocked ?: throw IOException("The decrypted PDF is missing.")
 
         // Give the readable copy the name the user opened, so sharing does not
         // expose a random "unlocked-<uuid>.pdf". Renaming happens after the
