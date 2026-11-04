@@ -19,6 +19,8 @@ set "LC_TELEPHONE=en_US.UTF-8"
 set "LC_TIME=en_US.UTF-8"
 set "TZ=UTC"
 
+call ".\gradlew.bat" --stop
+timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
