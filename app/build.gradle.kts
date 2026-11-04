@@ -52,7 +52,7 @@ fun calculate_version_code(major: Int, minor: Int, patch: Int): Int {
     return base_version_code
 }
 
-val app_version_name = "26.11.3"
+val app_version_name = "26.11.4"
 println("[VERSION] ============================================")
 val (version_major, version_minor, version_patch) = parse_and_validate_version(app_version_name)
 val base_version_code = calculate_version_code(version_major, version_minor, version_patch)
@@ -317,38 +317,16 @@ println("[ABI] ============================================\n")
 println("[DEPS] Adding dependencies...")
 
 dependencies {
-    // Core Android + Kotlin essentials
-    implementation("androidx.core:core-ktx:1.19.1")
-    
-    // Compose framework (essential)
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))
-    implementation("androidx.compose.ui:ui") {
-        exclude(group = "androidx.compose.foundation", module = "foundation-layout")
-    }
-    
-    // Activity for Compose
-    implementation("androidx.activity:activity-compose:1.13.0") {
-        exclude(group = "androidx.lifecycle", module = "lifecycle-process")
-    }
-    
-    // Lifecycle support (minimal)
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0") {
-        exclude(group = "androidx.lifecycle", module = "lifecycle-common")
-    }
-    
-    // Material Design 3 UI (optional: remove if custom UI)
-    implementation("androidx.compose.material3:material3") {
-        exclude(group = "androidx.compose.material", module = "material-ripple")
-    }
-    
-    // Coroutines for async PDF operations
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    
-    // PDF functionality
-    implementation("io.github.afreakyelf:Pdf-Viewer:2.4.0")
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0") {
-        exclude(group = "org.bouncycastle") // Already excluded globally
-    }
+  implementation("androidx.activity:activity-compose:1.9.3")                  // Activity for Compose
+  implementation("androidx.compose.material3:material3")                      // Material Design 3 UI
+  implementation("androidx.compose.ui:ui")                                    // Jetpack Compose UI framework
+  implementation("androidx.core:core-ktx:1.15.0")                             // AndroidX core libraries + Kotlin essentials
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")        // Lifecycle support
+  implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")          // Lifecycle support
+  implementation("com.tom-roush:pdfbox-android:2.0.27.0")                     // PDFBox for decryption and metadata extraction
+  implementation("io.github.afreakyelf:Pdf-Viewer:2.4.0")                     // PDF viewer library (uses Android's PdfRenderer)
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // Kotlin Coroutines for async work.
+  implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
 }
 
 
