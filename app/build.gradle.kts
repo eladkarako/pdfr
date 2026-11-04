@@ -10,52 +10,60 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+
 // ============================================================================
 // VERSION CONFIGURATION
 // ============================================================================
 
 fun parse_and_validate_version(version_string: String): Triple<Int, Int, Int> {
-    println("[VERSION] parse_and_validate_version version_string:$version_string")
+    println("[VERSION] parse_and_validate_version version_string:${version_string}")
 
     val parts = version_string.split(".").map(String::toInt)
     
     require(parts.size == 3) {
-        "appVersionName must have three parts (major.minor.patch), got: $version_string"
+        "appVersionName must have three parts (major.minor.patch), got: ${version_string}"
     }
     println("[VERSION] Parts: major=${parts[0]}, minor=${parts[1]}, patch=${parts[2]}")
     
     require(parts.all { it >= 0 }) {
         "All version parts must be non-negative"
     }
-    println("[VERSION] All parts are non-negative ✓")
+    println("[VERSION] All parts are non-negative [OK]")
     
     require(parts[1] in 0..99 && parts[2] in 0..99) {
         "Minor and patch must be 0–99, got: ${parts[1]}.${parts[2]}"
     }
-    println("[VERSION] Minor and patch in valid range (0–99) ✓")
+    println("[VERSION] Minor and patch in valid range (0–99) [OK]")
     
     return Triple(parts[0], parts[1], parts[2])
 }
 
 fun calculate_version_code(major: Int, minor: Int, patch: Int): Int {
-    println("[VERSION] calculate_version_code major:$major, minor:$minor, patch:$patch")
+    println("[VERSION] calculate_version_code major:${major}, minor:${minor}, patch:${patch}")
     
     val base_version_code = major * 10_000 + minor * 100 + patch
-    println("[VERSION] Base version code: $base_version_code")
+    println("[VERSION] Base version code: ${base_version_code}")
     
     val app_version_code = base_version_code * 10
-    println("[VERSION] App version code (with APK type suffix): $app_version_code")
+    println("[VERSION] App version code (with APK type suffix): ${app_version_code}")
     
     require(app_version_code in 1..2_100_000_000) {
-        "Generated versionCode is outside Android's supported range: $app_version_code"
+        "Generated versionCode is outside Android's supported range: ${app_version_code}"
     }
-    println("[VERSION] Version code is within valid range ✓")
+    println("[VERSION] Version code is within valid range [OK]")
     
     return base_version_code
 }
 
 
-val app_version_name = "26.11.4"
+val versionFile = rootProject.file("version.txt")
+require(versionFile.exists()) {
+    "version.txt not found at ${versionFile.absolutePath}"
+}
+val app_version_name = versionFile.readText().trim()
+println("[VERSION] got version name string from /version.txt, content: ${app_version_name}")
+
+
 println("[VERSION] ============================================")
 val (version_major, version_minor, version_patch) = parse_and_validate_version(app_version_name)
 val base_version_code = calculate_version_code(version_major, version_minor, version_patch)
@@ -94,17 +102,17 @@ fun load_keystore_config(): KeystoreConfig? {
         val from_file = properties.getProperty(property_key)
         
         if (from_file != null) {
-            println("[KEYSTORE] Found '$property_key' in keystore.properties file")
+            println("[KEYSTORE] Found '${property_key}' in './keystore.properties' file")
             return from_file
         }
         
         val from_env = System.getenv(env_key)
         if (from_env != null) {
-            println("[KEYSTORE] Found '$env_key' in environment variables")
+            println("[KEYSTORE] Found '${env_key}' in environment variables")
             return from_env
         }
         
-        println("[KEYSTORE] '$property_key' / '$env_key' not found anywhere")
+        println("[KEYSTORE] '${property_key}' / '${env_key}' not found anywhere")
         return null
     }
     
@@ -116,27 +124,27 @@ fun load_keystore_config(): KeystoreConfig? {
         return null
     }
     
-    println("[KEYSTORE] Keystore file configured: $storeFile")
+    println("[KEYSTORE] Keystore file configured: ${storeFile}")
     
     val storePassword = get_value("storePassword", "PDFR_STORE_PASSWORD")
     require(storePassword != null) {
         "storePassword not found in keystore.properties or PDFR_STORE_PASSWORD env var"
     }
-    println("[KEYSTORE] Keystore password configured ✓")
+    println("[KEYSTORE] Keystore password configured [OK]")
     
     val keyAlias = get_value("keyAlias", "PDFR_KEY_ALIAS")
     require(keyAlias != null) {
         "keyAlias not found in keystore.properties or PDFR_KEY_ALIAS env var"
     }
-    println("[KEYSTORE] Key alias configured: $keyAlias ✓")
+    println("[KEYSTORE] Key alias configured: ${keyAlias} [OK]")
     
     val keyPassword = get_value("keyPassword", "PDFR_KEY_PASSWORD")
     require(keyPassword != null) {
         "keyPassword not found in keystore.properties or PDFR_KEY_PASSWORD env var"
     }
-    println("[KEYSTORE] Key password configured ✓")
+    println("[KEYSTORE] Key password configured [OK]")
     
-    println("[KEYSTORE] All keystore credentials loaded successfully ✓")
+    println("[KEYSTORE] All keystore credentials loaded successfully [OK]")
     println("[KEYSTORE] ============================================\n")
 
     return KeystoreConfig(
@@ -165,7 +173,7 @@ android {
         versionCode = app_version_code
         versionName = app_version_name
 
-        println("[ANDROID] App configured: version=$app_version_name (code=$app_version_code)")
+        println("[ANDROID] App configured: version=${app_version_name} (code=${app_version_code})")
 
         vectorDrawables {
             useSupportLibrary = true
@@ -193,6 +201,9 @@ android {
                 storePassword = keystore_config.storePassword
                 keyAlias = keystore_config.keyAlias
                 keyPassword = keystore_config.keyPassword
+
+                enableV1Signing = true
+                enableV2Signing = true
             }
 
             // ===== VALIDATION =====
@@ -202,28 +213,28 @@ android {
             if (releaseConfig.storeFile == null) {
                 error("[SIGNING] ERROR: storeFile is NULL - keystore file not set!")
             } else {
-                println("[SIGNING] ✓ storeFile: ${releaseConfig.storeFile}")
+                println("[SIGNING] [OK] storeFile: ${releaseConfig.storeFile}")
             }
 
             if (releaseConfig.storePassword == null) {
                 error("[SIGNING] ERROR: storePassword is NULL - keystore password not set!")
             } else {
-                println("[SIGNING] ✓ storePassword: [REDACTED]")
+                println("[SIGNING] [OK] storePassword: [REDACTED]")
             }
 
             if (releaseConfig.keyAlias == null) {
                 error("[SIGNING] ERROR: keyAlias is NULL - key alias not set!")
             } else {
-                println("[SIGNING] ✓ keyAlias: ${releaseConfig.keyAlias}")
+                println("[SIGNING] [OK] keyAlias: ${releaseConfig.keyAlias}")
             }
 
             if (releaseConfig.keyPassword == null) {
                 error("[SIGNING] ERROR: keyPassword is NULL - key password not set!")
             } else {
-                println("[SIGNING] ✓ keyPassword: [REDACTED]")
+                println("[SIGNING] [OK] keyPassword: [REDACTED]")
             }
 
-            println("[SIGNING] Release signing config created ✓")
+            println("[SIGNING] Release signing config created [OK]")
         } else {
             println("[SIGNING] No keystore configured. Release builds will use debug signing.")
         }
@@ -287,8 +298,12 @@ android {
         resources {
             println("[PACKAGING] Excluding license metadata files")
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/*.version"
+            excludes += "/META-INF/version-control-info.textproto"
+            excludes += "/META-INF/com/android/build/gradle/app-metadata.properties"
         }
     }
+
 }
 
 
@@ -316,7 +331,7 @@ val seen_release_codes = mutableMapOf<Int, String>()
 
 androidComponents {
     onVariants { variant ->
-        println("[VERSION] variant=${variant.name}, buildType=${variant.buildType}, outputs=${variant.outputs.size}, base=$base_version_code")
+        println("[VERSION] variant=${variant.name}, buildType=${variant.buildType}, outputs=${variant.outputs.size}, base=${base_version_code}")
 
         variant.outputs.forEach { output ->
             val abi = output.filters.find { it.filterType == ABI }?.identifier
@@ -329,7 +344,7 @@ androidComponents {
             } else {
                 label = abi
                 suffix = abi_codes[abi]
-                    ?: throw GradleException("[VERSION] ABI '$abi' has no entry in abi_codes")
+                    ?: throw GradleException("[VERSION] ABI '${abi}' has no entry in abi_codes")
             }
 
             val code = base_version_code * 10 + suffix
@@ -338,13 +353,13 @@ androidComponents {
             // Duplicate check only for release builds, since debug and release
             // are never uploaded together and may share codes safely.
             if (variant.buildType == "release") {
-                val previous = seen_release_codes.put(code, "${variant.name}/$label")
+                val previous = seen_release_codes.put(code, "${variant.name}/${label}")
                 if (previous != null) {
-                    throw GradleException("[VERSION] Duplicate versionCode $code: $previous and ${variant.name}/$label")
+                    throw GradleException("[VERSION] Duplicate versionCode ${code}: ${previous} and ${variant.name}/${label}")
                 }
             }
 
-            println("[VERSION] ${variant.name}/$label: versionCode=$code (base=$base_version_code, suffix=$suffix)")
+            println("[VERSION] ${variant.name}/${label}: versionCode=${code} (base=${base_version_code}, suffix=${suffix})")
         }
     }
 }
@@ -381,4 +396,4 @@ configurations.configureEach {
     exclude(group = "org.bouncycastle")
 }
 
-println("[DEPS] Dependencies configured ✓")
+println("[DEPS] Dependencies configured [OK]")
