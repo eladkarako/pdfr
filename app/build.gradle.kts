@@ -1,4 +1,6 @@
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
+import com.android.build.api.variant.FilterConfiguration
+
 import java.io.FileInputStream
 import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -52,6 +54,7 @@ fun calculate_version_code(major: Int, minor: Int, patch: Int): Int {
     return base_version_code
 }
 
+
 val app_version_name = "26.11.4"
 println("[VERSION] ============================================")
 val (version_major, version_minor, version_patch) = parse_and_validate_version(app_version_name)
@@ -59,25 +62,17 @@ val base_version_code = calculate_version_code(version_major, version_minor, ver
 val app_version_code = base_version_code * 10
 println("[VERSION] ============================================\n")
 
-// ============================================================================
-// DEPENDENCY EXCLUSIONS
-// ============================================================================
 
-println("[DEPENDENCIES] Excluding BouncyCastle (not needed for password flow)")
-
-configurations.configureEach {
-    exclude(group = "org.bouncycastle")
-}
 
 // ============================================================================
 // KEYSTORE CONFIGURATION
 // ============================================================================
 
 data class KeystoreConfig(
-    val store_file: String,
-    val store_password: String,
-    val key_alias: String,
-    val key_password: String
+    val storeFile: String,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String
 )
 
 fun load_keystore_config(): KeystoreConfig? {
@@ -113,57 +108,47 @@ fun load_keystore_config(): KeystoreConfig? {
         return null
     }
     
-    val store_file = get_value("keystore_file", "PDFR_KEYSTORE_FILE")
+    val storeFile = get_value("storeFile", "PDFR_STORE_FILE")
     
-    if (store_file == null) {
+    if (storeFile == null) {
         println("[KEYSTORE] Keystore file not configured. Using debug signing for release builds.")
         println("[KEYSTORE] ============================================\n")
         return null
     }
     
-    println("[KEYSTORE] Keystore file configured: $store_file")
+    println("[KEYSTORE] Keystore file configured: $storeFile")
     
-    val store_password = get_value("keystore_file_password", "PDFR_KEYSTORE_FILE_PASSWORD")
-    require(store_password != null) {
-        "keystore_file_password not found in keystore.properties or PDFR_KEYSTORE_FILE_PASSWORD env var"
+    val storePassword = get_value("storePassword", "PDFR_STORE_PASSWORD")
+    require(storePassword != null) {
+        "storePassword not found in keystore.properties or PDFR_STORE_PASSWORD env var"
     }
     println("[KEYSTORE] Keystore password configured ✓")
     
-    val key_alias = get_value("key_alias", "PDFR_KEY_ALIAS")
-    require(key_alias != null) {
-        "key_alias not found in keystore.properties or PDFR_KEY_ALIAS env var"
+    val keyAlias = get_value("keyAlias", "PDFR_KEY_ALIAS")
+    require(keyAlias != null) {
+        "keyAlias not found in keystore.properties or PDFR_KEY_ALIAS env var"
     }
-    println("[KEYSTORE] Key alias configured: $key_alias ✓")
+    println("[KEYSTORE] Key alias configured: $keyAlias ✓")
     
-    val key_password = get_value("key_password", "PDFR_KEY_PASSWORD")
-    require(key_password != null) {
-        "key_password not found in keystore.properties or PDFR_KEY_PASSWORD env var"
+    val keyPassword = get_value("keyPassword", "PDFR_KEY_PASSWORD")
+    require(keyPassword != null) {
+        "keyPassword not found in keystore.properties or PDFR_KEY_PASSWORD env var"
     }
     println("[KEYSTORE] Key password configured ✓")
     
     println("[KEYSTORE] All keystore credentials loaded successfully ✓")
     println("[KEYSTORE] ============================================\n")
-    
+
     return KeystoreConfig(
-        store_file = store_file,
-        store_password = store_password,
-        key_alias = key_alias,
-        key_password = key_password
+        storeFile     = storeFile,
+        storePassword = storePassword,
+        keyAlias      = keyAlias,
+        keyPassword   = keyPassword
     )
 }
 
 val keystore_config = load_keystore_config()
 
-// ============================================================================
-// ABI CODES
-// ============================================================================
-
-val abi_codes = mapOf(
-    "armeabi-v7a" to 1,
-    "arm64-v8a" to 2,
-    "x86" to 3,
-    "x86_64" to 4,
-)
 
 // ============================================================================
 // ANDROID CONFIGURATION
@@ -195,7 +180,7 @@ android {
             isEnable = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            isUniversalApk = false
         }
     }
 
@@ -204,12 +189,40 @@ android {
             println("[SIGNING] Creating release signing config with keystore credentials")
             
             create("release") {
-                storeFile = rootProject.file(keystore_config.store_file)
-                storePassword = keystore_config.store_password
-                keyAlias = keystore_config.key_alias
-                keyPassword = keystore_config.key_password
+                storeFile = rootProject.file(keystore_config.storeFile)
+                storePassword = keystore_config.storePassword
+                keyAlias = keystore_config.keyAlias
+                keyPassword = keystore_config.keyPassword
             }
-            
+
+            // ===== VALIDATION =====
+            val releaseConfig = signingConfigs.getByName("release")
+            println("[SIGNING] Validating release signing config...")
+
+            if (releaseConfig.storeFile == null) {
+                error("[SIGNING] ERROR: storeFile is NULL - keystore file not set!")
+            } else {
+                println("[SIGNING] ✓ storeFile: ${releaseConfig.storeFile}")
+            }
+
+            if (releaseConfig.storePassword == null) {
+                error("[SIGNING] ERROR: storePassword is NULL - keystore password not set!")
+            } else {
+                println("[SIGNING] ✓ storePassword: [REDACTED]")
+            }
+
+            if (releaseConfig.keyAlias == null) {
+                error("[SIGNING] ERROR: keyAlias is NULL - key alias not set!")
+            } else {
+                println("[SIGNING] ✓ keyAlias: ${releaseConfig.keyAlias}")
+            }
+
+            if (releaseConfig.keyPassword == null) {
+                error("[SIGNING] ERROR: keyPassword is NULL - key password not set!")
+            } else {
+                println("[SIGNING] ✓ keyPassword: [REDACTED]")
+            }
+
             println("[SIGNING] Release signing config created ✓")
         } else {
             println("[SIGNING] No keystore configured. Release builds will use debug signing.")
@@ -278,6 +291,20 @@ android {
     }
 }
 
+
+// ============================================================================
+// ABI CODES
+// ============================================================================
+val universal_code = 0
+
+val abi_codes = mapOf(
+    "armeabi-v7a" to 1,
+    "arm64-v8a" to 2,
+    "x86" to 3,
+    "x86_64" to 4,
+)
+
+
 // ============================================================================
 // ABI-SPECIFIC VERSION CODES
 // ============================================================================
@@ -285,25 +312,39 @@ android {
 println("[ABI] ============================================")
 println("[ABI] Setting up ABI-specific version codes...")
 
+val seen_release_codes = mutableMapOf<Int, String>()
+
 androidComponents {
     onVariants { variant ->
-        variant.outputs.forEach { output ->
-            val abi = output.filters
-                .find { it.filterType == ABI }
-                ?.identifier
+        println("[VERSION] variant=${variant.name}, buildType=${variant.buildType}, outputs=${variant.outputs.size}, base=$base_version_code")
 
-            if (abi != null) {
-                val abi_code = abi_codes[abi]
-                if (abi_code != null) {
-                    val final_version_code = base_version_code * 10 + abi_code
-                    output.versionCode.set(final_version_code)
-                    println("[ABI] $abi: version code = $final_version_code (base=$base_version_code + suffix=$abi_code)")
-                } else {
-                    println("[ABI] $abi: ABI code not found in mapping (skipped)")
-                }
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find { it.filterType == ABI }?.identifier
+            val label: String
+            val suffix: Int
+
+            if (abi == null) {
+                label = "universal"
+                suffix = universal_code
             } else {
-                println("[ABI] Universal APK: version code = $app_version_code (suffix=0)")
+                label = abi
+                suffix = abi_codes[abi]
+                    ?: throw GradleException("[VERSION] ABI '$abi' has no entry in abi_codes")
             }
+
+            val code = base_version_code * 10 + suffix
+            output.versionCode.set(code)
+
+            // Duplicate check only for release builds, since debug and release
+            // are never uploaded together and may share codes safely.
+            if (variant.buildType == "release") {
+                val previous = seen_release_codes.put(code, "${variant.name}/$label")
+                if (previous != null) {
+                    throw GradleException("[VERSION] Duplicate versionCode $code: $previous and ${variant.name}/$label")
+                }
+            }
+
+            println("[VERSION] ${variant.name}/$label: versionCode=$code (base=$base_version_code, suffix=$suffix)")
         }
     }
 }
@@ -329,5 +370,15 @@ dependencies {
   implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
 }
 
+
+// ============================================================================
+// DEPENDENCY EXCLUSIONS
+// ============================================================================
+
+println("[DEPENDENCIES] Excluding BouncyCastle (not needed for password flow)")
+
+configurations.configureEach {
+    exclude(group = "org.bouncycastle")
+}
 
 println("[DEPS] Dependencies configured ✓")
