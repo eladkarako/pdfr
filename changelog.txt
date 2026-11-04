@@ -1,3 +1,6 @@
+26.11.4
+* mostly gradle and assist script working, but also improving flow in unlocking PDF error handling.
+
 26.11.3
 * changing: `leaf`->`pdfr`/`PDFr`, `com.leaf.reader`->`com.karako.pdfr` much better since now you know what it does.
 * adding automatically keystore re-generating script into `app/build.gradle.kts`. it doesn't really matter as this keystore will hold only this application so alias is just "alias" instead of "leaf" or "pdfr".
