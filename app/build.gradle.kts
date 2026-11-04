@@ -262,6 +262,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+
+            ndk {
+                println("[BUILD] explicitly include debug symbols to make crash more clear (removing uses Android NDK llvm-strip).")
+                debugSymbolLevel = "FULL" // or "SYMBOL_TABLE" or "NONE"
+            }
             println("[BUILD] ProGuard rules configured")
         }
     }
