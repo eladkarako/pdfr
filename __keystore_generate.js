@@ -30,6 +30,16 @@ const KEYTOOL_ARGS = {
 };
 
 // ============================================================================
+// DEBUG LOGGER
+// ============================================================================
+const DEBUG = {
+  log: (msg) => console.log(`[DEBUG] ${msg}`),
+  info: (msg) => console.log(`[INFO] ${msg}`),
+  warn: (msg) => console.warn(`[WARN] ${msg}`),
+  error: (msg) => console.error(`[ERROR] ${msg}`),
+};
+
+// ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 const beautify_json = (obj) => {
@@ -86,14 +96,21 @@ const beautify_json_aligned2 = (obj)=>{
 
 const file_exists = async (file_path) => {
   try {
+    DEBUG.log(`Checking file existence: ${file_path}`);
     await fs.access(file_path, FILE_READ_PERMISSIONS);
+    DEBUG.log(`File exists: ${file_path}`);
     return true;
   } catch (err) {
+    DEBUG.log(`File does not exist or not accessible: ${file_path}`);
     return false;
   }
 };
 
 const run_command = (execute, args, env) => {
+  DEBUG.log(`Executing command: ${execute}`);
+  DEBUG.log(`With arguments: ${JSON.stringify(args)}`);
+  DEBUG.log(`Environment variables set: ${ENV_KEYSTORE_FILE_PASSWORD}, ${ENV_KEY_PASSWORD}`);
+  
   const options = {
     env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -104,13 +121,19 @@ const run_command = (execute, args, env) => {
 
   return new Promise((resolve, reject) => {
     const sub_process = spawn(execute, args, options);
+    DEBUG.log(`Process spawned with PID: ${sub_process.pid}`);
 
     sub_process.stdout.pipe(process.stdout);
     sub_process.stderr.pipe(process.stdout);
 
-    sub_process.once("error", reject);
+    sub_process.once("error", (err) => {
+      DEBUG.error(`Process error: ${err.message}`);
+      reject(err);
+    });
 
     sub_process.once("close", (code, signal) => {
+      DEBUG.log(`Process closed with code: ${code}, signal: ${signal}`);
+      
       const signal_exit_code = signal
         ? os.constants.signals[signal]
           ? os.constants.signals[signal] + 128
@@ -122,8 +145,10 @@ const run_command = (execute, args, env) => {
         : `keytool exited with status ${code}. exit-code:${exit_code}.`;
 
       if (code === 0) {
+        DEBUG.log(`Process exited successfully with exit-code: ${exit_code}`);
         resolve(exit_code);
       } else {
+        DEBUG.error(message);
         reject(new Error(message));
       }
     });
@@ -134,10 +159,13 @@ const run_command = (execute, args, env) => {
 // PROPERTIES PARSING
 // ============================================================================
 const parse_properties = async () => {
+  DEBUG.log(`Reading properties file: ${KEYSTORE_PROPERTIES_FILE}`);
   const content = await fs.readFile(KEYSTORE_PROPERTIES_FILE, {
     encoding: "utf8",
     signal: AbortSignal.timeout(FILE_ACCESS_TIMEOUT_MS),
   });
+
+  DEBUG.log(`Properties file read successfully, length: ${content.length} bytes`);
 
   const keystore_properties = Array.from(
     content.matchAll(/^([^\=]+)\s*=\s*([^\r\n]+)/gms)
@@ -148,14 +176,18 @@ const parse_properties = async () => {
     return carry;
   }, {});
 
-  console.log(`[INFO] parsing "${KEYSTORE_PROPERTIES_FILE}" done.`);
+  DEBUG.info(`Parsed ${Object.keys(keystore_properties).length} properties from file:`);
   console.log(beautify_json_aligned2(keystore_properties));
 
   return keystore_properties;
 };
 
 const validate_properties = (keystore_properties) => {
+  DEBUG.log(`Starting properties validation...`);
   const keys_in_properties = Object.keys(keystore_properties);
+
+  DEBUG.log(`Found keys in properties: ${JSON.stringify(keys_in_properties)}`);
+  DEBUG.log(`Expected keys: ${JSON.stringify(KNOWN_KEYS)}`);
 
   // Check for required keys
   KNOWN_KEYS.forEach((key) => {
@@ -164,6 +196,7 @@ const validate_properties = (keystore_properties) => {
         `ERROR: "${key}" not found in "${KEYSTORE_PROPERTIES_FILE}".`
       );
     }
+    DEBUG.log(`✓ Required key found: ${key}`);
   });
 
   // Check for empty values
@@ -172,14 +205,24 @@ const validate_properties = (keystore_properties) => {
     if (value === "") {
       throw new Error(`ERROR: "${key}" is empty.`);
     }
+    DEBUG.log(`✓ Key "${key}" has value (length: ${value.length})`);
   });
 
   // PKCS12 requires identical keystore and key passwords
-  if (keystore_properties.keystore_file_password !== keystore_properties.key_password) {
+  const keystorePwd = keystore_properties.keystore_file_password;
+  const keyPwd = keystore_properties.key_password;
+  
+  DEBUG.log(`Checking PKCS12 password requirement...`);
+  DEBUG.log(`keystore_file_password length: ${keystorePwd.length}`);
+  DEBUG.log(`key_password length: ${keyPwd.length}`);
+  
+  if (keystorePwd !== keyPwd) {
     throw new Error(
       `ERROR: PKCS12 needs identical values for keystore_file_password and key_password. they are different.`
     );
   }
+  DEBUG.log(`✓ Passwords match for PKCS12 format`);
+  DEBUG.info(`All property validations passed!`);
 };
 
 // ============================================================================
@@ -187,7 +230,14 @@ const validate_properties = (keystore_properties) => {
 // ============================================================================
 const get_keytool_path = () => {
   const java_home = process.env["JAVA_HOME"] || process.env["JRE_HOME"] || "D:/software/java/jdk-17.0.1";
-  return java_home.replace(/\\+/gm, "/").replace(/\/+$/gm, "") + "/bin/keytool.exe";
+  DEBUG.log(`JAVA_HOME: ${process.env["JAVA_HOME"] || "not set"}`);
+  DEBUG.log(`JRE_HOME: ${process.env["JRE_HOME"] || "not set"}`);
+  DEBUG.log(`Using Java path: ${java_home}`);
+  
+  const keytool_path = java_home.replace(/\\+/gm, "/").replace(/\/+$/gm, "") + "/bin/keytool.exe";
+  DEBUG.log(`Resolved keytool path: ${keytool_path}`);
+  
+  return keytool_path;
 };
 
 // ============================================================================
@@ -195,6 +245,12 @@ const get_keytool_path = () => {
 // ============================================================================
 (async () => {
   try {
+    DEBUG.info(`=== Keystore Generation Script Started ===`);
+    DEBUG.log(`Current working directory: ${process.cwd()}`);
+    DEBUG.log(`Script directory: ${__dirname}`);
+    DEBUG.log(`Node version: ${process.version}`);
+    DEBUG.log(`Platform: ${process.platform}`);
+    
     const keystore_properties = await parse_properties();
     validate_properties(keystore_properties);
 
@@ -202,25 +258,42 @@ const get_keytool_path = () => {
       .resolve(__dirname, keystore_properties.keystore_file)
       .replace(/\\+/gm, "/");
 
+    DEBUG.info(`Target keystore file path: ${keystore_file_path}`);
+
     // Check if keystore already exists
-    if (await file_exists(keystore_file_path)) {
+    const exists = await file_exists(keystore_file_path);
+    if (exists) {
       throw new Error(
         `ERROR: "${keystore_file_path}" - already exists (will not overwrite it).`
       );
     }
+    DEBUG.log(`✓ Keystore file does not already exist`);
 
     // Create directory if needed
     const directory_path = path.dirname(keystore_file_path);
+    DEBUG.log(`Creating directory if needed: ${directory_path}`);
     try {
       await fs.mkdir(directory_path, { recursive: true });
+      DEBUG.log(`✓ Directory ready: ${directory_path}`);
     } catch (err) {
-      // Directory may already exist, ignore
+      DEBUG.warn(`Directory creation returned error (may already exist): ${err.message}`);
     }
+
+    // Verify directory exists
+    const dir_exists = await file_exists(directory_path);
+    if (!dir_exists) {
+      throw new Error(`ERROR: Failed to create or access directory: ${directory_path}`);
+    }
+    DEBUG.log(`✓ Directory verified: ${directory_path}`);
 
     // Prepare environment variables for keytool
     const env = { ...process.env };
     env[ENV_KEYSTORE_FILE_PASSWORD] = keystore_properties.keystore_file_password;
     env[ENV_KEY_PASSWORD] = keystore_properties.key_password;
+    
+    DEBUG.log(`Environment variables prepared:`);
+    DEBUG.log(`  ${ENV_KEYSTORE_FILE_PASSWORD}: <set>`);
+    DEBUG.log(`  ${ENV_KEY_PASSWORD}: <set>`);
 
     // Build keytool arguments
     const keytool_args = [
@@ -248,20 +321,34 @@ const get_keytool_path = () => {
       KEYTOOL_ARGS.dname,
     ];
 
+    DEBUG.info(`Keytool configuration:`);
+    DEBUG.log(`  storetype: ${KEYTOOL_ARGS.storetype}`);
+    DEBUG.log(`  keyalg: ${KEYTOOL_ARGS.keyalg}`);
+    DEBUG.log(`  keysize: ${KEYTOOL_ARGS.keysize}`);
+    DEBUG.log(`  sigalg: ${KEYTOOL_ARGS.sigalg}`);
+    DEBUG.log(`  validity: ${KEYTOOL_ARGS.validity} days`);
+    DEBUG.log(`  dname: ${KEYTOOL_ARGS.dname}`);
+
     const keytool_path = get_keytool_path();
+    
+    DEBUG.info(`=== Executing Keytool ===`);
     const exit_code = await run_command(keytool_path, keytool_args, env);
-    console.log(`keytool finished with exit-code: ${exit_code}`);
+    DEBUG.info(`Keytool finished with exit-code: ${exit_code}`);
 
     // Verify keystore was created
-    if (await file_exists(keystore_file_path)) {
-      console.log(
-        `SUCCESS: keystore-file (PKCS12) created successfully at: ${keystore_file_path}`
-      );
+    DEBUG.log(`Verifying keystore file was created...`);
+    const created = await file_exists(keystore_file_path);
+    if (created) {
+      const stats = await fs.stat(keystore_file_path);
+      DEBUG.info(`SUCCESS: keystore-file (PKCS12) created successfully`);
+      DEBUG.info(`  Path: ${keystore_file_path}`);
+      DEBUG.info(`  Size: ${stats.size} bytes`);
+      DEBUG.info(`  Created: ${stats.birthtime}`);
     } else {
       throw new Error("ERROR: keystore file was not created.");
     }
   } catch (err) {
-    console.error(err.message);
+    DEBUG.error(`Script failed: ${err.message}`);
     process.exit(1);
   }
 })();
