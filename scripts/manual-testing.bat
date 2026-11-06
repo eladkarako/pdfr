@@ -10,10 +10,10 @@ echo ============================================================
 echo   Device: %PDFR_AVD%     Fixtures: %PDFR_FIXTURES%
 echo.
 echo   1. Push generated fixtures to the emulator
-echo   2. Open sample.pdf (14 pages)
+echo   2. Open sample.pdf (14 pages, reorder/rotate/linearize)
 echo   3. Open dummy-encrypted.pdf (password: secret)
-echo   4. Open notes.txt (monospace toggle)
-echo   5. Open alice.epub (reflow)
+echo   4. Open text: notes.txt, README.nfo or book.text
+echo   5. Open an EPUB, HTML or Gutenberg sample
 echo   6. Double-tap zoom (2x, 4x, 6x, 1x)
 echo   7. Pinch out / pinch in
 echo   8. Long-press and select text
@@ -51,11 +51,29 @@ echo  Password: secret
 goto pause
 
 :text
-call "%~dp0open-fixture.bat" notes.txt
+choice /c 123 /n /m "1 = notes.txt, 2 = README.nfo, 3 = book.text: "
+if errorlevel 3 (
+  call "%~dp0open-fixture.bat" book.text
+) else if errorlevel 2 (
+  call "%~dp0open-fixture.bat" README.nfo
+) else (
+  call "%~dp0open-fixture.bat" notes.txt
+)
 goto pause
 
 :epub
-call "%~dp0open-fixture.bat" alice.epub
+choice /c 12345 /n /m "1 = alice.epub, 2 = Alice (Gutenberg), 3 = Pride and Prejudice, 4 = Sherlock Holmes (TXT), 5 = Yellow Wallpaper (HTML): "
+if errorlevel 5 (
+  call "%~dp0open-fixture.bat" "gutenberg\yellow-wallpaper.html"
+) else if errorlevel 4 (
+  call "%~dp0open-fixture.bat" "gutenberg\sherlock-holmes.txt"
+) else if errorlevel 3 (
+  call "%~dp0open-fixture.bat" "gutenberg\pride-and-prejudice.epub"
+) else if errorlevel 2 (
+  call "%~dp0open-fixture.bat" "gutenberg\alice-gutenberg.epub"
+) else (
+  call "%~dp0open-fixture.bat" alice.epub
+)
 goto pause
 
 :doubletap

@@ -3,9 +3,9 @@ setlocal
 call "%~dp0_env.bat"
 
 echo [PDFr] Generating fixtures in "%PDFR_FIXTURES%"...
-"%PYTHON%" "%PDFR_ROOT%\tools\make_test_files.py" --out "%PDFR_FIXTURES%"
+call "%PDFR_ROOT%\tools\make_test_files.cmd" --out "%PDFR_FIXTURES%"
 if errorlevel 1 (
-  echo [ERROR] Fixture generation failed. Is Python available?
+  echo [ERROR] Fixture generation failed. Is Node.js available?
   exit /b 1
 )
 
@@ -21,6 +21,12 @@ echo [PDFr] Asking MediaStore to index the new files...
 for %%F in ("%PDFR_FIXTURES%\*") do (
   echo   - %%~nxF
   "%ADB%" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Download/pdfr-fixtures/%%~nxF" >nul 2>&1
+)
+if exist "%PDFR_FIXTURES%\gutenberg" (
+  for %%F in ("%PDFR_FIXTURES%\gutenberg\*") do (
+    echo   - gutenberg\%%~nxF
+    "%ADB%" shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d "file:///sdcard/Download/pdfr-fixtures/gutenberg/%%~nxF" >nul 2>&1
+  )
 )
 
 echo.

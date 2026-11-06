@@ -45,8 +45,19 @@ set "CLASS_FILTER="
 if not "%~1"=="" set "CLASS_FILTER=-e class %~1"
 
 echo [PDFr] Running instrumentation...
-"%ADB%" shell am instrument -w %CLASS_FILTER% com.karako.pdfr.test/androidx.test.runner.AndroidJUnitRunner
-if errorlevel 1 (
+set "OUT=%TEMP%\pdfr-instrument-%RANDOM%.txt"
+"%ADB%" shell am instrument -w %CLASS_FILTER% com.karako.pdfr.test/androidx.test.runner.AndroidJUnitRunner > "%OUT%" 2>&1
+set "RC=%ErrorLevel%"
+type "%OUT%"
+
+set "FAILED="
+rem `adb shell am instrument` returns 0 even when a test fails, so inspect the
+rem runner's own report instead of trusting the exit code.
+findstr /C:"FAILURES!!!" /C:"INSTRUMENTATION_FAILED" /C:"INSTRUMENTATION_ABORTED" /C:"Process crashed" "%OUT%" >nul && set "FAILED=1"
+if not "%RC%"=="0" set "FAILED=1"
+del "%OUT%" >nul 2>&1
+
+if defined FAILED (
   echo [FAIL] Instrumented tests failed.
   echo        Re-run with a class filter to narrow it down:
   echo        run-instrumented-tests.bat com.karako.pdfr.MuPdfDocumentInstrumentedTest

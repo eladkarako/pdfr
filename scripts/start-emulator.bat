@@ -10,6 +10,20 @@ if not exist "%EMULATOR%" (
   exit /b 1
 )
 
+set "AVD_LIST=%TEMP%\pdfr-avds-%RANDOM%.txt"
+"%EMULATOR%" -list-avds > "%AVD_LIST%" 2>nul
+findstr /x /c:"%PDFR_AVD%" "%AVD_LIST%" >nul
+if errorlevel 1 (
+  echo [ERROR] AVD "%PDFR_AVD%" was not found.
+  echo         Available AVDs:
+  type "%AVD_LIST%"
+  echo.
+  echo         Set PDFR_AVD to one of them, or create an AVD named pdfr_full.
+  del "%AVD_LIST%" >nul 2>&1
+  exit /b 1
+)
+del "%AVD_LIST%" >nul 2>&1
+
 echo [PDFr] Starting AVD "%PDFR_AVD%"...
 start "PDFr emulator - %PDFR_AVD%" "%EMULATOR%" -avd "%PDFR_AVD%" -no-snapshot-load -no-boot-anim
 
