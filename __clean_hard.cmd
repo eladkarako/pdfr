@@ -24,21 +24,18 @@ timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
-call "taskkill.exe" /F /IM "java.exe"  /T
-call "taskkill.exe" /F /IM "javaw.exe" /T
-timeout /t 2
 
 set "NO_COLOR=1"
 
-::---------------------- cleanup file.
+::---------------------- cleanup log file.
 echo.>"__clean_hard.log"
 
-title gradle cache (local)
+title .gradle folder (local)
 pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
 echo.>>"__clean_hard.log"
 echo.>>"__clean_hard.log"
 
-title gradle cache (user profile)
+title .gradle folder (user profile)
 pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
 echo.>>"__clean_hard.log"
 echo.>>"__clean_hard.log"
@@ -49,7 +46,7 @@ call ".\gradlew.bat" clean --console=plain 2>&1 | "tee.exe" --append "__clean_ha
 
 timeout /t 2
 call ".\gradlew.bat" --stop
-timeout /t 10
+timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 popd
