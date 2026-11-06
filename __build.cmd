@@ -24,23 +24,17 @@ timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
-call "taskkill.exe" /F /IM "java.exe"  /T
-call "taskkill.exe" /F /IM "javaw.exe" /T
-timeout /t 2
-
-
-echo.>"__build.log"
 
 set "NO_COLOR=1"
-
-title gradle assembleRelease (multiple build and sign)
-call ".\gradlew.bat" assembleRelease --console=plain 2>&1 | "tee.exe" --append "__build.log"
-::call ".\gradlew.bat" assembleRelease --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
-
+::---------------------- build log file.
+echo.>"__build.log"
+title gradle clean assembleRelease
+call ".\gradlew.bat" clean assembleRelease --console=plain 2>&1 | "tee.exe" --append "__build.log"
+::call ".\gradlew.bat" clean assembleRelease --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "__build.log"
 
 timeout /t 2
 call ".\gradlew.bat" --stop
-timeout /t 10
+timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 popd
