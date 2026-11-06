@@ -47,13 +47,14 @@ set "EXIT_CODE=%ErrorLevel%"
 if ["%EXIT_CODE%"] neq ["0"] ( call :DOWNLOAD_QPDF )
 
 
-call "node.exe" "make_test_files.js"
+call "node.exe" "make_test_files.js" %*
 set "EXIT_CODE=%ErrorLevel%"
 
 echo [INFO] node ended with exit-code: %EXIT_CODE%.
 
-timeout /t 10
-exit /b 0
+rem Keep the window open only for a double-click / plain run.
+if "%~1"=="" timeout /t 10
+exit /b %EXIT_CODE%
 ::-------------------------------------------------------------------------------------------------------------
 
 

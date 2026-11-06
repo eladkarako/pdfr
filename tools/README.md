@@ -1,47 +1,35 @@
 # Test-fixture generator
 
-generates few files to be used in testings.  
+Generates the documents used for manual testing. It writes them to
+`build/test-fixtures/` (`../build/test-fixtures/` from the script's point of
+view).
 
-it writes them to `/build/test-fixtures/` (from the script's perspective that's `../build/test-fixtures/`).  
+Everything except the encrypted PDF is produced with Node's built-in modules.
+The encrypted PDF needs `qpdf` on `PATH` or next to the script.
 
-### Windows OS.
+### Windows
 
-- run `make_test_files.cmd`
-it will download `qpdf` and `node` if they are missing from current folder or `PATH` (uses `curl` and `7z` which it assumes exists in current folder or `PATH` which they do, in my PC).
+```bat
+tools\make_test_files.cmd
+```
 
-### Other OS
-- you'll need `node` and `qpdf` binaries available either in same folder or in system's `PATH`.
+`make_test_files.cmd` downloads Node and qpdf into `tools/` when they are
+missing from the folder or `PATH`. It uses `curl` and `7z`, which are assumed to
+be available.
 
-<hr/>
+### Other systems
 
-### used in testings. 
+You need `node` (20.15+ or 22.2+, for `zlib.crc32`) and `qpdf` either next to
+the script or on `PATH`.
 
-- `adb.exe` feeds those to...
-- `C:\Users\Elad\AppData\Local\Android\Sdk\emulator\emulator.exe` which uses...
-- `C:\Users\Elad\AppData\Local\Android\Sdk\emulator\qemu\windows-x86_64\qemu-system-x86_64.exe` with... 
-- a lite VM `avd` I pre-set for the project.
+```bash
+node tools/make_test_files.js --out build/test-fixtures
+python3 tools/fetch_gutenberg.py --out build/test-fixtures/gutenberg
+```
 
-<hr/>
-
-### qPDF binaries:
-
-- windows x64 - https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-msvc64.zip
-- linux x64 - https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-bin-linux-x86_64.zip
-- linux aarch64 - https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-bin-linux-aarch64.zip
-- macos x64 - https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-bin-macos-x86_64.zip
-- macos arm64 - https://github.com/qpdf/qpdf/releases/download/v12.4.2/qpdf-12.4.2-bin-macos-arm64.zip
-
-<hr/>
-
-### old python
-
-this is based on `make_test_files.py` which used `pyqpdf` (`python -m pip install pypdf`).  
-if you prefer it, use the git history to fetch it.
-
-
-### encryption
-
-The password is `secret`.
+The JavaScript generator also downloads the Gutenberg books itself unless you
+pass `--no-gutenberg`. `fetch_gutenberg.py` is the standalone equivalent and
+uses only the Python standard library.
 
 ## Output
 
@@ -51,20 +39,47 @@ The password is `secret`.
 | `dummy.pdf` | A one-page PDF. |
 | `dummy-encrypted.pdf` | A one-page PDF encrypted with AES-256 (password `secret`). |
 | `notes.txt` | Plain text with long lines, indentation and literal angle brackets. |
+| `README.nfo` | A small ASCII-art readme that exercises the `.nfo` plain-text path. |
+| `book.text` | Long reflowable paragraphs for the `.text` plain-text path. |
 | `alice.epub` | A minimal two-chapter EPUB 3 book. |
 | `sample.cbz` | Three solid-colour PNG pages. |
+| `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |
 
-The pages are real, text-extractable PDFs (base-14 Helvetica), so selection,
-filtering and `pypdf` verification all work.
+The generated PDFs are real, text-extractable documents (base-14 Helvetica), so
+selection, reordering, rotation and qpdf linearization all work on them.
 
-Useful options:
+### Gutenberg fixtures
+
+| File | Book | Format |
+| --- | --- | --- |
+| `alice-gutenberg.epub` | *Alice's Adventures in Wonderland* | EPUB |
+| `pride-and-prejudice.epub` | *Pride and Prejudice* | EPUB with images |
+| `sherlock-holmes.txt` | *The Adventures of Sherlock Holmes* | plain text |
+| `yellow-wallpaper.html` | *The Yellow Wallpaper* | HTML |
+
+They are public-domain works downloaded from `https://www.gutenberg.org/`. Each
+file's source URL is recorded in `gutenberg/SOURCES.txt`. Downloads are skipped
+(with a warning) when offline, so fixture generation still succeeds without a
+network.
+
+## Options
 
 ```text
---out DIR           output directory (default: <repo>\build\test-fixtures)
---pages N           number of pages in sample.pdf (default 14)
---password TEXT     password for dummy-encrypted.pdf (default secret)
---no-encrypted      do not require pypdf
+--out DIR                output directory (default: <repo>/build/test-fixtures)
+--pages N                number of pages in sample.pdf (default 14)
+--password TEXT          password for dummy-encrypted.pdf (default secret)
+--no-encrypted           skip dummy-encrypted.pdf
+--no-gutenberg            skip the Project Gutenberg downloads
+--gutenberg-timeout MS   per-download timeout in milliseconds (default 30000)
 ```
 
-`scripts\push-fixtures.bat` runs this generator and copies the results to
-`/sdcard/Download/pdfr-fixtures/` on the connected device.
+`fetch_gutenberg.py` additionally supports `--list` and `--only <slug>`
+(`alice`, `pride`, `sherlock`, `yellow`).
+
+## Used in testing
+
+- `adb.exe` pushes the fixtures to the device.
+- `scripts\push-fixtures.bat` runs the generator and copies the results to
+  `/sdcard/Download/pdfr-fixtures/`.
+- The instrumented tests generate their own tiny PDFs at runtime instead of
+  reading these files.

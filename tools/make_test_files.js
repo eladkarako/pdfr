@@ -9,7 +9,10 @@
  * fixtures are still written.
  *
  * The generated set mirrors app/src/androidTest: deterministic page labels make
- * it easy to see whether filtering kept the requested order and duplicates.
+ * it easy to see whether reordering kept the requested order and duplicates.
+ *
+ * Public-domain Project Gutenberg books are downloaded as well (unless
+ * --no-gutenberg is given) to exercise EPUB, HTML and plain-text rendering.
  *
  *     node tools/make_test_files.js --out build/test-fixtures
  *
@@ -23,6 +26,43 @@ const { execFileSync } = require('node:child_process');
 const { parseArgs } = require('node:util');
 
 const PASSWORD = 'secret';
+
+// Small public-domain books used to exercise EPUB, HTML and plain-text
+// rendering. The direct cache URLs are stable and avoid extra redirects.
+const GUTENBERG_BOOKS = [
+  {
+    ebookId: 11,
+    title: "Alice's Adventures in Wonderland",
+    author: 'Lewis Carroll',
+    url: 'https://www.gutenberg.org/cache/epub/11/pg11.epub',
+    filename: 'alice-gutenberg.epub',
+    kind: 'EPUB',
+  },
+  {
+    ebookId: 1342,
+    title: 'Pride and Prejudice',
+    author: 'Jane Austen',
+    url: 'https://www.gutenberg.org/cache/epub/1342/pg1342-images.epub',
+    filename: 'pride-and-prejudice.epub',
+    kind: 'EPUB (with images)',
+  },
+  {
+    ebookId: 1661,
+    title: 'The Adventures of Sherlock Holmes',
+    author: 'Arthur Conan Doyle',
+    url: 'https://www.gutenberg.org/cache/epub/1661/pg1661.txt',
+    filename: 'sherlock-holmes.txt',
+    kind: 'plain text',
+  },
+  {
+    ebookId: 1952,
+    title: 'The Yellow Wallpaper',
+    author: 'Charlotte Perkins Gilman',
+    url: 'https://www.gutenberg.org/cache/epub/1952/pg1952-images.html',
+    filename: 'yellow-wallpaper.html',
+    kind: 'HTML',
+  },
+];
 
 // ---------------------------------------------------------------------------
 // PDF
@@ -114,7 +154,7 @@ function writePdf(file, labels) {
 
 /**
  * Encrypt with qpdf (AES-256) when installed. Returns false when unavailable.
- * The pypdf version verified the result; this one runs qpdf --check instead.
+ * `qpdf --check` verifies the result.
  */
 function encryptPdf(source, destination, password) {
   try {
@@ -345,10 +385,81 @@ function writeCbz(file, pages) {
 }
 
 // ---------------------------------------------------------------------------
+// Project Gutenberg
+// ---------------------------------------------------------------------------
+
+async function downloadGutenberg(destination, timeoutMs) {
+  fs.mkdirSync(destination, { recursive: true });
+  const downloaded = [];
+
+  for (const book of GUTENBERG_BOOKS) {
+    const target = path.join(destination, book.filename);
+    const partial = `${target}.part`;
+
+    try {
+      const response = await fetch(book.url, {
+        headers: { 'User-Agent': 'PDFr-test-fixtures/1.0' },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = Buffer.from(await response.arrayBuffer());
+      if (data.length < 1024) {
+        throw new Error('download was unexpectedly small');
+      }
+      if (book.filename.endsWith('.epub') && data.subarray(0, 2).toString('latin1') !== 'PK') {
+        throw new Error('not a ZIP/EPUB file');
+      }
+
+      fs.writeFileSync(partial, data);
+      fs.renameSync(partial, target);
+      downloaded.push(book);
+      console.log(`[PDFr] Gutenberg ${book.filename.padEnd(30)} ${String(data.length).padStart(9)} bytes`);
+    } catch (err) {
+      fs.rmSync(partial, { force: true });
+      console.warn(`[PDFr] Skipped Gutenberg ${book.filename}: ${err.message}`);
+    }
+  }
+
+  if (downloaded.length > 0) {
+    const lines = [
+      'Project Gutenberg test fixtures',
+      '===============================',
+      '',
+      'These files are public-domain works downloaded from Project Gutenberg.',
+      'They are used only to exercise PDFr EPUB, HTML and plain-text reading.',
+      '',
+    ];
+    for (const book of downloaded) {
+      lines.push(
+        book.filename,
+        `  Title:  ${book.title}`,
+        `  Author: ${book.author}`,
+        `  Format: ${book.kind}`,
+        `  Source: ${book.url}`,
+        `  eBook:  https://www.gutenberg.org/ebooks/${book.ebookId}`,
+        '',
+      );
+    }
+    lines.push(
+      'Project Gutenberg: https://www.gutenberg.org/',
+      'Permission is granted to copy, distribute and modify these works',
+      'under the Project Gutenberg License included with each eBook.',
+      '',
+    );
+    fs.writeFileSync(path.join(destination, 'SOURCES.txt'), lines.join('\n'), 'utf8');
+  }
+
+  return downloaded.length;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
-function main() {
+async function main() {
   const repo = path.resolve(__dirname, '..');
 
   const { values } = parseArgs({
@@ -357,13 +468,16 @@ function main() {
       pages: { type: 'string', default: '14' },
       password: { type: 'string', default: PASSWORD },
       'no-encrypted': { type: 'boolean', default: false },
+      'no-gutenberg': { type: 'boolean', default: false },
+      'gutenberg-timeout': { type: 'string', default: '30000' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
 
   if (values.help) {
     console.log(
-      'Usage: node make_test_files.js [--out DIR] [--pages N] [--password PW] [--no-encrypted]',
+      'Usage: node make_test_files.js [--out DIR] [--pages N] [--password PW]\n' +
+        '       [--no-encrypted] [--no-gutenberg] [--gutenberg-timeout MS]',
     );
     return 0;
   }
@@ -393,9 +507,7 @@ function main() {
   }
 
   const notes = path.join(out, 'notes.txt');
-  fs.writeFileSync(
-    notes,
-    `PDFr plain text fixture
+  const notesBody = `PDFr plain text fixture
 =======================
 
 The quick brown fox jumps over the lazy dog.
@@ -411,6 +523,32 @@ A second paragraph with enough words to wrap across a line and show
 how MuPDF turns plain text into reflowable HTML pages.
 
 <This should stay literal angle brackets>
+`;
+  fs.writeFileSync(notes, notesBody, 'utf8');
+
+  // .nfo and .text are common in scene/readme archives. They must take the
+  // same plain-text path as .txt.
+  fs.writeFileSync(
+    path.join(out, 'README.nfo'),
+    `PDFr NFO fixture
+================
+  _   _   _   _
+ | |_| |_| |_| |
+ |  _  | . |  _|
+ |_| |_|___|_|
+
+Extension: .nfo
+The quick brown fox jumps over the lazy dog.
+`,
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(out, 'book.text'),
+    `PDFr .text fixture
+
+A long paragraph for the reflowable reader. ${'The reader wraps this line to the current screen width. '.repeat(8)}
+
+A second paragraph proves that blank lines still start a new block.
 `,
     'utf8',
   );
@@ -440,6 +578,12 @@ how MuPDF turns plain text into reflowable HTML pages.
     [70, 170, 90],
   ]);
 
+  if (!values['no-gutenberg']) {
+    const timeoutMs = Number.parseInt(values['gutenberg-timeout'], 10);
+    const timeout = Number.isInteger(timeoutMs) && timeoutMs > 0 ? timeoutMs : 30000;
+    await downloadGutenberg(path.join(out, 'gutenberg'), timeout);
+  }
+
   console.log(`[PDFr] Fixtures written to ${out}`);
   for (const name of fs.readdirSync(out).sort()) {
     const { size } = fs.statSync(path.join(out, name));
@@ -458,10 +602,12 @@ how MuPDF turns plain text into reflowable HTML pages.
 }
 
 if (require.main === module) {
-  try {
-    process.exitCode = main();
-  } catch (err) {
-    console.error(`[PDFr] ${err.message}`);
-    process.exitCode = 1;
-  }
+  main()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((err) => {
+      console.error(`[PDFr] ${err.message}`);
+      process.exitCode = 1;
+    });
 }
