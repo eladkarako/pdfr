@@ -1,18 +1,18 @@
-# Pdf-Viewer relies on AndroidX lifecycle classes that R8 can strip when a
-# Java consumer resolves older lifecycle-process versions. The library ships
-# its own consumer rules; these are the belt-and-braces copies from its README.
--keep,allowobfuscation class androidx.lifecycle.ProcessLifecycleOwner { *; }
--keep,allowobfuscation class androidx.lifecycle.ProcessLifecycleOwner$* { *; }
+# MuPDF's Java bindings are called from native code by class, field and method
+# name/signature. Renaming or stripping any of them would break the JNI bridge.
+-keep class com.artifex.mupdf.fitz.** { *; }
+-keepclassmembers class com.artifex.mupdf.fitz.** {
+    native <methods>;
+}
 
-# PdfBox-Android can decode JPEG 2000 only when the optional gemalto JP2
-# library is present. PDFr does not ship it, and Android's PdfRenderer does the
-# actual page drawing, so the references are harmless.
--dontwarn com.gemalto.jp2.**
+# MuPDF loads its native library by name and uses reflection for a few helpers.
+-dontwarn com.artifex.mupdf.fitz.**
 
-# Public-key (certificate) security is the only code path that needs
-# BouncyCastle. PDFr uses the standard password handler, which runs on plain
-# JCE. Keeping the warning quiet avoids pulling in ~10 MB of crypto jars.
--dontwarn org.bouncycastle.**
+# qpdf's JNI symbol is bound by the class and method name
+# (Java_com_karako_pdfr_data_Qpdf_nativeLinearize), so keep both.
+-keepclasseswithmembernames class com.karako.pdfr.data.Qpdf {
+    native <methods>;
+}
 
 # I do not need to obfuscate or rename the classes since this is an opensource code, I want to make reverse engineering from APK to source easier for inspection.
 -dontobfuscate

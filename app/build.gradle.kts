@@ -172,6 +172,7 @@ android {
         targetSdk = 36
         versionCode = app_version_code
         versionName = app_version_name
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         println("[ANDROID] App configured: version=${app_version_name} (code=${app_version_code})")
 
@@ -291,15 +292,16 @@ android {
 
     androidResources {
         println("[RESOURCES] Optimizing resources...")
-        println("[RESOURCES] Excluding PDFBox CMap/font assets (~4 MB)")
-        
-        ignoreAssetsPatterns += "!com"
-        
         println("[RESOURCES] Storing binary files uncompressed (already compressed)")
         noCompress += listOf("png", "jpg", "jpeg", "webp", "m4a", "mp4", "flac", "ogg")
     }
 
     packaging {
+        // Prebuilt, already stripped by tools/build-qpdf-android.ps1.
+        jniLibs {
+            keepDebugSymbols += "**/libqpdfjni.so"
+        }
+
         resources {
             println("[PACKAGING] Excluding license metadata files")
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -384,21 +386,18 @@ dependencies {
   implementation("androidx.core:core-ktx:1.15.0")                             // AndroidX core libraries + Kotlin essentials
   implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")        // Lifecycle support
   implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")          // Lifecycle support
-  implementation("com.tom-roush:pdfbox-android:2.0.27.0")                     // PDFBox for decryption and metadata extraction
-  implementation("io.github.afreakyelf:Pdf-Viewer:2.4.0")                     // PDF viewer library (uses Android's PdfRenderer)
+  implementation("com.artifex.mupdf:fitz:1.28.5")                             // MuPDF engine for PDF, EPUB, XPS, CBZ and text selection
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // Kotlin Coroutines for async work.
   implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
-}
 
+  // Pure JVM tests for parsing and small data classes.
+  testImplementation("junit:junit:4.13.2")
 
-// ============================================================================
-// DEPENDENCY EXCLUSIONS
-// ============================================================================
-
-println("[DEPENDENCIES] Excluding BouncyCastle (not needed for password flow)")
-
-configurations.configureEach {
-    exclude(group = "org.bouncycastle")
+  // On-device tests use the real MuPDF native library and Android Bitmap.
+  androidTestImplementation("androidx.test:runner:1.6.2")
+  androidTestImplementation("androidx.test:rules:1.6.1")
+  androidTestImplementation("androidx.test.ext:junit:1.2.1")
+  androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 
 println("[DEPS] Dependencies configured [OK]")
