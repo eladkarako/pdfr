@@ -31,10 +31,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             PDFrTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
-                val documentInfo by viewModel.documentInfo.collectAsStateWithLifecycle()
+                val selection by viewModel.selection.collectAsStateWithLifecycle()
                 ReaderApp(
                     state = state,
-                    documentInfo = documentInfo,
+                    selection = selection,
                     viewModel = viewModel,
                 )
             }
@@ -48,13 +48,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openFrom(intent: Intent?) {
-        val uri = intent?.pdfUri() ?: return
+        val uri = intent?.documentUri() ?: return
         // The file is copied immediately while the grant is live, so there is no
         // need to hold a persistable permission.
         viewModel.open(uri)
     }
 
-    private fun Intent.pdfUri(): Uri? = when (action) {
+    private fun Intent.documentUri(): Uri? = when (action) {
         Intent.ACTION_VIEW -> data
         Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
         else -> null

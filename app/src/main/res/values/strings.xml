@@ -2,34 +2,36 @@
 <resources>
     <string name="app_name">PDFr</string>
 
-    <string name="open_pdf">Open a PDF</string>
-    <string name="open_another">Open another PDF</string>
-    <string name="share_pdf">Share PDF</string>
-    <string name="share_via">Share via</string>
+    <string name="open_document">Open a document</string>
+    <string name="open_another">Open another document</string>
+    <string name="share_document">Share document</string>
 
     <string name="empty_title">Nothing open</string>
-    <string name="empty_body">Open a PDF to start reading. PDFr also appears in other apps\' “Open with” and “Share” menus.</string>
+    <string name="empty_body">Open a PDF, EPUB, XPS, CBZ, FB2, HTML or text file to start reading. PDFr also appears in other apps\' “Open with” and “Share” menus.</string>
 
     <string name="loading">Opening…</string>
     <string name="error_title">Couldn\'t open that file</string>
     <string name="error_generic">Something went wrong while reading this file.</string>
+    <string name="error_no_pages">That document has no readable pages.</string>
     <string name="try_another">Try another file</string>
 
     <string name="document_info">Document info</string>
     <string name="file_name">File name</string>
     <string name="file_size">File size</string>
+    <string name="document_type">Type</string>
+    <string name="document_format">Format</string>
     <string name="page_count">Pages</string>
     <plurals name="page_count_value">
         <item quantity="one">%1$d page</item>
         <item quantity="other">%1$d pages</item>
     </plurals>
+    <string name="page_of">%1$d / %2$d</string>
     <string name="password_protected">Password protected</string>
-    <string name="password_protected_yes">Yes (unlocked)</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="close">Close</string>
 
-    <string name="pdf_metadata">PDF metadata</string>
+    <string name="document_metadata">Document metadata</string>
     <string name="metadata_title">Title</string>
     <string name="metadata_author">Author</string>
     <string name="metadata_subject">Subject</string>
@@ -39,6 +41,10 @@
     <string name="metadata_created">Created</string>
     <string name="metadata_modified">Modified</string>
 
+    <string name="copy">Copy</string>
+    <string name="select_all">Select all</string>
+    <string name="copied">Copied to clipboard</string>
+
     <string name="password_title">Password required</string>
     <string name="password_body">“%1$s” is protected. Enter its password to open it.</string>
     <string name="password_label">Password</string>
@@ -46,6 +52,58 @@
     <string name="unlock">Unlock</string>
     <string name="cancel">Cancel</string>
     <string name="enter_password">Enter password</string>
-    <string name="password_required_title">This PDF is locked</string>
-    <string name="password_required_body">Enter the document password to read it. PDFr keeps the decrypted copy only in its private cache.</string>
+    <string name="password_required_title">This document is locked</string>
+    <string name="password_required_body">Enter the document password to read it. MuPDF decrypts it in memory; PDFr does not write a decrypted copy.</string>
+
+    <string name="more_options">More options</string>
+    <string name="monospace_on">Monospace: on</string>
+    <string name="monospace_off">Monospace: off</string>
+
+    <string name="reorder_pages">Reorder pages…</string>
+    <string name="reorder_title">Reorder pages</string>
+    <string name="reorder_body">List the pages to keep, in the order you want them. Pages you leave out are deleted. Page numbers refer to the PDF that is open now.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">Separate pages with commas. Use a dash for a range and e for the last page. Spaces are ignored; order and repeats are kept.</string>
+    <string name="reorder_apply">Reorder</string>
+    <string name="rewrite_replace_note">The new PDF replaces the current document. To return to the original, open it again.</string>
+    <string name="reorder_done">Created the reordered PDF.</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">Keeping %1$d page</item>
+        <item quantity="other">Keeping %1$d pages</item>
+    </plurals>
+
+    <string name="rotate_pages">Rotate 180°…</string>
+    <string name="rotate_title">Rotate 180°</string>
+    <string name="rotate_body">Turn the listed pages upside down. Page numbers refer to the PDF that is open now.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">Rotate</string>
+    <string name="rotate_done">Created the rotated PDF.</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">Rotating %1$d page</item>
+        <item quantity="other">Rotating %1$d pages</item>
+    </plurals>
+
+    <string name="page_error_empty">Enter page numbers, for example 1-3,7,9-e.</string>
+    <string name="page_error_empty_entry">Remove the extra comma.</string>
+    <string name="page_error_token">Can’t read “%1$s”. Use page numbers, ranges and e.</string>
+    <string name="page_error_range">Page %1$d doesn’t exist. This document has %2$d pages.</string>
+    <string name="page_error_reversed">A range can’t end before it starts.</string>
+    <string name="page_error_too_many">That selection has too many pages.</string>
+
+    <string name="linearize">Linearize…</string>
+    <string name="linearize_title">Linearize PDF</string>
+    <string name="linearize_body">Uses qpdf to write a genuinely linearized PDF, optimised so the first page can be displayed before the rest of the file has been read.</string>
+    <string name="linearize_apply">Linearize</string>
+    <string name="linearize_done">Created a linearized PDF.</string>
+    <string name="linearize_unavailable">qpdf is not available in this build.</string>
+
+    <string name="compact">Compact…</string>
+    <string name="compact_title">Compact PDF</string>
+    <string name="compact_body">Rewrites the PDF with unused objects removed and streams, fonts and images compressed. The compact copy usually opens faster and takes less space. MuPDF 1.28 cannot linearize, so use Linearize for that.</string>
+    <string name="compact_apply">Create copy</string>
+    <string name="compact_done">Created a compact PDF.</string>
+
+    <string name="rewrite_failed">Couldn’t create the new PDF.</string>
+    <string name="working">Working…</string>
+    <string name="working_body">Working on the document…</string>
 </resources>

@@ -1,9 +1,24 @@
+26.11.5
++ replaced PDFBox and Android's PdfRenderer/Pdf-Viewer with MuPDF.
++ opens PDF, EPUB, XPS/OXPS, CBZ and other formats MuPDF recognises.
++ continuous-scroll Compose reader with reflow layout for EPUB/FB2/plain text.
++ plain text accepts `.txt`, `.nfo` and `.text`, with a monospace/proportional toggle.
++ long-press text selection with copy and select-all.
++ zoom from 100% to 600% with the menu, a two-finger pinch, or double-tap.
++ reorder PDF pages (`1-3,7,9-e`): listed pages are kept in the written order, omitted pages are deleted.
++ rotate only the listed PDF pages 180 degrees.
++ linearize PDFs with a bundled static qpdf build (own background thread); MuPDF's compact rewrite stays available as Compact.
++ password-protected documents are unlocked in memory; a rewrite saves a new unencrypted copy only when requested.
++ more spacing between pages and restored position/zoom after rotation.
++ JVM unit tests, on-device MuPDF/qpdf tests, fixture generator, Project Gutenberg samples and Windows helper scripts.
++ app relicensed to AGPL-3.0 to match MuPDF.
+
 26.11.4
 * mostly gradle and assist script working, but also improving flow in unlocking PDF error handling.
 
 26.11.3
-* changing: `leaf`->`pdfr`/`PDFr`, `com.leaf.reader`->`com.karako.pdfr` much better since now you know what it does.
-* adding automatically keystore re-generating script into `app/build.gradle.kts`. it doesn't really matter as this keystore will hold only this application so alias is just "alias" instead of "leaf" or "pdfr".
+* renaming the project to `PDFr` (`com.karako.pdfr`), which says what it does.
+* adding automatically keystore re-generating script into `app/build.gradle.kts`. it doesn't really matter as this keystore will hold only this application so the alias is just "alias".
 
 26.11.2
 + initial. written with the help of OpenCode, Ollama, DeepSeep (online) free (and local) with tooling (without rtk to save my tokens)

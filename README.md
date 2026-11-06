@@ -1,84 +1,180 @@
-<h1><img width="48" src="icon.svg" /> <code>PDFr</code></h1>
+# PDFr
 
-## PDF reader for Android.
+document reader for android  
+powered by [MuPDF](https://mupdf.com/) and [qPDF](https://github.com/qpdf/qpdf)
 
-<hr/>
+## Privacy
 
-## 👀 privacy
-- no network access.
+- no network permission is declared or merged into the manifest.
 - no ads.
 - no analytics.
-- no data-collection.
+- no data collection.
+- documents are copied into the app's private cache only while they are open.
 
-## 🖨️ share button
-- use it to share it to printer, or share it with another applications (such as gmail for attaching it to your email).
+## Formats
 
-## 📖 how it can open PDFs:
-- `open-with` PDFr.
-- `share-to` PDFr.
-- use in-app open button to open a PDF file.
+- PDF
+- EPUB
+- XPS / OXPS
+- CBZ (comics)
+- FB2, plain text (`.txt`, `.nfo`, `.text`), HTML and SVG (whatever MuPDF can
+  recognise)
 
-<hr/>
+The same continuous-scroll reader is used for every format. Fixed-layout
+documents are rasterised page by page; reflowable documents (EPUB, FB2, text)
+are laid out to the current screen width and zoom level.
 
-## 🔓 opening a password protected PDF (supported)
-- decrypts PDF with owner password (you enter).
-- opened PDF is decrypted (without password) and you can share it from directly from `PDFr` (uses original filename).
-- supports both RC4, and AES-128/AES-256 encryption.
-- if password is empty, it just opens it right-away.
+## Features
 
-<hr/>
+- **Open with / Share to PDFr**, or pick a file from the in-app button.
+- **Text selection and copying** - long-press a word, drag to extend the
+  selection, then use **Copy**, **Select all** or **Close** in the floating bar.
+- **Zoom** from 100% to 600% with the menu, a two-finger pinch, or a double-tap
+  (2x, 4x, 6x, back to 1x). Reflowable books get a larger text layout;
+  fixed-layout pages are rasterised at the larger size and panned horizontally.
+- **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
+  the order you want them. Pages you leave out are deleted; `e` is the last
+  page, spaces are ignored, and repeats are kept. PDFr writes a new,
+  unencrypted PDF into its cache and opens it in place of the current document.
+- **Rotate 180°** (PDF only): turns the listed pages upside down. The range
+  defaults to `1-e`, and only the pages you list are rotated.
+- **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
+  native library to write a genuinely linearized PDF, so the first page can be
+  shown before the rest of the file is read. The new copy replaces the current
+  document.
+- **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
+  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
+  stays a separate, clearly named action.
+- **Monospace** override for plain-text documents, from the overflow menu.
+- **Password-protected documents** are unlocked in memory by MuPDF. No
+  decrypted copy is written when merely reading; any rewrite saves its
+  replacement without encryption.
+- **Document info**: file name, size, type/format, page count, encryption, and
+  the usual title/author/subject/keywords/creator/producer/date metadata.
+- **Share** the open document through Android's share sheet / print spooler.
+- **Reading position** is preserved across rotation, reflow and process death.
 
-## ℹ️ info button
-- file name.
-- file size.
-- page count.
-- if it is password protected.
-- any PDF metadata - title, author, subject, keywords, creator, producer, created, modified.
 
-<hr/>
+## How opening works
 
-<hr/>
+A document received from another app is usually a `content://` URI that only
+PDFr can read. `DocumentStore` copies the bytes once into
+`cacheDir/documents/<import-id>/`, using a staging file renamed into place only
+after the copy succeeds. Everything else - the reader, the info dialog and the
+share sheet - uses that cached file. `FileProvider` exposes only the
+`documents/` tree.
 
+Reordering, rotating, linearizing or compacting writes a new PDF into a fresh
+subdirectory of the same cache, opens it, and then deletes the previous copy.
+There is deliberately no undo stack and no original PDF kept around: use
+**Open another document** (or the system picker) to go back to the source file.
+Every rewrite saves without encryption, so a rewritten encrypted PDF opens
+without a password.
 
-<hr/>
+## Architecture
 
-### 🤏 minimal interface
-- limited/no dark theme.
-- only left-to-right interface (no `RTL`).
+```
+app/src/main/java/com/karako/pdfr/
+├── MainActivity.kt          # intent intake (VIEW / SEND / picker)
+├── data/
+│   ├── DocumentFormats.kt   # MIME types, extensions and plain-text names
+│   ├── DocumentInfo.kt      # generic metadata model
+│   ├── DocumentStore.kt     # copies an incoming URI into cache
+│   ├── PageRanges.kt        # parses "1-3,7,9-e" page selections
+│   ├── MuPdf.kt             # one dedicated MuPDF thread
+│   ├── MuPdfDocument.kt     # open/auth/layout/render/select/rewrite
+│   ├── Qpdf.kt              # one dedicated qpdf thread + JNI bridge
+│   └── ShareSheet.kt        # ACTION_SEND via FileProvider
+├── ui/
+│   ├── ReaderApp.kt         # Compose continuous-scroll reader + dialogs
+│   ├── ReaderViewModel.kt   # reader state, viewport, selection, reflow
+│   └── theme/Theme.kt
 
-<hr/>
+app/src/main/cpp/            # JNI bridge to static libqpdf
+app/src/main/jniLibs/<abi>/  # stripped libqpdfjni.so per ABI
+app/src/test/                # JVM tests (no device, no native code)
+app/src/androidTest/         # MuPDF/qpdf integration tests + PDF writer
+tools/make_test_files.js     # generates manual-test documents + Gutenberg books
+tools/fetch_gutenberg.py     # standalone Project Gutenberg downloader
+scripts/                     # Windows helpers: emulator, install, tests, gestures
+```
 
-## 🚧 architecture /  🪶 `APK` size
-- explicitly removing `android:name="android.permission.INTERNET"` and `android:name="android.permission.ACCESS_NETWORK_STATE"`.
-- rendering is based on Android's built-in `android.graphics.pdf.PdfRenderer`, via https://github.com/afreakyelf/Pdf-Viewer (`io.github.afreakyelf:Pdf-Viewer:2.4.0`), it means no text selection, no text copy (and no form filling).  
-- PDFBox-Android - https://github.com/TomRoush/PdfBox-Android is bundled only to read metadata and to make protected files readable; it is never used to render a page (although it can and probably will do a better job).
-- APK is about `~3MB` for release.
-- Pdf-Viewer is about `100KB` most of the rest is Compose, Material 3 and the AndroidX graph.
-- PDFBox would normally add several more megabytes, but BouncyCastle is excluded - so PDFBox only needs it for certificate/public-key encryption; `PDFr`'s password flow uses the standard security handler, which runs on the platform's own JCE, and PDFBox's bundled CMap/font assets are stripped out, with `androidResources.ignoreAssetsPatterns`. `PDFr` only parses dictionaries and rewrites decrypted files, so those resources are never opened.
+MuPDF's native objects are not concurrency-safe, so every MuPDF call runs on a
+single background thread (`MuPdf.dispatcher`). Pages are rendered into
+`ARGB_8888` bitmaps held in a byte-sized LRU cache; structured text is cached
+separately for selection.
 
-<hr/>
+qpdf is independent of MuPDF and can be slow on large files, so it has its own
+serialized thread (`Qpdf.dispatcher`). It is built as a static library for each
+Android ABI and exposed through a tiny JNI function
+(`app/src/main/cpp/qpdf_jni.cpp`). The stripped `libqpdfjni.so` files are
+checked into `app/src/main/jniLibs/`, so a normal Gradle build never needs the
+qpdf or libjpeg sources.
 
-### How sharing stays reliable
-A PDF received from another app is often a `content://` URI that only `PDFr` can read. Rather than forwarding that URI (which may not be re-grantable), `DocumentStore` copies the bytes into `cacheDir/documents/<import-id>/` once. A staging file is renamed into place only after the copy succeeds, so a failed or self-referential import cannot truncate the open document. Both the viewer and the share sheet use that cached file, and `FileProvider` (`res/xml/file_paths.xml`) exposes only the `documents/` tree.
+## Build
 
-<hr/>
+- JDK 17
+- Android SDK 36
+- Gradle 9.8.2
+- The official prebuilt MuPDF AAR `com.artifex.mupdf:fitz:1.28.5` is resolved
+  from `https://maven.ghostscript.com`.
+- qpdf 12.4.2 is linked statically; the stripped JNI libraries are committed,
+  so the Android NDK is only needed when rebuilding them.
 
-### ℹ️ Metadata and passwords
-PDFBox loads the cached file with the supplied password (or an empty one). If the document is unencrypted, or its user password is empty, `PdfDocuments` reads the document information dictionary and returns the cache file unchanged.
+```bash
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-universal-debug.apk
+```
 
-If a real password is required, the document stays on the `Locked` state and the UI shows a password dialog. A wrong password returns to the same dialog with an error; the correct one marks the PDF as decrypted, saves a readable copy into the same private cache directory, and deletes the encrypted import. The copy is then renamed back to the original file name, so the viewer, the title and the share sheet all keep the name the user opened.
+The build produces one APK per ABI plus a universal APK; use the matching
+split for smaller installs (for example `app-x86_64-debug.apk` on an x86_64
+emulator).
 
-Two consequences are worth knowing:
-- 🔓📄 The decrypted copy lives in `PDFr`'s private cache until the next import or normal cache eviction. It is not added to the original location.
-- Sharing a protected document shares the decrypted copy, under its original file name.
+### Rebuilding the qpdf bridge
 
-Certificate/public-key encrypted PDFs are not supported (for now). Supporting them would mean re-adding BouncyCastle and roughly doubling the APK again.
+`build/qpdf/` holds the downloaded qpdf and libjpeg-turbo sources and the
+per-ABI build trees. `tools/build-qpdf-android.ps1` configures and builds all
+four ABIs with the Android NDK, strips the resulting `libqpdfjni.so`, and copies
+it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp` or the
+qpdf version changes; a normal clone builds from the checked-in libraries.
 
-<hr/>
+## Testing
 
-## 🔏 Signing
+Three layers, all runnable from the repository root:
 
-Release builds read their keystore from `keystore.properties` in the project
+| Layer | Command | Needs a device? |
+| --- | --- | --- |
+| JVM unit tests | `scripts\run-unit-tests.bat` (or `gradlew :app:testDebugUnitTest`) | no |
+| MuPDF integration tests | `scripts\run-instrumented-tests.bat` | yes |
+| Manual checklist | `scripts\manual-testing.bat` | yes |
+
+- `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`.
+- `app/src/androidTest/README.md` - opens, renders, selects, reorders,
+  rotates, compacts, linearizes through qpdf, unlocks AES-256 PDFs and toggles
+  plain-text monospace on real MuPDF.
+- `scripts/README.md` - emulator/install helpers, fixture pushing and the
+  manual checklist, including a raw-multitouch pinch helper.
+- `tools/README.md` - the dependency-free fixture generator and the Project
+  Gutenberg downloader.
+
+Typical first run:
+
+```bat
+scripts\start-emulator.bat
+scripts\install-debug.bat
+scripts\push-fixtures.bat
+scripts\run-instrumented-tests.bat
+scripts\manual-testing.bat
+```
+
+The instrumented tests generate their own PDFs at runtime (including a
+password-protected one), so no test binaries are checked in. For manual
+testing, `node tools\make_test_files.js` creates a 14-page `sample.pdf`, text
+files (`.txt`, `.nfo`, `.text`), an EPUB, a CBZ, an AES-256 PDF whose password
+is `secret`, and downloads a few public-domain Project Gutenberg books
+(EPUB/TXT/HTML) into `gutenberg/`.
+
+Release builds are minified and signed from `keystore.properties` in the project
 root (git-ignored), or from environment variables for CI:
 
 ```properties
@@ -90,122 +186,32 @@ keyPassword=…
 
 | Property | Environment variable |
 | --- | --- |
-| `storeFile` | `PDFR_KEYSTORE_FILE` |
-| `storePassword` | `PDFR_KEYSTORE_PASSWORD` |
+| `storeFile` | `PDFR_STORE_FILE` |
+| `storePassword` | `PDFR_STORE_PASSWORD` |
 | `keyAlias` | `PDFR_KEY_ALIAS` |
 | `keyPassword` | `PDFR_KEY_PASSWORD` |
 
-```bash
-./gradlew assembleRelease
-apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk
-```
+Without signing material Gradle still builds, but the release APK is signed
+with the debug key. Back up the real keystore and its password: losing either
+means future versions can no longer update an installed app.
 
-If no signing material is found, Gradle still builds, but produces an
-**unsigned** APK — verify before distributing. Back up the keystore and its
-password: losing either means future versions can no longer update the installed
-app.
+## Native size
 
-<hr/>
-
-
-## 🗺️ Layout
-```
-app/src/main/java/com/karako/pdfr/
-├── PDFrApplication.kt       # initializes PDFBox's resource loader
-├── MainActivity.kt          # intent intake (VIEW / SEND / picker)
-├── data/
-│   ├── DocumentStore.kt     # copies the incoming URI into cache
-│   ├── PdfDocuments.kt      # metadata + password decryption
-│   └── ShareSheet.kt        # ACTION_SEND via FileProvider
-└── ui/
-    ├── ReaderViewModel.kt   # reader/locked state, import, unlock
-    ├── ReaderApp.kt         # Compose UI, info and password dialogs
-    └── theme/Theme.kt
-```
-
-<hr/>
-
-### 🔨 build
-- JDK 17 .
-- Android SDK 36 (Android 16.0, "Baklava", https://dl.google.com/android/repository/source-36_r01.zip ) .
-- gradle 9.8.2 ( https://services.gradle.org/distributions/gradle-9.8.2-bin.zip ) .
-
-### 🧹 build - clean (cleanup broken gradle + cache + artifacts - Windows OS)
-1. `pwsh -Command "Remove-Item -Recurse -Force '.\.gradle' -Verbose"`
-2. `pwsh -Command "Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose"`
-3. `call ".\gradlew.bat" clean --info`
-
-### 📦 debug build / install
-- debug build - `./gradlew assembleDebug` (built in gradle task)
-- install - `adb install -r app/build/outputs/apk/debug/app-debug.apk`
-
-### 📦 release build / install
-- release build - `./gradlew assembleRelease`  (built in gradle task that signs the APK when signing data is available).
-- install - `adb install -r app/build/outputs/apk/release/app-release.apk`
-
-### rename
-- `local.properties.demo` -> `local.properties` with something like this:  
-```txt
-sdk.dir=C\:\\Users\\Elad\\AppData\\Local\\Android\\Sdk
-```
-- `keystore.properties.demo` -> `keystore.properties` with something like this:  
-```txt
-storeFile=keystore/release.jks
-storePassword=abcdef123456789abcdef123456789ab
-keyAlias=alias
-keyPassword=abcdef123456789abcdef123456789ab
-```
-- note the first time you build without release keystore the keystore will be generated and there would be no signed apk, you should run the command again, I need to fix the `app/build.gradle.kts` since it first check if the file exists (which I can evaluate later).
-
-- signed `.apk` files will be under `/app/build/outputs/apk/release/` .
-
-<hr/>
-
-## Verified
-
-Smoke-tested on an Android 15 (API 35) x86_64 emulator with the minified,
-signed release APK:
-
-- importing `sample.pdf` through the system document picker,
-- opening documents with Hebrew, Japanese and accented file names; the top bar
-  and info dialog show the original name rather than `_` placeholders,
-- scrolling (14 pages) and rotating with the reading position kept,
-- showing PDF metadata (title, author, subject, keywords, creator, producer,
-  created, modified) alongside file name, original size and page count,
-- opening AES-128, AES-256 and RC4-128 protected PDFs with the correct
-  password, rejecting a wrong password with an inline error, and opening an
-  empty-password encrypted PDF without prompting,
-- process death while locked (password prompt and file name restored) and while
-  unlocked (decrypted document and reading position restored),
-- sharing to the Print spooler, which rendered all pages from the shared
-  decrypted copy,
-- sharing `PDFr`'s own PDF back to `PDFr`, which keeps the open document and its
-  page position instead of corrupting the cache,
-- re-importing a file with the same display name, which gets a fresh cache
-  directory,
-- no crashes in the crash buffer.
-
-`file://` URIs are intentionally **not** advertised: under scoped storage an app
-without broad storage access cannot read another app's file path, so those
-intents would always fail.
-
-<hr/>
-
-## Tuning (potential changes)
-
-- Max zoom is `PdfRendererViewCompose(maxZoomScale = 3f)`; pass a different value in `ReaderApp.kt`.
-- Screenshot blocking is available through the library's `pdfView_disableScreenshots` theme attribute if you ever use `PdfViewerActivity` instead of the view.
-- Rendering is `PdfRenderer`-based: there is no text layer to select or search.
-- `androidResources.ignoreAssetsPatterns += "!com"` strips PDFBox's font/CMap assets. Remove that line if you start using PDFBox for text extraction or rendering; rendering does not need it, but those features do.
-- If certificate/public-key encrypted PDFs ever matter, remove the BouncyCastle exclusion and the matching `-dontwarn` rule, then expect a much larger APK.
-
-<hr/>
+MuPDF is a real document engine, so the native library is the largest part of
+the APK: roughly 11 MB for arm64-v8a, 8 MB for armeabi-v7a and 11 MB each for
+the x86 ABIs. The qpdf JNI bridge adds about 3.1 MB per ABI after stripping.
+The app ships ABI splits plus a universal APK, so users only need to install the
+APK for their device.
 
 ## License
 
-MIT for this app. Pdf-Viewer is MIT; PDFBox-Android and PDFBox are Apache-2.0.
+PDFr is licensed under the **GNU Affero General Public License v3.0**
+(`LICENSE`). This is required because it links against MuPDF, which is also
+AGPL-3.0 (or available under a commercial license from Artifex). If you
+distribute a modified PDFr, the AGPL's source-offer obligations apply.
 
+MuPDF: https://mupdf.com/ - Copyright Artifex Software, Inc.
 
-<hr/>
-
-https://paypal.me/31adkarak0
+qpdf: https://qpdf.readthedocs.io/ - Apache License 2.0, Copyright Jay
+Berkenbilt and contributors. libjpeg-turbo: https://libjpeg-turbo.org/ -
+IJG/BSD-style licenses. Both are linked statically into `libqpdfjni.so`.

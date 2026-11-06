@@ -10,10 +10,10 @@ import java.io.IOException
 import java.util.UUID
 
 /**
- * A reader only needs one PDF at a time, so incoming documents are copied into
- * a single cache directory. The copy is what makes the Share button reliable:
- * the original content:// URI may be readable only by us, while the cached file
- * can be handed to any app through FileProvider.
+ * A reader only needs one document at a time, so incoming files are copied
+ * into a single cache directory. The copy is what makes the Share button
+ * reliable: the original content:// URI may be readable only by us, while the
+ * cached file can be handed to any app through FileProvider.
  */
 object DocumentStore {
 
@@ -34,13 +34,13 @@ object DocumentStore {
         if (queried != null) return queried
 
         // A few providers do not return DISPLAY_NAME. Their last path segment
-        // is only useful when it is a real PDF name, not an opaque document id
-        // such as "msf:1234".
+        // is only useful when it looks like a real file name, not an opaque
+        // document id such as "msf:1234".
         // Uri.lastPathSegment is already percent-decoded.
         return runCatching { uri.lastPathSegment }.getOrNull()
             ?.substringAfterLast('/')
             ?.trim()
-            ?.takeIf { it.endsWith(".pdf", ignoreCase = true) }
+            ?.takeIf { it.length <= 255 && DocumentFormats.extensionOf(it) != null }
     }
 
     suspend fun import(context: Context, uri: Uri, displayName: String?): File =
@@ -51,7 +51,7 @@ object DocumentStore {
             // the same display name therefore cannot overwrite - or truncate -
             // the file that is currently on screen.
             val dir = File(root, UUID.randomUUID().toString()).apply { mkdirs() }
-            val target = File(dir, safeFileName(displayName ?: "document.pdf"))
+            val target = File(dir, safeFileName(displayName ?: "document"))
             val staging = File(dir, "import.tmp")
 
             try {
@@ -81,6 +81,30 @@ object DocumentStore {
         removeStaleFiles(File(context.cacheDir, DIR), keep = keep)
     }
 
+    /**
+     * Allocates a cache file for a reordered, rotated, linearized or compacted
+     * rewrite. Each rewrite gets its own directory so the visible file name can
+     * stay readable without colliding with the document it replaces.
+     */
+    fun derivedFile(context: Context, displayName: String): File {
+        val root = File(context.cacheDir, DIR).apply { mkdirs() }
+        val dir = File(root, UUID.randomUUID().toString()).apply { mkdirs() }
+        return File(dir, safeFileName(displayName))
+    }
+
+    /**
+     * Deletes a cache document (and its now-empty per-import directory) after
+     * the reader has replaced it. The documents root is never removed.
+     */
+    fun discard(file: File) {
+        file.delete()
+        val parent = file.parentFile ?: return
+        val root = parent.parentFile ?: return
+        if (parent != root && parent.list()?.isEmpty() == true) {
+            parent.delete()
+        }
+    }
+
     private fun removeStaleFiles(root: File, keep: File?) {
         // Older builds stored the document directly in root; newer ones keep it
         // in a per-import directory. Keep whichever entry owns the open file.
@@ -92,7 +116,7 @@ object DocumentStore {
         }
     }
 
-    private fun safeFileName(raw: String): String {
+    internal fun safeFileName(raw: String): String {
         val base = raw.substringAfterLast('/').substringAfterLast('\\')
         val cleaned = base
             .replace(illegalChars, "_")
@@ -101,16 +125,22 @@ object DocumentStore {
             .trimStart('.')
             .ifBlank { "document" }
 
-        // Keep the PDF extension exactly once, but cap the stem by UTF-8 byte
-        // length (not character count) so a long CJK name still fits Android's
-        // per-file name limit.
-        val stem = if (cleaned.endsWith(".pdf", ignoreCase = true)) {
-            cleaned.dropLast(4).trimEnd()
+        val extension = DocumentFormats.extensionOf(cleaned)
+            ?.lowercase()
+            ?.takeIf { it.length <= 8 }
+
+        val stem = if (extension != null) {
+            cleaned.dropLast(extension.length + 1).trimEnd()
         } else {
             cleaned
         }.ifBlank { "document" }
 
-        return truncateUtf8(stem, MAX_NAME_BYTES) + ".pdf"
+        // Cap the stem by UTF-8 byte length (not character count) so a long
+        // CJK name still fits Android's per-file name limit.
+        val suffix = extension?.let { ".$it" }.orEmpty()
+        val maxStemBytes = (MAX_NAME_BYTES - suffix.toByteArray(Charsets.UTF_8).size)
+            .coerceAtLeast(16)
+        return truncateUtf8(stem, maxStemBytes) + suffix
     }
 
     private fun truncateUtf8(value: String, maxBytes: Int): String {

@@ -10,10 +10,11 @@ import java.io.File
 object ShareSheet {
 
     /**
-     * Shares the cached PDF through FileProvider. ClipData is set as well as the
-     * read flag because some OEM choosers only propagate grants through ClipData.
+     * Shares the cached document through FileProvider. ClipData is set as well
+     * as the read flag because some OEM choosers only propagate grants through
+     * ClipData.
      */
-    fun sharePdf(context: Context, file: File) {
+    fun shareDocument(context: Context, file: File, mimeType: String) {
         val uri = FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
@@ -21,13 +22,13 @@ object ShareSheet {
         )
 
         val send = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
+            type = mimeType
             putExtra(Intent.EXTRA_STREAM, uri)
             putExtra(Intent.EXTRA_SUBJECT, file.name)
             clipData = ClipData.newUri(context.contentResolver, file.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_via)))
+        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_document)))
     }
 }
