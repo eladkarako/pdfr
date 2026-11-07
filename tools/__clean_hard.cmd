@@ -41,9 +41,32 @@ pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Rec
 echo.>>"build\logs\__clean_hard.log"
 echo.>>"build\logs\__clean_hard.log"
 
+title .\.kotlin
+title .\build\app
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.kotlin' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+
+title .\build\release
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\build\release' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+
+title .\build\reports
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\build\reports' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+
+::title .\build\test-fixtures
+::pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\build\test-fixtures' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+::echo.>>"build\logs\__clean_hard.log"
+::echo.>>"build\logs\__clean_hard.log"
+
+
 title gradle clean
 call ".\gradlew.bat" clean --console=plain 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
 ::call ".\gradlew.bat" clean --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+
 
 timeout /t 2
 call ".\gradlew.bat" --stop
