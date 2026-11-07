@@ -19,11 +19,13 @@ echo   7. Pinch out / pinch in
 echo   8. Long-press and select text
 echo   9. Show PDFr cache documents
 echo  10. Show recent app logs / crashes
+echo  11. Record a zoom probe (pinch/pan screenshots)
 echo   0. Exit
 echo.
 set "ACTION="
 set /p "ACTION=Choose an action: "
 
+if "%ACTION%"=="11" goto zoomprobe
 if "%ACTION%"=="10" goto logs
 if "%ACTION%"=="9" goto cache
 if "%ACTION%"=="8" goto select
@@ -78,6 +80,19 @@ goto pause
 
 :doubletap
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0gestures.ps1" double-tap
+goto pause
+
+:zoomprobe
+choice /c 1234 /n /m "1 = pinch out, 2 = pinch in, 3 = two-finger pan, 4 = double-tap: "
+if errorlevel 4 (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action double-tap
+) else if errorlevel 3 (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pan
+) else if errorlevel 2 (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pinch-in
+) else (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pinch-out
+)
 goto pause
 
 :pinch

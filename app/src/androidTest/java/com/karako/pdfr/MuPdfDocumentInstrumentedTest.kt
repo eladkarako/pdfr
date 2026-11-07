@@ -154,6 +154,77 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun rendersFixedLayoutPageProportionallyAtZoom() {
+        val doc = open(pdf("render-zoom.pdf", 1))
+        try {
+            val normal = onMuPdf { doc.renderPage(0, 400) }
+            val zoomed = onMuPdf { doc.renderPage(0, 800) }
+            assertNotNull(normal)
+            assertNotNull(zoomed)
+
+            val normalWidth = normal!!.bitmap.width
+            val zoomedWidth = zoomed!!.bitmap.width
+            // A fixed-layout page is rasterised at the requested zoom, so the
+            // wider request produces a proportionally larger bitmap.
+            assertEquals(2.0, zoomedWidth.toDouble() / normalWidth, 0.05)
+            assertEquals(
+                2.0,
+                zoomed.bitmap.height.toDouble() / normal.bitmap.height,
+                0.05,
+            )
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
+    fun reflowAtHigherZoomRepaginatesWithoutLosingText() {
+        val file = File(dir, "zoom-notes.txt").apply {
+            writeText(
+                (1..120).joinToString("\n\n") {
+                    "Paragraph $it: the quick brown fox jumps over the lazy dog " +
+                        "while a second sentence makes the line wrap more than once."
+                },
+            )
+        }
+
+        val doc = open(file)
+        try {
+            assertTrue(doc.isReflowable)
+
+            // 100%: the reader lays the page out at the full viewport width
+            // and height. 200% halves both values, which is what a narrow
+            // reflow does; more text then has to move to further pages.
+            assertTrue(onMuPdf { doc.layout(400f, 800f, 11f) })
+            val normalPages = onMuPdf { doc.countPages() }
+            assertTrue(normalPages >= 1)
+            assertTrue(textOf(doc, 0).contains("Paragraph 1"))
+
+            assertTrue(onMuPdf { doc.layout(200f, 400f, 11f) })
+            val zoomedPages = onMuPdf { doc.countPages() }
+            assertTrue(
+                "zoomed layout had $zoomedPages pages, normal had $normalPages",
+                zoomedPages > normalPages,
+            )
+            assertTrue(textOf(doc, 0).contains("Paragraph 1"))
+            val tail = buildString {
+                if (zoomedPages >= 2) append(textOf(doc, zoomedPages - 2))
+                append(textOf(doc, zoomedPages - 1))
+            }
+            assertTrue(
+                "last paragraph missing after zoom reflow: '${tail.takeLast(300)}'",
+                tail.contains("Paragraph 120"),
+            )
+
+            val rendered = onMuPdf { doc.renderPage(0, 200) }
+            assertNotNull(rendered)
+            assertTrue(rendered!!.bitmap.width > 0)
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
     fun selectsAllTextOnAPage() {
         val doc = open(pdf("select.pdf", 1))
         try {

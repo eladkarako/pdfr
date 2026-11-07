@@ -10,6 +10,7 @@
 + toolbar order is now share, info, open, save, menu; "Open another" was removed from the overflow menu because Open has its own button.
 + test fixtures now include guide.md, sample.docx, image.png and image.ppm, with unit tests for the new format mappings and aliases.
 + pinch zoom now resizes the content live under the fingers at any size, keeps the touched spot in place, and only reflows or re-rasterises for sharpness once the gesture ends; a zoomed fixed-layout page can still be panned horizontally.
++ added `ZoomMathTest` plus fixed-layout/reflow zoom instrumented tests, and `tools\zoom-probe.ps1`, which records before/down/mid/late/settled screenshots and reports whether a pinch settles without a jump.
 
 26.11.6
 + page indicator now follows the page that fills most of the viewport, so it updates before the previous page leaves the screen.

@@ -14,6 +14,7 @@ native MuPDF library.
 | File | What it covers |
 | --- | --- |
 | `PageRangesTest` | The `1-3,7,9-e,3` selection grammar: ranges, `e`, whitespace, order, duplicates, and every error reason. |
+| `ZoomMathTest` | The live zoom arithmetic: continuous values, 100%-600% clamping, pinch distance, double-tap stops, the reflow/bitmap scale hand-off, and the horizontal/vertical anchor maths that keeps the touched point under the fingers. |
 | `DocumentFormatsTest` | Extension/MIME mapping (PDF, ebooks, Markdown, OOXML Office, images, source/config text), plain-text recognition, temporary-suffix aliases, text MIME detection, byte-level text sniffing, picker MIME list, and `extensionOf` rejecting opaque provider ids. |
 | `DocumentInfoTest` | PDF detection for the Reorder/Rotate/Linearize/Compact menu items and metadata presence. |
 

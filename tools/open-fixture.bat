@@ -84,7 +84,7 @@ if /i "%MIME%"=="application/octet-stream" (
 )
 
 echo [PDFr] Opening %BASE% (%MIME%)...
-"%ADB%" shell am start -a android.intent.action.VIEW -d "content://com.karako.pdfr.fileprovider/shared_documents/%BASE%" -t "%MIME%"
+"%ADB%" shell am start -a android.intent.action.VIEW -n com.karako.pdfr/.MainActivity -d "content://com.karako.pdfr.fileprovider/shared_documents/%BASE%" -t "%MIME%"
 if errorlevel 1 (
   echo [HINT] If PDFr shows "no access", open the folder icon and pick the file manually.
   exit /b 1

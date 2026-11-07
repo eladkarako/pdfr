@@ -41,6 +41,7 @@ tools\manual-testing.bat
 | `open-fixture.bat <name> [mime]` | Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then sends the app its own FileProvider URI. Needs the debug build. Falls back to a MediaStore `ACTION_VIEW` if the app is not debuggable. |
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
+| `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then reports whether `late` and `settled` are identical. Writes to `build\zoom-probe\` by default. |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
 
@@ -66,7 +67,8 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
 2. **Double-tap zoom** - glides from 100% to 200%, 400%, 600%, then back to
    100%. Every intermediate value is allowed.
 3. **Pinch zoom** - two-finger spread clamps at 600%, pinch together clamps at
-   100%. Single-finger scrolling still works while zoomed.
+   100%. Single-finger scrolling still works while zoomed. `zoom-probe.ps1`
+   records the sequence for later inspection.
 4. **Text selection** - long-press a word, drag, then adjust either end with the blue handles before choosing Copy / Select all / Close.
 5. **Reorder pages** - overflow menu -> Reorder pages -> `1-3,7,9-e,3` on
    `sample.pdf` produces an 11-page `sample (reordered).pdf`. `show-cache.bat`
@@ -133,6 +135,47 @@ URI. If you have a release build installed instead (no `run-as`), the script
 falls back to MediaStore; some Android builds reject that grant, in which case
 use the folder button inside the app and pick `/sdcard/Download/pdfr-fixtures/...`
 manually.
+
+### Zoom regression probe
+
+`zoom-probe.ps1` captures what the reader looks like before, during and after a
+two-finger gesture. It records the same sequence used to verify the live zoom:
+
+```bat
+tools\start-emulator.bat
+tools\install-debug.bat
+
+:: Fixed-layout PDF: pinch around the title of page 3.
+tools\open-fixture.bat sample.pdf
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterY 0.17
+
+:: Reflowable text: pinch, then pan with two fingers.
+tools\open-fixture.bat notes.txt
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pan
+
+:: Back to 100% and sharpen.
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-in -StartGap 780 -EndGap 120
+```
+
+Each run writes `-before`, `-down`, `-mid`, `-late` and `-settled` PNGs to
+`build\zoom-probe\`. Check that:
+
+- `down` still shows the old size, while `mid` already shows the page enlarged
+  under the fingers (live resize, not a snap after the gesture);
+- the touched point stays in place between `down` and `mid`;
+- `late` and `settled` are identical: the debounced bitmap/reflow landed at
+  exactly the live size (the script hashes both files and says so);
+- a two-finger `pan` moves the content without changing its size.
+
+Use `-SkipRoot` when adbd is already root (the usual emulator state). Plain
+`adb root` can restart adbd, resize the viewport for a frame and trigger an
+extra reflow, which looks like a jump between `before` and `down`.
+
+Other options: `-CenterY 0.17`, `-StartGap`, `-EndGap`, `-Gap`, `-StartY`,
+`-EndY`, `-Steps`, `-SettleMs`, `-OutDir`, `-Prefix`, `-EventDevice`,
+`-ScreenWidth` and `-ScreenHeight`. The same actions are available from the
+`manual-testing.bat` menu as option 11.
 
 ## Test-fixture generator
 
