@@ -26,14 +26,7 @@ are laid out to the current screen width and zoom level.
 
 <hr/>
 
-### ⚙️ engines: 
-
-- 🧩 [MuPDF](https://mupdf.com/)
-- 🔧 [qPDF](https://github.com/qpdf/qpdf)
-
-<hr/>
-
-## 📥 How opening works
+<details><summary><h2>📥 How opening works</h2></summary>
 
 📨 A document received from another app is usually a `content://` URI that only
 PDFr can read. `DocumentStore` copies the bytes once into
@@ -49,9 +42,55 @@ There is deliberately no undo stack and no original PDF kept around: use
 ⚠️ Every rewrite saves without encryption, so a rewritten encrypted PDF opens
 without a password.
 
+</details>
+
 <hr/>
 
-## 🏗️ Architecture
+<details><summary><h2>✨ Features</h2></summary>
+
+- 📂 **Open with / Share to PDFr**, or pick a file from the in-app button.
+- ✂️ **Text selection and copying** - long-press a word, drag to extend the
+  selection, then use **Copy**, **Select all** or **Close** in the floating bar.
+- 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
+  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
+  larger text layout; fixed-layout pages are rasterised at the larger size and
+  panned horizontally.
+- 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
+  the order you want them. Pages you leave out are deleted; `e` is the last
+  page, spaces are ignored, and repeats are kept. PDFr writes a new,
+  unencrypted PDF into its cache and opens it in place of the current document.
+- 🔄 **Rotate 180°** (PDF only): turns the listed pages upside down. The range
+  defaults to `1-e`, and only the pages you list are rotated.
+- ⚡ **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
+  native library to write a genuinely linearized PDF, so the first page can be
+  shown before the rest of the file is read. The new copy replaces the current
+  document.
+- 🗜️ **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
+  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
+  stays a separate, clearly named action.
+- 🔤 **Monospace** override for plain-text documents, from the overflow menu.
+- 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
+  decrypted copy is written when merely reading; any rewrite saves its
+  replacement without encryption.
+- ℹ️ **Document info**: file name, size, type/format, page count, encryption, and
+  the usual title/author/subject/keywords/creator/producer/date metadata.
+- 📤 **Share** the open document through Android's share sheet / print spooler.
+- 📍 **Reading position** is preserved across rotation, reflow and process death.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>⚙️ engines:</h2></summary>
+
+- 🧩 [MuPDF](https://mupdf.com/)
+- 🔧 [qPDF](https://github.com/qpdf/qpdf)
+
+</details>
+
+<hr/>
+
+<details><summary><h2>🏗️ Architecture</h2></summary>
 
 ```
 app/src/main/java/com/karako/pdfr/
@@ -90,42 +129,11 @@ Android ABI and exposed through a tiny JNI function
 checked into `app/src/main/jniLibs/`, so a normal Gradle build never needs the
 qpdf or libjpeg sources.
 
-<hr/>
-
-## ✨ Features
-
-- 📂 **Open with / Share to PDFr**, or pick a file from the in-app button.
-- ✂️ **Text selection and copying** - long-press a word, drag to extend the
-  selection, then use **Copy**, **Select all** or **Close** in the floating bar.
-- 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
-  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
-  larger text layout; fixed-layout pages are rasterised at the larger size and
-  panned horizontally.
-- 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
-  the order you want them. Pages you leave out are deleted; `e` is the last
-  page, spaces are ignored, and repeats are kept. PDFr writes a new,
-  unencrypted PDF into its cache and opens it in place of the current document.
-- 🔄 **Rotate 180°** (PDF only): turns the listed pages upside down. The range
-  defaults to `1-e`, and only the pages you list are rotated.
-- ⚡ **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
-  native library to write a genuinely linearized PDF, so the first page can be
-  shown before the rest of the file is read. The new copy replaces the current
-  document.
-- 🗜️ **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
-  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
-  stays a separate, clearly named action.
-- 🔤 **Monospace** override for plain-text documents, from the overflow menu.
-- 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
-  decrypted copy is written when merely reading; any rewrite saves its
-  replacement without encryption.
-- ℹ️ **Document info**: file name, size, type/format, page count, encryption, and
-  the usual title/author/subject/keywords/creator/producer/date metadata.
-- 📤 **Share** the open document through Android's share sheet / print spooler.
-- 📍 **Reading position** is preserved across rotation, reflow and process death.
+</details>
 
 <hr/>
 
-## 📦 Build
+<details><summary><h2>📦 Build</h2></summary>
 
 - ☕ JDK 17
 - 🤖 Android SDK 36
@@ -148,9 +156,11 @@ copied to `build/release` after `assembleRelease` or `bundleRelease`.
 split for smaller installs (for example `app-x86_64-debug.apk` on an x86_64
 emulator).
 
+</details>
+
 <hr/>
 
-### 🛠️ Rebuilding the qpdf bridge
+<details><summary><h2>🛠️ Rebuilding the qpdf bridge</h2></summary>
 
 `build/qpdf/` holds the downloaded qpdf and libjpeg-turbo sources and the
 per-ABI build trees. `tools/build-qpdf-android.ps1` configures and builds all
@@ -158,9 +168,11 @@ four ABIs with the Android NDK, strips the resulting `libqpdfjni.so`, and copies
 it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp` or the
 qpdf version changes; a normal clone builds from the checked-in libraries.
 
+</details>
+
 <hr/>
 
-## 🧪 Testing
+<details><summary><h2>🧪 Testing</h2></summary>
 
 Three layers, all runnable from the repository root:
 
@@ -216,6 +228,8 @@ keyPassword=…
 ⚠️ Without signing material Gradle still builds, but the release APK is signed
 with the debug key. Back up the real keystore and its password: losing either
 means future versions can no longer update an installed app.
+
+</details>
 
 <hr/>
 
