@@ -103,6 +103,9 @@ class MuPdfDocument private constructor(
     @Volatile
     private var closed = false
 
+    /** Last plain-text font choice applied through [applyReaderStyle]. */
+    private var monospaceText: Boolean? = null
+
     fun countPages(): Int = synchronized(this) {
         if (closed) return 0
         runCatching { document.countPages() }.getOrDefault(0)
@@ -141,6 +144,17 @@ class MuPdfDocument private constructor(
     }
 
     /**
+     * Applies PDFr's user stylesheet to a reflowable document: zero page and
+     * body margins so the text uses the full reader width, plus the preferred
+     * font for plain-text files. Call [layout] afterwards to reflow.
+     */
+    fun applyReaderStyle(monospace: Boolean = false): Boolean = synchronized(this) {
+        if (closed || !isReflowable) return false
+        monospaceText = monospace
+        applyReaderStyleLocked()
+    }
+
+    /**
      * Chooses the font family used by a plain-text document. MuPDF turns text
      * into `<pre>` blocks, which are monospace by default; turning the option
      * off applies a proportional font instead. Other reflowable formats are
@@ -148,12 +162,20 @@ class MuPdfDocument private constructor(
      */
     fun applyMonospace(enabled: Boolean): Boolean = synchronized(this) {
         if (closed || !isReflowable || !isPlainText) return false
-        return runCatching {
-            document.style(true, if (enabled) MONOSPACE_CSS else PROPORTIONAL_CSS)
-            clearCaches()
-            true
-        }.getOrDefault(false)
+        monospaceText = enabled
+        applyReaderStyleLocked()
     }
+
+    private fun applyReaderStyleLocked(): Boolean = runCatching {
+        val font = when {
+            !isPlainText -> ""
+            monospaceText == true -> MONOSPACE_CSS
+            else -> PROPORTIONAL_CSS
+        }
+        document.style(true, READER_CSS + font)
+        clearCaches()
+        true
+    }.getOrDefault(false)
 
     fun pageBounds(index: Int): PageBounds? = synchronized(this) {
         if (closed) return null
@@ -355,6 +377,14 @@ class MuPdfDocument private constructor(
 
         private const val MONOSPACE_CSS = "pre { font-family: monospace; }"
         private const val PROPORTIONAL_CSS = "pre { font-family: sans-serif; }"
+
+        /**
+         * MuPDF's default HTML stylesheet leaves a wide body margin. Reflowable
+         * documents should use the whole reader width, so remove page and body
+         * margins before laying them out.
+         */
+        private const val READER_CSS =
+            "@page { margin: 0; } html, body { margin: 0; padding: 0; }"
 
         /**
          * Rewrites the PDF without encryption, with unused objects removed and
