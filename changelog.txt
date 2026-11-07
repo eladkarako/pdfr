@@ -1,3 +1,12 @@
+26.11.6
++ page indicator now follows the page that fills most of the viewport, so it updates before the previous page leaves the screen.
++ reflowable EPUB/FB2/text pages use the full reader width; removed MuPDF's default body margins.
++ slim toolbar without the file name: share on the left, info in the middle, menu on the right; the app is forced to LTR.
++ double-tap zoom glides smoothly between 100-600%; pinch stays continuous and accepts intermediate values.
++ Gradle output moved to `build/app`, and release APKs/AABs are mirrored to `build/release`.
++ merged `scripts` into `tools` and moved the root build batch files there too.
++ added `tools/create-test-avd.bat`, which creates the `pdfr_full` API 35 AVD with 1536 MB RAM.
+
 26.11.5
 + replaced PDFBox and Android's PdfRenderer/Pdf-Viewer with MuPDF.
 + opens PDF, EPUB, XPS/OXPS, CBZ and other formats MuPDF recognises.
