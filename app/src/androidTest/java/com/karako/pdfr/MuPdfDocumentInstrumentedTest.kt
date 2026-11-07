@@ -1,5 +1,7 @@
 package com.karako.pdfr
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Context
@@ -22,6 +24,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 /**
  * Exercises the real native MuPDF library on the device: opening, layout,
@@ -55,6 +59,55 @@ class MuPdfDocumentInstrumentedTest {
 
     private fun open(file: File, password: String? = null): MuPdfDocument =
         onMuPdf { MuPdfDocument.open(file, file.name, password) }
+
+    /** Writes a minimal OOXML Word document, enough for MuPDF's Office handler. */
+    private fun docx(name: String, paragraphs: List<String>): File {
+        fun escape(text: String): String = text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+
+        val body = paragraphs.joinToString("\n") {
+            "<w:p><w:r><w:t xml:space=\"preserve\">${escape(it)}</w:t></w:r></w:p>"
+        }
+        val document = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+              <w:body>$body</w:body>
+            </w:document>
+        """.trimIndent()
+        val rootRels = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+              <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+            </Relationships>
+        """.trimIndent()
+        val documentRels = """
+            <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>
+        """.trimIndent()
+
+        val file = File(dir, name)
+        ZipOutputStream(file.outputStream()).use { zip ->
+            fun add(path: String, text: String) {
+                zip.putNextEntry(ZipEntry(path))
+                zip.write(text.toByteArray(Charsets.UTF_8))
+                zip.closeEntry()
+            }
+            add("[Content_Types].xml", """
+                <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                  <Default Extension="xml" ContentType="application/xml"/>
+                  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+                </Types>
+            """.trimIndent())
+            add("_rels/.rels", rootRels)
+            add("word/document.xml", document)
+            add("word/_rels/document.xml.rels", documentRels)
+        }
+        return file
+    }
 
     private fun close(doc: MuPdfDocument) {
         onMuPdf { doc.close() }
@@ -336,7 +389,7 @@ class MuPdfDocumentInstrumentedTest {
 
     @Test
     fun nfoAndTextExtensionsArePlainText() {
-        for (extension in listOf("nfo", "text", "txt")) {
+        for (extension in listOf("nfo", "text", "txt", "log")) {
             val file = File(dir, "readme.$extension").apply {
                 writeText("PDFr $extension fixture\n\nThe quick brown fox jumps over the lazy dog.\n")
             }
@@ -349,6 +402,85 @@ class MuPdfDocumentInstrumentedTest {
             } finally {
                 close(doc)
             }
+        }
+    }
+
+    @Test
+    fun markdownOpensAndReflowsIncludingLongSuffixes() {
+        // .markdown/.mdown/.mkd/.mkdn are not MuPDF extensions, so the reader
+        // copies them to a temporary .md before opening.
+        for (extension in listOf("md", "markdown", "mdown", "mkd", "mkdn")) {
+            val file = File(dir, "guide.$extension").apply {
+                writeText(
+                    """
+                    # PDFr Markdown fixture
+
+                    A paragraph with **bold text** and a [link](https://mupdf.com/).
+
+                    - first item
+                    - second item with `inline code`
+                    """.trimIndent(),
+                )
+            }
+            val doc = open(file)
+            try {
+                assertTrue(".$extension should reflow", doc.isReflowable)
+                assertTrue(onMuPdf { doc.layout(400f, 800f, 11f) })
+                assertTrue(onMuPdf { doc.countPages() } >= 1)
+                assertTrue(
+                    ".$extension text was: ${textOf(doc, 0)}",
+                    textOf(doc, 0).contains("PDFr Markdown fixture"),
+                )
+            } finally {
+                close(doc)
+            }
+        }
+    }
+
+    @Test
+    fun docxOpensAsReflowableHtml() {
+        val file = docx(
+            "sample.docx",
+            listOf(
+                "PDFr DOCX fixture",
+                "MuPDF renders this WordprocessingML document as reflowable HTML.",
+                "A second paragraph checks paragraph spacing.",
+            ),
+        )
+        val doc = open(file)
+        try {
+            assertTrue(doc.isReflowable)
+            assertTrue(onMuPdf { doc.layout(400f, 800f, 11f) })
+            assertTrue(onMuPdf { doc.countPages() } >= 1)
+            val text = textOf(doc, 0)
+            assertTrue("DOCX text was: $text", text.contains("PDFr DOCX fixture"))
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
+    fun imageOpensAsSinglePageDocument() {
+        val file = File(dir, "image.png")
+        val bitmap = Bitmap.createBitmap(32, 24, Bitmap.Config.ARGB_8888)
+        try {
+            bitmap.eraseColor(Color.rgb(40, 110, 200))
+            file.outputStream().use { out ->
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out))
+            }
+        } finally {
+            bitmap.recycle()
+        }
+
+        val doc = open(file)
+        try {
+            assertEquals(1, onMuPdf { doc.countPages() })
+            assertFalse(doc.isReflowable)
+            val rendered = onMuPdf { doc.renderPage(0, 400) }
+            assertNotNull(rendered)
+            assertTrue(rendered!!.bitmap.width > 0)
+        } finally {
+            close(doc)
         }
     }
 

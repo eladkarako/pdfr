@@ -498,12 +498,13 @@ class MuPdfDocument private constructor(
             Context.init()
 
             // MuPDF picks its handler from the file extension, and it does not
-            // know `.nfo` or `.text`. Its magic-string overload is unusable in
-            // MuPDF 1.28.5 (the native method reads the magic as an Archive and
-            // aborts), so give it a temporary copy with a `.txt` suffix.
-            val plainText = DocumentFormats.isPlainTextName(file.name)
-            val temporaryFile = if (plainText && !file.name.endsWith(".txt", ignoreCase = true)) {
-                val temp = File(file.parentFile, ".${java.util.UUID.randomUUID()}.txt")
+            // know `.nfo` or the longer Markdown suffixes. Its magic-string
+            // overload is unusable in MuPDF 1.28.5 (the native method reads the
+            // magic as an Archive and aborts), so give it a temporary copy
+            // with the canonical suffix.
+            val alias = DocumentFormats.muPdfAliasForName(file.name)
+            val temporaryFile = if (alias != null) {
+                val temp = File(file.parentFile, ".${java.util.UUID.randomUUID()}.$alias")
                 try {
                     file.copyTo(temp, overwrite = true)
                     temp

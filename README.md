@@ -17,14 +17,19 @@
 | 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for printing and scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
 | 📘 EPUB | `.epub` | An open, reflowable ebook standard maintained by the IDPF. It is a ZIP container holding HTML, CSS, images, and metadata. | The most widely supported ebook format, and the one most publishers use. Text adapts to the screen, and readers can change fonts and sizes. |
 | 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a print and document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
-| 🦸 CBZ (comic book archive) | `.cbz` (also `.cbr` for RAR) | A comic archive: a ZIP file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
+| 🦸 CBZ / CBT (comic book archive) | `.cbz`, `.cbt` | A comic archive: a ZIP (CBZ) or TAR (CBT) file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
 | 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
-| 🌐 HTML and SVG | `.html`, `.htm`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
-| 📝 Plain text | `.txt`, `.text`, `.nfo` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
+| 📚 MOBI / PalmDoc | `.mobi`, `.prc`, `.pdb` | Older Amazon and Palm ebook containers, including the Mobipocket format that predates KF8 and AZW3. | Readable but reflowed without DRM support. Most modern Kindle books use AZW3/KFX, which MuPDF does not open. |
+| 📝 Markdown | `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn` | Plain text with lightweight heading, list, link and code syntax. | Reflows to the screen width. MuPDF converts it to HTML before layout; longer suffixes are handled through a temporary `.md` copy. |
+| 📄 Office (OOXML) | `.docx`, `.xlsx`, `.pptx`, `.hwpx` | ZIP-based XML office documents. HWPX is the open XML format used by Hangul Word Processor. | Rendered as reflowable HTML: text, basic formatting and tables survive, while exact page layout, macros and charts do not. Legacy binary `.doc`, `.xls` and `.ppt` are **not** supported. |
+| 🖼️ Images and PNM/PAM | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.jp2`, `.jpx`, `.jxr`, `.wdp`, `.hdp`, `.psd`, `.pnm`, `.pbm`, `.pgm`, `.ppm`, `.pam`, `.pfm`, `.jb2` | Single-page raster or vector images. PNM/PAM is a family of simple, uncompressed image formats. | Each image opens as a one-page document. SVG is handled as a vector page and stays sharp when zoomed. |
+| 🌐 HTML, XHTML and SVG | `.html`, `.htm`, `.xhtml`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
+| 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
 
 💡 note: The same continuous-scroll reader is used for every format. Fixed-layout
-documents are rasterised page by page; reflowable documents (EPUB, FB2, text)
-are laid out to the current screen width and zoom level.
+documents are rasterised page by page; reflowable documents (EPUB, MOBI, FB2,
+Markdown, Office, HTML and text) are laid out to the current screen width and
+zoom level.
 
 <hr/>
 
@@ -39,10 +44,15 @@ share sheet - uses that cached file. `FileProvider` exposes only the
 
 🔄 Reordering, rotating, linearizing or compacting writes a new PDF into a fresh
 subdirectory of the same cache, opens it, and then deletes the previous copy.
-There is deliberately no undo stack and no original PDF kept around: use
-**Open another document** (or the system picker) to go back to the source file.
+There is deliberately no undo stack and no original PDF kept around: use the
+**Open** toolbar button (or the system picker) to go back to the source file.
 ⚠️ Every rewrite saves without encryption, so a rewritten encrypted PDF opens
 without a password.
+
+💾 **Save as** copies the document that is currently open to a location you
+choose, using the same format and filename. The cached bytes are copied
+verbatim, so rewrites, embedded metadata and the original date/time stay
+intact wherever the target provider allows its timestamp to be updated.
 
 </details>
 
@@ -50,7 +60,10 @@ without a password.
 
 <details><summary><h2>✨ Features</h2></summary>
 
-- 📂 **Open with / Share to PDFr**, or pick a file from the in-app button.
+- 📂 **Open with / Share to PDFr**, or pick a file from the **Open** toolbar button.
+- 💾 **Save as** next to **Open**: choose a destination and keep the current
+  format, filename, extension and, where the provider supports it, the original
+  modification time.
 - ✂️ **Text selection and copying** - long-press a word, drag to extend the
   selection, then use **Copy**, **Select all** or **Close** in the floating bar.
 - 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)

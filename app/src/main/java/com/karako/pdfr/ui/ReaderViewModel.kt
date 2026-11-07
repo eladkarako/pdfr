@@ -44,6 +44,8 @@ sealed interface ReaderState {
         val info: DocumentInfo,
         val pageCount: Int,
         val reflowable: Boolean,
+        /** Source file timestamp in milliseconds, kept for Save as. */
+        val lastModified: Long? = null,
         val monospace: Boolean = false,
         val monospaceAvailable: Boolean = false,
         val layoutVersion: Int = 0,
@@ -180,8 +182,9 @@ class ReaderViewModel(
         openJob?.cancel()
         openJob = viewModelScope.launch {
             try {
-                val file = withContext(Dispatchers.IO) {
-                    DocumentStore.import(app, uri, name)
+                val (file, lastModified) = withContext(Dispatchers.IO) {
+                    val modified = DocumentStore.sourceLastModified(app, uri)
+                    DocumentStore.import(app, uri, name, modified) to modified
                 }
                 load(
                     file = file,
@@ -189,6 +192,7 @@ class ReaderViewModel(
                     mimeType = mime,
                     password = null,
                     startPage = 0,
+                    lastModified = lastModified,
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -216,6 +220,8 @@ class ReaderViewModel(
                 mimeType = locked.mimeType,
                 password = password,
                 startPage = savedState.get<Int>(KEY_PAGE) ?: 0,
+                lastModified = savedState.get<Long>(KEY_MTIME)
+                    ?: locked.file.lastModified().takeIf { it > 0L },
             )
         }
     }
@@ -399,6 +405,8 @@ class ReaderViewModel(
             ?: DocumentFormats.mimeTypeForFile(file)
 
         monospace = savedState.get<Boolean>(KEY_MONO) ?: true
+        val lastModified = savedState.get<Long>(KEY_MTIME)
+            ?: file.lastModified().takeIf { it > 0L }
 
         _state.value = ReaderState.Loading(name)
         openJob = viewModelScope.launch {
@@ -408,6 +416,7 @@ class ReaderViewModel(
                 mimeType = mime,
                 password = null,
                 startPage = savedState.get<Int>(KEY_PAGE) ?: 0,
+                lastModified = lastModified,
             )
         }
     }
@@ -427,8 +436,10 @@ class ReaderViewModel(
         password: String?,
         startPage: Int,
         preservePrevious: Boolean = false,
+        lastModified: Long? = null,
     ): Boolean {
         val version = ++generation
+        lastModified?.takeIf { it > 0L }?.let { file.setLastModified(it) }
 
         layoutJob?.cancel()
         selectionJob?.cancel()
@@ -482,6 +493,7 @@ class ReaderViewModel(
             savedState[KEY_MIME] = mimeType
             savedState[KEY_PAGE] = page
             savedState[KEY_MONO] = monospace
+            savedState[KEY_MTIME] = lastModified
 
             _state.value = ReaderState.Ready(
                 file = file,
@@ -490,6 +502,7 @@ class ReaderViewModel(
                 info = info,
                 pageCount = pageCount,
                 reflowable = opened.isReflowable,
+                lastModified = lastModified,
                 monospace = monospace,
                 monospaceAvailable = opened.isPlainText,
                 anchorPage = page,
@@ -502,13 +515,13 @@ class ReaderViewModel(
         } catch (e: DocumentPasswordRequiredException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, displayName, mimeType, wrongPassword = false)
+                lock(file, displayName, mimeType, wrongPassword = false, lastModified = lastModified)
             }
             return false
         } catch (e: DocumentWrongPasswordException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, displayName, mimeType, wrongPassword = true)
+                lock(file, displayName, mimeType, wrongPassword = true, lastModified = lastModified)
             }
             return false
         } catch (e: CancellationException) {
@@ -630,6 +643,41 @@ class ReaderViewModel(
         rewrite(ready, pages = null, rotate = null, kind = RewriteKind.COMPACT)
     }
 
+    /**
+     * Copies the document that is currently on screen to a user-chosen URI.
+     * The bytes are copied verbatim, so the existing format (including any
+     * reorder/rotate/linearize/compact result and its embedded metadata) is
+     * preserved. File timestamp and display name are carried over where the
+     * target provider supports it.
+     */
+    fun saveAs(target: Uri) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (_busy.value) return
+
+        val app = getApplication<Application>()
+        _busy.value = true
+        viewModelScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val output = app.contentResolver.openOutputStream(target, "wt")
+                        ?: throw IOException("The selected location is not writable.")
+                    output.use { sink ->
+                        ready.file.inputStream().use { source -> source.copyTo(sink) }
+                    }
+                    DocumentStore.applyLastModified(app, target, ready.lastModified)
+                }
+                val savedName = DocumentStore.displayName(app, target) ?: ready.displayName
+                _messages.tryEmit(app.getString(R.string.saved_as, savedName))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _messages.tryEmit(app.getString(R.string.save_failed))
+            } finally {
+                _busy.value = false
+            }
+        }
+    }
+
     private fun rewrite(
         ready: ReaderState.Ready,
         pages: IntArray?,
@@ -668,7 +716,11 @@ class ReaderViewModel(
                             options = MuPdfDocument.PDF_COMPACT_OPTIONS,
                         )
                     }
-                    if (saved) target else {
+                    if (saved) {
+                        ready.lastModified?.takeIf { it > 0L }
+                            ?.let { target.setLastModified(it) }
+                        target
+                    } else {
                         target.delete()
                         null
                     }
@@ -693,6 +745,7 @@ class ReaderViewModel(
                     password = password,
                     startPage = 0,
                     preservePrevious = true,
+                    lastModified = ready.lastModified,
                 )
 
                 if (replaced) {
@@ -749,10 +802,17 @@ class ReaderViewModel(
         )
     }
 
-    private fun lock(file: File, displayName: String, mimeType: String, wrongPassword: Boolean) {
+    private fun lock(
+        file: File,
+        displayName: String,
+        mimeType: String,
+        wrongPassword: Boolean,
+        lastModified: Long?,
+    ) {
         savedState[KEY_PATH] = file.absolutePath
         savedState[KEY_NAME] = displayName
         savedState[KEY_MIME] = mimeType
+        savedState[KEY_MTIME] = lastModified
 
         _selection.value = null
         _state.value = ReaderState.Locked(
@@ -791,6 +851,7 @@ class ReaderViewModel(
         const val KEY_MIME = "document_mime"
         const val KEY_PAGE = "document_page"
         const val KEY_MONO = "document_monospace"
+        const val KEY_MTIME = "document_modified"
 
         const val TEXT_EM = 11f
         const val MIN_ZOOM = 1f

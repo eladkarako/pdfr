@@ -1,8 +1,10 @@
 package com.karako.pdfr.ui
 
+import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.text.format.Formatter
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -124,6 +126,15 @@ fun ReaderApp(
     }
     val openPicker = { picker.launch(DocumentFormats.PICKER_MIME_TYPES) }
 
+    // ACTION_CREATE_DOCUMENT is used directly because the suggested MIME type
+    // and filename change with the open document.
+    val savePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                result.data?.data?.let(viewModel::saveAs)
+            }
+        }
+
     var showInfo by rememberSaveable { mutableStateOf(false) }
     var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
     var showReorderDialog by rememberSaveable { mutableStateOf(false) }
@@ -170,9 +181,9 @@ fun ReaderApp(
             if (state is ReaderState.Ready) {
                 TopAppBar(
                     title = {
-                        // Share on the left, info in the middle, menu on the
-                        // right. The app is forced to LTR so this order never
-                        // flips in an RTL locale.
+                        // Share on the left; info, open and save together in
+                        // the middle; menu on the right. The app is forced to
+                        // LTR so this order never flips in an RTL locale.
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -188,11 +199,39 @@ fun ReaderApp(
                                     contentDescription = stringResource(R.string.share_document),
                                 )
                             }
-                            IconButton(onClick = { showInfo = true }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_info),
-                                    contentDescription = stringResource(R.string.document_info),
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { showInfo = true }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_info),
+                                        contentDescription = stringResource(R.string.document_info),
+                                    )
+                                }
+                                IconButton(
+                                    onClick = openPicker,
+                                    enabled = !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_folder_open),
+                                        contentDescription = stringResource(R.string.open_another),
+                                    )
+                                }
+                                IconButton(
+                                    onClick = {
+                                        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                            addCategory(Intent.CATEGORY_OPENABLE)
+                                            type = DocumentFormats.mimeTypeForName(state.displayName)
+                                                ?: state.mimeType
+                                            putExtra(Intent.EXTRA_TITLE, state.displayName)
+                                        }
+                                        savePicker.launch(intent)
+                                    },
+                                    enabled = !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_save),
+                                        contentDescription = stringResource(R.string.save_as),
+                                    )
+                                }
                             }
                             Box {
                                 IconButton(
@@ -208,13 +247,6 @@ fun ReaderApp(
                                     expanded = showOverflowMenu,
                                     onDismissRequest = { showOverflowMenu = false },
                                 ) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.open_another)) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            openPicker()
-                                        },
-                                    )
                                     if (state.info.isPdf) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.reorder_pages)) },

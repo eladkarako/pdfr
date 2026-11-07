@@ -87,12 +87,21 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
     overflow -> Monospace: on/off. All three should reflow.
 11. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
     zoom enlarges the layout.
-12. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
+12. **Markdown / Office** - open `guide.md` and `sample.docx`; headings, lists
+    and paragraphs should reflow. `guide.markdown` also works through the
+    temporary `.md` alias.
+13. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
+    document that stays sharp when zoomed.
+14. **Save as** - with any document open, tap the middle **Save** button, pick a
+    destination, and confirm the copy has the same name, extension and content.
+    Re-download the saved file and check that its modified time matches the
+    source where the provider supports timestamps.
+15. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
     HTML should all render and reflow.
-13. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
+16. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
     change to the last page as soon as that page occupies most of the screen,
     not after the previous page has completely left.
-14. **Rotation / process death** - rotate while reading, then enable
+17. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
 
@@ -166,6 +175,11 @@ uses only the Python standard library.
 | `book.text` | Long reflowable paragraphs for the `.text` plain-text path. |
 | `alice.epub` | A minimal two-chapter EPUB 3 book. |
 | `sample.cbz` | Three solid-colour PNG pages. |
+| `guide.md` | Markdown headings, lists, a link, a code block, a quote and a long paragraph. |
+| `guide.markdown` | Same content with a suffix MuPDF does not know, to exercise the temporary `.md` alias. |
+| `sample.docx` | A minimal WordprocessingML document with three paragraphs. |
+| `image.png` | A 480x320 solid-colour image, one page when opened. |
+| `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |
 | `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |
 
 The generated PDFs are real, text-extractable documents (base-14 Helvetica), so

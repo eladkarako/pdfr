@@ -40,13 +40,48 @@
                 <data android:scheme="content" android:mimeType="application/epub+zip" />
                 <data android:scheme="content" android:mimeType="application/vnd.ms-xpsdocument" />
                 <data android:scheme="content" android:mimeType="application/oxps" />
+                <data android:scheme="content" android:mimeType="application/xps" />
                 <data android:scheme="content" android:mimeType="application/vnd.comicbook+zip" />
                 <data android:scheme="content" android:mimeType="application/x-cbz" />
+                <data android:scheme="content" android:mimeType="application/x-cbt" />
                 <data android:scheme="content" android:mimeType="application/x-fictionbook+xml" />
+                <data android:scheme="content" android:mimeType="application/x-fictionbook" />
+                <data android:scheme="content" android:mimeType="application/x-mobipocket-ebook" />
                 <data android:scheme="content" android:mimeType="text/plain" />
                 <data android:scheme="content" android:mimeType="text/html" />
                 <data android:scheme="content" android:mimeType="application/xhtml+xml" />
+                <data android:scheme="content" android:mimeType="text/markdown" />
+                <data android:scheme="content" android:mimeType="text/x-markdown" />
                 <data android:scheme="content" android:mimeType="image/svg+xml" />
+                <data android:scheme="content" android:mimeType="image/bmp" />
+                <data android:scheme="content" android:mimeType="image/gif" />
+                <data android:scheme="content" android:mimeType="image/jpeg" />
+                <data android:scheme="content" android:mimeType="image/png" />
+                <data android:scheme="content" android:mimeType="image/tiff" />
+                <data android:scheme="content" android:mimeType="image/x-tiff" />
+                <data android:scheme="content" android:mimeType="image/jp2" />
+                <data android:scheme="content" android:mimeType="image/jpx" />
+                <data android:scheme="content" android:mimeType="image/jxr" />
+                <data android:scheme="content" android:mimeType="image/vnd.ms-photo" />
+                <data android:scheme="content" android:mimeType="image/vnd.adobe.photoshop" />
+                <data android:scheme="content" android:mimeType="image/x-jbig2" />
+                <data android:scheme="content" android:mimeType="image/x-portable-anymap" />
+                <data android:scheme="content" android:mimeType="image/x-portable-arbitrarymap" />
+                <data android:scheme="content" android:mimeType="image/x-portable-bitmap" />
+                <data android:scheme="content" android:mimeType="image/x-portable-greymap" />
+                <data android:scheme="content" android:mimeType="image/x-portable-pixmap" />
+                <data android:scheme="content" android:mimeType="image/x-portable-floatmap" />
+                <data
+                    android:scheme="content"
+                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data
+                    android:scheme="content"
+                    android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data
+                    android:scheme="content"
+                    android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:scheme="content" android:mimeType="application/haansofthwpx" />
+                <data android:scheme="content" android:mimeType="application/vnd.hancom.hwpx" />
             </intent-filter>
 
             <!-- file:// is intentionally unsupported: under scoped storage an
@@ -61,13 +96,45 @@
                 <data android:mimeType="application/epub+zip" />
                 <data android:mimeType="application/vnd.ms-xpsdocument" />
                 <data android:mimeType="application/oxps" />
+                <data android:mimeType="application/xps" />
                 <data android:mimeType="application/vnd.comicbook+zip" />
                 <data android:mimeType="application/x-cbz" />
+                <data android:mimeType="application/x-cbt" />
                 <data android:mimeType="application/x-fictionbook+xml" />
+                <data android:mimeType="application/x-fictionbook" />
+                <data android:mimeType="application/x-mobipocket-ebook" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="text/html" />
                 <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="text/x-markdown" />
                 <data android:mimeType="image/svg+xml" />
+                <data android:mimeType="image/bmp" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/tiff" />
+                <data android:mimeType="image/x-tiff" />
+                <data android:mimeType="image/jp2" />
+                <data android:mimeType="image/jpx" />
+                <data android:mimeType="image/jxr" />
+                <data android:mimeType="image/vnd.ms-photo" />
+                <data android:mimeType="image/vnd.adobe.photoshop" />
+                <data android:mimeType="image/x-jbig2" />
+                <data android:mimeType="image/x-portable-anymap" />
+                <data android:mimeType="image/x-portable-arbitrarymap" />
+                <data android:mimeType="image/x-portable-bitmap" />
+                <data android:mimeType="image/x-portable-greymap" />
+                <data android:mimeType="image/x-portable-pixmap" />
+                <data android:mimeType="image/x-portable-floatmap" />
+                <data
+                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data
+                    android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data
+                    android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/haansofthwpx" />
+                <data android:mimeType="application/vnd.hancom.hwpx" />
             </intent-filter>
         </activity>
 

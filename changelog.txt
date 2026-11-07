@@ -1,3 +1,11 @@
+26.11.7
++ opens the remaining formats MuPDF 1.28.5 supports: Markdown, MOBI/PRC/PDB, CBT, HTML/XHTML, SVG, common images, PNM/PAM, and OOXML Office (DOCX/XLSX/PPTX/HWPX).
++ PDFr now advertises those types as an "Open with" and share target; legacy binary .doc/.xls/.ppt are intentionally not advertised because MuPDF cannot read them.
++ plain-text aliases now cover .log, .nfo and the longer Markdown suffixes through a temporary canonical-suffix copy.
++ added a middle Save button next to Open that copies the current document in its existing format, keeping the original filename, extension and, where the provider supports it, the original modification time.
++ toolbar order is now share, info, open, save, menu; "Open another" was removed from the overflow menu because Open has its own button.
++ test fixtures now include guide.md, sample.docx, image.png and image.ppm, with unit tests for the new format mappings and aliases.
+
 26.11.6
 + page indicator now follows the page that fills most of the viewport, so it updates before the previous page leaves the screen.
 + reflowable EPUB/FB2/text pages use the full reader width; removed MuPDF's default body margins.

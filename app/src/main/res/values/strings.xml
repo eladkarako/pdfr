@@ -3,11 +3,14 @@
     <string name="app_name">PDFr</string>
 
     <string name="open_document">Open a document</string>
-    <string name="open_another">Open another document</string>
+    <string name="open_another">Open document</string>
     <string name="share_document">Share document</string>
+    <string name="save_as">Save as</string>
+    <string name="saved_as">Saved %1$s.</string>
+    <string name="save_failed">Couldn\'t save the copy.</string>
 
     <string name="empty_title">Nothing open</string>
-    <string name="empty_body">Open a PDF, EPUB, XPS, CBZ, FB2, HTML or text file to start reading. PDFr also appears in other apps\' “Open with” and “Share” menus.</string>
+    <string name="empty_body">Open a PDF, EPUB, Markdown, Office document, image, comic archive or text file to start reading. PDFr also appears in other apps\' "Open with" and "Share" menus.</string>
 
     <string name="loading">Opening…</string>
     <string name="error_title">Couldn\'t open that file</string>

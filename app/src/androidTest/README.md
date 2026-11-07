@@ -1,8 +1,8 @@
 # PDFr instrumented tests (device)
 
 These tests exercise the real MuPDF native library on an emulator or device.
-They generate their own PDF/TXT fixtures at runtime, so nothing binary is
-committed.
+They generate their own PDF/TXT/Markdown/DOCX/image fixtures at runtime, so
+nothing binary is committed.
 
 ```bat
 tools\create-test-avd.bat
@@ -23,7 +23,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 | File | Purpose |
 | --- | --- |
 | `TestPdfWriter.kt` | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`. |
-| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/compacts/linearizes, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures and the plain-text monospace toggle. |
+| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/compacts/linearizes, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), DOCX and single-page images. |
 
 ## What is covered
 
@@ -41,7 +41,11 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 - Rewriting an encrypted PDF produces an unencrypted copy that opens with no
   password.
 - Plain text: reflow, rendering, selection, both monospace states, and the
-  `.txt`/`.nfo`/`.text` extensions.
+  `.txt`/`.nfo`/`.text`/`.log` extensions.
+- Markdown: reflow and text extraction for `.md`, `.markdown`, `.mdown`, `.mkd`
+  and `.mkdn` (the longer suffixes go through a temporary `.md` copy).
+- DOCX: a generated OOXML package opens as reflowable HTML.
+- PNG: opens as a one-page fixed-layout document and renders.
 - PDFs reject the text-only monospace override.
 
 `MuPdfDocumentInstrumentedTest` dispatches every MuPDF call through

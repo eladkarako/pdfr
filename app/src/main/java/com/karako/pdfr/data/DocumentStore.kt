@@ -1,7 +1,10 @@
 package com.karako.pdfr.data
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -43,7 +46,81 @@ object DocumentStore {
             ?.takeIf { it.length <= 255 && DocumentFormats.extensionOf(it) != null }
     }
 
-    suspend fun import(context: Context, uri: Uri, displayName: String?): File =
+    /**
+     * Reads the source file's last-modified time, in milliseconds. Providers
+     * are inconsistent: DocumentsProvider reports milliseconds while
+     * MediaStore reports seconds, so the value is normalised.
+     */
+    fun sourceLastModified(context: Context, uri: Uri): Long? {
+        val fromDocuments = runCatching {
+            context.contentResolver.query(
+                uri,
+                arrayOf(DocumentsContract.Document.COLUMN_LAST_MODIFIED),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+            }
+        }.getOrNull()
+
+        val fromMediaStore = runCatching {
+            context.contentResolver.query(
+                uri,
+                arrayOf(MediaStore.MediaColumns.DATE_MODIFIED),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+            }
+        }.getOrNull()
+
+        return normaliseTimestamp(fromDocuments) ?: normaliseTimestamp(fromMediaStore)
+    }
+
+    /**
+     * Best-effort preservation of a file's last-modified time on the target of
+     * a "Save as" operation. SAF providers are not required to accept either
+     * column, so unsupported updates are ignored.
+     */
+    fun applyLastModified(context: Context, uri: Uri, millis: Long?) {
+        val value = millis?.takeIf { it > 0 } ?: return
+
+        runCatching {
+            context.contentResolver.update(
+                uri,
+                ContentValues().apply {
+                    put(DocumentsContract.Document.COLUMN_LAST_MODIFIED, value)
+                },
+                null,
+                null,
+            )
+        }
+        runCatching {
+            context.contentResolver.update(
+                uri,
+                ContentValues().apply {
+                    put(MediaStore.MediaColumns.DATE_MODIFIED, value / 1000L)
+                },
+                null,
+                null,
+            )
+        }
+    }
+
+    private fun normaliseTimestamp(value: Long?): Long? {
+        if (value == null || value <= 0L) return null
+        // Epoch milliseconds are ~1.7e12 today; seconds are ~1.7e9.
+        return if (value < 100_000_000_000L) value * 1000L else value
+    }
+
+    suspend fun import(
+        context: Context,
+        uri: Uri,
+        displayName: String?,
+        lastModified: Long? = null,
+    ): File =
         withContext(Dispatchers.IO) {
             val root = File(context.cacheDir, DIR).apply { mkdirs() }
 
@@ -71,6 +148,10 @@ object DocumentStore {
                 dir.deleteRecursively()
                 throw e
             }
+
+            // Keep the source timestamp on the cached copy. Save as and the
+            // reader's own rewrites can then carry it through unchanged.
+            lastModified?.takeIf { it > 0L }?.let { target.setLastModified(it) }
 
             // The new document is now the only one worth keeping.
             removeStaleFiles(root, keep = target)
