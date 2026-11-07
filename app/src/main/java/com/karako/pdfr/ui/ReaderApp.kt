@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -63,6 +66,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -84,7 +88,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,14 +99,15 @@ import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
 import com.karako.pdfr.data.ShareSheet
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
-private val ZOOM_OPTIONS = listOf(1f, 1.5f, 2f, 3f, 4f, 6f)
 private const val MIN_ZOOM = 1f
 private const val MAX_ZOOM = 6f
 private const val DEFAULT_PAGE_ASPECT = 1.4142f
 private const val RENDER_SETTLE_MS = 120L
+private const val ZOOM_ANIMATION_MS = 260
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,7 +131,6 @@ fun ReaderApp(
     var showLinearizeDialog by rememberSaveable { mutableStateOf(false) }
     var showCompactDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
-    var showZoomMenu by remember { mutableStateOf(false) }
     var showOverflowMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -164,134 +167,112 @@ fun ReaderApp(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = when (state) {
-                            is ReaderState.Ready -> state.displayName
-                            is ReaderState.Locked -> state.displayName
-                            is ReaderState.Loading -> state.name ?: stringResource(R.string.loading)
-                            else -> stringResource(R.string.app_name)
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                actions = {
-                    IconButton(onClick = openPicker) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_folder_open),
-                            contentDescription = stringResource(R.string.open_another),
-                        )
-                    }
-                    if (state is ReaderState.Ready) {
-                        Box {
-                            TextButton(onClick = { showZoomMenu = true }) {
-                                Text("${(zoom * 100).roundToInt()}%")
-                            }
-                            DropdownMenu(
-                                expanded = showZoomMenu,
-                                onDismissRequest = { showZoomMenu = false },
-                            ) {
-                                ZOOM_OPTIONS.forEach { option ->
-                                    DropdownMenuItem(
-                                        text = { Text("${(option * 100).roundToInt()}%") },
-                                        onClick = {
-                                            zoom = option
-                                            showZoomMenu = false
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                        IconButton(onClick = { showInfo = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_info),
-                                contentDescription = stringResource(R.string.document_info),
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                ShareSheet.shareDocument(context, state.file, state.mimeType)
-                            },
+            if (state is ReaderState.Ready) {
+                TopAppBar(
+                    title = {
+                        // Share on the left, info in the middle, menu on the
+                        // right. The app is forced to LTR so this order never
+                        // flips in an RTL locale.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_share),
-                                contentDescription = stringResource(R.string.share_document),
-                            )
-                        }
-                        Box {
                             IconButton(
-                                onClick = { showOverflowMenu = true },
-                                enabled = !busy,
+                                onClick = {
+                                    ShareSheet.shareDocument(context, state.file, state.mimeType)
+                                },
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_more_vert),
-                                    contentDescription = stringResource(R.string.more_options),
+                                    painter = painterResource(R.drawable.ic_share),
+                                    contentDescription = stringResource(R.string.share_document),
                                 )
                             }
-                            DropdownMenu(
-                                expanded = showOverflowMenu,
-                                onDismissRequest = { showOverflowMenu = false },
-                            ) {
-                                if (state.info.isPdf) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.reorder_pages)) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            showReorderDialog = true
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.rotate_pages)) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            showRotateDialog = true
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.linearize)) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            showLinearizeDialog = true
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.compact)) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            showCompactDialog = true
-                                        },
+                            IconButton(onClick = { showInfo = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_info),
+                                    contentDescription = stringResource(R.string.document_info),
+                                )
+                            }
+                            Box {
+                                IconButton(
+                                    onClick = { showOverflowMenu = true },
+                                    enabled = !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_more_vert),
+                                        contentDescription = stringResource(R.string.more_options),
                                     )
                                 }
-                                if (state.monospaceAvailable) {
+                                DropdownMenu(
+                                    expanded = showOverflowMenu,
+                                    onDismissRequest = { showOverflowMenu = false },
+                                ) {
                                     DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                stringResource(
-                                                    if (state.monospace) {
-                                                        R.string.monospace_on
-                                                    } else {
-                                                        R.string.monospace_off
-                                                    },
-                                                ),
-                                            )
-                                        },
+                                        text = { Text(stringResource(R.string.open_another)) },
                                         onClick = {
                                             showOverflowMenu = false
-                                            viewModel.setMonospace(!state.monospace)
+                                            openPicker()
                                         },
                                     )
+                                    if (state.info.isPdf) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.reorder_pages)) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showReorderDialog = true
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.rotate_pages)) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showRotateDialog = true
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.linearize)) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showLinearizeDialog = true
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.compact)) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showCompactDialog = true
+                                            },
+                                        )
+                                    }
+                                    if (state.monospaceAvailable) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (state.monospace) {
+                                                            R.string.monospace_on
+                                                        } else {
+                                                            R.string.monospace_off
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                viewModel.setMonospace(!state.monospace)
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
-                },
-            )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                )
+            }
         },
     ) { padding ->
         Box(
@@ -660,16 +641,29 @@ private fun DocumentReader(
     val listState = rememberLazyListState()
     val horizontalScroll = rememberScrollState()
     val latestZoom by rememberUpdatedState(zoom)
+    val scope = rememberCoroutineScope()
+    var zoomJob by remember { mutableStateOf<Job?>(null) }
 
+    // Double-tap glides between 100%, 200%, 400% and 600% instead of jumping.
+    // Pinch zoom stays continuous and can stop on any value in that range.
     val doubleTapZoom = {
-        onZoom(
-            when {
-                zoom < 2f -> 2f
-                zoom < 4f -> 4f
-                zoom < MAX_ZOOM -> MAX_ZOOM
-                else -> MIN_ZOOM
-            },
-        )
+        val target = when {
+            latestZoom < 2f -> 2f
+            latestZoom < 4f -> 4f
+            latestZoom < MAX_ZOOM -> MAX_ZOOM
+            else -> MIN_ZOOM
+        }
+        zoomJob?.cancel()
+        zoomJob = scope.launch {
+            animate(
+                initialValue = latestZoom,
+                targetValue = target,
+                animationSpec = tween(
+                    durationMillis = ZOOM_ANIMATION_MS,
+                    easing = FastOutSlowInEasing,
+                ),
+            ) { value, _ -> onZoom(value) }
+        }
     }
 
     BoxWithConstraints(
@@ -680,6 +674,7 @@ private fun DocumentReader(
                 maxZoom = MAX_ZOOM,
                 currentZoom = { latestZoom },
                 onZoom = onZoom,
+                onZoomStart = { zoomJob?.cancel() },
             ),
     ) {
         val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
@@ -706,12 +701,27 @@ private fun DocumentReader(
             }
         }
 
+        // Report the page that occupies the largest part of the viewport, not
+        // the first one that peeks in at the top. At the end of a scroll the
+        // last page therefore wins as soon as it fills more than half the
+        // screen instead of waiting for the previous page to leave entirely.
         val visiblePage by remember {
-            derivedStateOf { listState.firstVisibleItemIndex }
+            derivedStateOf {
+                val layout = listState.layoutInfo
+                val viewportStart = layout.viewportStartOffset
+                val viewportEnd = layout.viewportEndOffset
+                layout.visibleItemsInfo.maxByOrNull { item ->
+                    val overlapStart = maxOf(item.offset, viewportStart)
+                    val overlapEnd = minOf(item.offset + item.size, viewportEnd)
+                    (overlapEnd - overlapStart).coerceAtLeast(0)
+                }?.index ?: listState.firstVisibleItemIndex
+            }
         }
         LaunchedEffect(visiblePage) {
             viewModel.onPageChanged(visiblePage)
         }
+
+        val contentPadding = if (state.reflowable) 8.dp else 16.dp
 
         Box(
             modifier = Modifier
@@ -723,7 +733,7 @@ private fun DocumentReader(
                 modifier = Modifier
                     .width(pageWidthDp)
                     .fillMaxHeight(),
-                contentPadding = PaddingValues(vertical = 16.dp),
+                contentPadding = PaddingValues(vertical = contentPadding),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
             ) {
                 items(
@@ -968,6 +978,7 @@ private fun Modifier.twoFingerPinchZoom(
     maxZoom: Float,
     currentZoom: () -> Float,
     onZoom: (Float) -> Unit,
+    onZoomStart: () -> Unit = {},
 ): Modifier = pointerInput(minZoom, maxZoom) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
@@ -987,6 +998,7 @@ private fun Modifier.twoFingerPinchZoom(
                         pinching = true
                         startDistance = distance
                         startZoom = currentZoom()
+                        onZoomStart()
                     }
                 } else if (startDistance > 0f && distance > 0f) {
                     val scale = distance / startDistance
