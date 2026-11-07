@@ -1,4 +1,4 @@
-<h1>📄 <code>PDFr</code> <small><code>com.karako.pdfr</code></small></h1>
+<h1>📄 <code>PDFr</code> <sub><code>com.karako.pdfr</code></sub></h1>
 
 📱 PDF reader for Android.
 
