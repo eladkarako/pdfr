@@ -3,12 +3,17 @@ import com.android.build.api.variant.FilterConfiguration
 
 import java.io.FileInputStream
 import java.util.Properties
+import org.gradle.api.tasks.Copy
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Keep generated files out of the source tree: everything Gradle writes for
+// this module goes to <repo>/build/app instead of app/build.
+layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("build/app"))
 
 
 // ============================================================================
@@ -401,3 +406,19 @@ dependencies {
 }
 
 println("[DEPS] Dependencies configured [OK]")
+
+// ============================================================================
+// RELEASE ARTIFACTS
+// ============================================================================
+
+// Mirror release APKs and bundles into <repo>/build/release for easy access.
+val collectReleaseArtifacts = tasks.register<Copy>("collectReleaseArtifacts") {
+    group = "build"
+    description = "Copies release APKs and AABs into <repo>/build/release."
+    from(layout.buildDirectory.dir("outputs/apk/release")) { include("*.apk") }
+    from(layout.buildDirectory.dir("outputs/bundle/release")) { include("*.aab") }
+    into(rootProject.layout.projectDirectory.dir("build/release"))
+}
+
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }
+    .configureEach { finalizedBy(collectReleaseArtifacts) }
