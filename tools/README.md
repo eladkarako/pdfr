@@ -67,7 +67,7 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
    100%. Every intermediate value is allowed.
 3. **Pinch zoom** - two-finger spread clamps at 600%, pinch together clamps at
    100%. Single-finger scrolling still works while zoomed.
-4. **Text selection** - long-press a word, drag, then Copy / Select all / Close.
+4. **Text selection** - long-press a word, drag, then adjust either end with the blue handles before choosing Copy / Select all / Close.
 5. **Reorder pages** - overflow menu -> Reorder pages -> `1-3,7,9-e,3` on
    `sample.pdf` produces an 11-page `sample (reordered).pdf`. `show-cache.bat`
    should show the new name; the old cache file is gone. Pages not listed are

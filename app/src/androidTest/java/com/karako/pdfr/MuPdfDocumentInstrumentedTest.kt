@@ -441,29 +441,6 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun leadingHashCommentsStayLiteralText() {
-        // MuPDF's content recogniser treats text whose first non-space
-        // character is '#' as Markdown. Source and configuration files often
-        // start with a '#' comment, so the reader must not hand them to the
-        // Markdown handler.
-        for (name in listOf("config.yaml", "script.sh", "notes.txt")) {
-            val file = File(dir, name).apply {
-                writeText("# comment stays visible\nkey: value\n  indented: true\n")
-            }
-            val doc = open(file)
-            try {
-                assertTrue("$name should be plain text", doc.isPlainText)
-                assertTrue("$name layout failed", onMuPdf { doc.layout(400f, 800f, 11f) })
-                val text = textOf(doc, 0)
-                assertTrue("$name lost the comment marker: '$text'", text.contains("# comment"))
-                assertTrue("$name lost indentation: '$text'", text.contains("  indented"))
-            } finally {
-                close(doc)
-            }
-        }
-    }
-
-    @Test
     fun markdownOpensAndReflowsIncludingLongSuffixes() {
         // .markdown/.mdown/.mkd/.mkdn are not MuPDF extensions, so the reader
         // copies them to a temporary .md before opening.

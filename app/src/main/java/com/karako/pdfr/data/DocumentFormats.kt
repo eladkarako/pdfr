@@ -124,6 +124,9 @@ object DocumentFormats {
         "tex", "bib", "asm", "s", "v", "vhd", "vhdl",
     )
 
+    /** Plain-text suffixes MuPDF handles directly, so no temporary copy is needed. */
+    private val nativeTextExtensions = setOf("txt", "text", "log")
+
     /**
      * Extensions MuPDF recognises only under a different suffix. The reader
      * makes a temporary copy with the canonical suffix before opening it.
@@ -265,15 +268,14 @@ object DocumentFormats {
 
     /**
      * Returns the canonical suffix MuPDF understands for [name], or null when
-     * the original extension already works. Every plain-text suffix becomes
-     * `.txt`, including MuPDF's own `txt`/`text`/`log`: [MuPdfDocument] then
-     * adds a byte-order mark that stops MuPDF's content recogniser from
-     * mistaking a leading `#` for Markdown. Markdown aliases become `.md`.
+     * the original extension already works. Text suffixes MuPDF does not know
+     * (`.nfo`, source and configuration formats) become `.txt` copies; native
+     * `.txt`/`.text`/`.log` files open in place. Markdown aliases become `.md`.
      */
     fun muPdfAliasForName(name: String): String? {
         val extension = name.substringAfterLast('.', "").lowercase()
         mupdfAliases[extension]?.let { return it }
-        if (extension in plainTextExtensions) {
+        if (extension in plainTextExtensions && extension !in nativeTextExtensions) {
             return "txt"
         }
         return null

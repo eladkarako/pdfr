@@ -93,10 +93,9 @@ class DocumentFormatsTest {
         assertEquals("md", DocumentFormats.muPdfAliasForName("guide.mkd"))
         assertEquals("md", DocumentFormats.muPdfAliasForName("guide.mkdn"))
         assertNull(DocumentFormats.muPdfAliasForName("guide.md"))
-        // Plain text is copied too, so a leading '#' cannot be mistaken for
-        // Markdown by MuPDF's content recogniser.
-        assertEquals("txt", DocumentFormats.muPdfAliasForName("notes.txt"))
-        assertEquals("txt", DocumentFormats.muPdfAliasForName("server.log"))
+        // MuPDF handles these suffixes directly, so no temporary copy is made.
+        assertNull(DocumentFormats.muPdfAliasForName("notes.txt"))
+        assertNull(DocumentFormats.muPdfAliasForName("server.log"))
         assertNull(DocumentFormats.muPdfAliasForName("paper.pdf"))
         assertNull(DocumentFormats.muPdfAliasForName("page.html"))
         assertNull(DocumentFormats.muPdfAliasForName("drawing.svg"))

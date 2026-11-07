@@ -77,7 +77,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -99,7 +101,6 @@ import com.karako.pdfr.data.DocumentInfo
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.RenderedPage
-import com.karako.pdfr.data.SelectionQuad
 import com.karako.pdfr.data.ShareSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -110,6 +111,15 @@ private const val MAX_ZOOM = 6f
 private const val DEFAULT_PAGE_ASPECT = 1.4142f
 private const val RENDER_SETTLE_MS = 120L
 private const val ZOOM_ANIMATION_MS = 260
+
+// A fixed blue, rather than a theme colour: reader pages are always white, so
+// this stays visible even when the app's primary colour is very dark.
+private val SELECTION_FILL = Color(0x592196F3)
+private val SELECTION_OUTLINE = Color(0xB30D47A1)
+private val SELECTION_HANDLE = Color(0xFF0D47A1)
+private const val SELECTION_HANDLE_RADIUS_DP = 8f
+private const val SELECTION_HANDLE_STEM_DP = 11f
+private const val SELECTION_TOUCH_RADIUS_DP = 28f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -922,40 +932,172 @@ private fun PageItem(
                 contentScale = ContentScale.FillBounds,
             )
             if (selection != null && selection.page == index) {
-                SelectionHighlight(
-                    quads = selection.quads,
+                SelectionOverlay(
+                    selection = selection,
                     bounds = page.bounds,
-                    modifier = Modifier.fillMaxSize(),
+                    pageWidthPx = pageWidthPx,
+                    onHandleStart = viewModel::beginSelectionHandle,
+                    onHandleMove = viewModel::updateSelectionHandle,
+                    onHandleEnd = viewModel::finishSelectionHandle,
                 )
             }
         }
     }
 }
 
+/**
+ * Draws the selected text and two draggable handles. The handles sit at the
+ * first and last selected line; dragging one keeps the opposite end fixed, so
+ * the range can still be corrected after the initial long-press has ended.
+ */
 @Composable
-private fun SelectionHighlight(
-    quads: List<SelectionQuad>,
+private fun SelectionOverlay(
+    selection: SelectionState,
     bounds: PageBounds,
-    modifier: Modifier,
+    pageWidthPx: Int,
+    onHandleStart: (SelectionEdge) -> Unit,
+    onHandleMove: (Float, Float) -> Unit,
+    onHandleEnd: () -> Unit,
 ) {
-    val color = MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)
+    if (bounds.width <= 0f || selection.quads.isEmpty() || pageWidthPx <= 0) return
 
-    Canvas(modifier = modifier) {
-        if (bounds.width <= 0f) return@Canvas
-        val scale = size.width / bounds.width
-        val offsetX = -bounds.x0 * scale
-        val offsetY = -bounds.y0 * scale
+    val density = LocalDensity.current
+    val radiusPx = with(density) { SELECTION_HANDLE_RADIUS_DP.dp.toPx() }
+    val stemPx = with(density) { SELECTION_HANDLE_STEM_DP.dp.toPx() }
+    val touchPx = with(density) { SELECTION_TOUCH_RADIUS_DP.dp.toPx() }
+    val outlineWidth = with(density) { 1.5.dp.toPx() }
+    val handleStroke = with(density) { 2.dp.toPx() }
+
+    val scale = pageWidthPx.toFloat() / bounds.width
+    fun pageToView(x: Float, y: Float) = Offset(
+        (x - bounds.x0) * scale,
+        (y - bounds.y0) * scale,
+    )
+
+    fun handleCenter(point: Offset, width: Float, height: Float): Offset = Offset(
+        x = point.x.coerceIn(radiusPx, (width - radiusPx).coerceAtLeast(radiusPx)),
+        y = (point.y + stemPx)
+            .coerceIn(radiusPx, (height - radiusPx).coerceAtLeast(radiusPx)),
+    )
+
+    val first = selection.quads.first()
+    val last = selection.quads.last()
+    // Handles are drawn just below the first/last line, but the selection
+    // endpoint is the middle of that line: a point on the bottom edge can be
+    // read by MuPDF as belonging to the next line.
+    val startAnchor = Offset(first.llX, (first.ulY + first.llY) / 2f)
+    val endAnchor = Offset(last.lrX, (last.urY + last.lrY) / 2f)
+    val startPoint = pageToView(first.llX, first.llY)
+    val endPoint = pageToView(last.lrX, last.lrY)
+
+    // The selection changes while a handle is dragged, but the pointer input
+    // must not restart mid-gesture. Keep the hit-test points and anchors up to
+    // date in separate state instead of keying the gesture on every quad.
+    val startPointState = rememberUpdatedState(startPoint)
+    val endPointState = rememberUpdatedState(endPoint)
+    val startAnchorState = rememberUpdatedState(startAnchor)
+    val endAnchorState = rememberUpdatedState(endAnchor)
+    var activeEdge by remember(selection.page) { mutableStateOf<SelectionEdge?>(null) }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(selection.page, bounds, pageWidthPx) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    val startCenter = handleCenter(
+                        startPointState.value,
+                        size.width.toFloat(),
+                        size.height.toFloat(),
+                    )
+                    val endCenter = handleCenter(
+                        endPointState.value,
+                        size.width.toFloat(),
+                        size.height.toFloat(),
+                    )
+                    val startDistance = (down.position - startCenter).getDistance()
+                    val endDistance = (down.position - endCenter).getDistance()
+                    val edge = when {
+                        startDistance <= touchPx && startDistance <= endDistance ->
+                            SelectionEdge.Start
+                        endDistance <= touchPx -> SelectionEdge.End
+                        else -> null
+                    } ?: return@awaitEachGesture
+
+                    val downPage = Offset(
+                        bounds.x0 + down.position.x / scale,
+                        bounds.y0 + down.position.y / scale,
+                    )
+                    val anchor = when (edge) {
+                        SelectionEdge.Start -> startAnchorState.value
+                        SelectionEdge.End -> endAnchorState.value
+                    }
+                    // Keep the same relative grab point for the whole gesture,
+                    // so the endpoint does not jump towards the finger when the
+                    // handle sits below the line.
+                    val grabOffset = downPage - anchor
+
+                    down.consume()
+                    activeEdge = edge
+                    onHandleStart(edge)
+                    try {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes
+                                .firstOrNull { it.id == down.id }
+                                ?: break
+                            if (!change.pressed) break
+                            change.consume()
+                            val target = Offset(
+                                bounds.x0 + change.position.x / scale,
+                                bounds.y0 + change.position.y / scale,
+                            ) - grabOffset
+                            onHandleMove(target.x, target.y)
+                        }
+                    } finally {
+                        activeEdge = null
+                        onHandleEnd()
+                    }
+                }
+            },
+    ) {
         val path = Path()
-
-        quads.forEach { quad ->
-            path.moveTo(quad.ulX * scale + offsetX, quad.ulY * scale + offsetY)
-            path.lineTo(quad.urX * scale + offsetX, quad.urY * scale + offsetY)
-            path.lineTo(quad.lrX * scale + offsetX, quad.lrY * scale + offsetY)
-            path.lineTo(quad.llX * scale + offsetX, quad.llY * scale + offsetY)
+        selection.quads.forEach { quad ->
+            path.moveTo(quad.ulX * scale - bounds.x0 * scale, quad.ulY * scale - bounds.y0 * scale)
+            path.lineTo(quad.urX * scale - bounds.x0 * scale, quad.urY * scale - bounds.y0 * scale)
+            path.lineTo(quad.lrX * scale - bounds.x0 * scale, quad.lrY * scale - bounds.y0 * scale)
+            path.lineTo(quad.llX * scale - bounds.x0 * scale, quad.llY * scale - bounds.y0 * scale)
             path.close()
         }
+        drawPath(path, SELECTION_FILL)
+        drawPath(path, SELECTION_OUTLINE, style = Stroke(width = outlineWidth))
 
-        drawPath(path, color)
+        fun drawHandle(center: Offset, active: Boolean) {
+            val radius = if (active) radiusPx * 1.25f else radiusPx
+            drawLine(
+                color = SELECTION_HANDLE,
+                start = Offset(center.x, center.y - stemPx),
+                end = center,
+                strokeWidth = handleStroke,
+                cap = StrokeCap.Round,
+            )
+            drawCircle(Color.White, radius = radius + handleStroke, center = center)
+            drawCircle(SELECTION_HANDLE, radius = radius, center = center)
+            drawCircle(
+                Color.White.copy(alpha = 0.85f),
+                radius = radius * 0.32f,
+                center = center,
+            )
+        }
+
+        drawHandle(
+            handleCenter(startPoint, size.width, size.height),
+            activeEdge == SelectionEdge.Start,
+        )
+        drawHandle(
+            handleCenter(endPoint, size.width, size.height),
+            activeEdge == SelectionEdge.End,
+        )
     }
 }
 

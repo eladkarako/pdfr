@@ -483,50 +483,19 @@ class MuPdfDocument private constructor(
             }
         }
 
-        /** Copies [file] next to itself with the canonical [suffix]. */
+        /**
+         * Copies [file] next to itself with the canonical [suffix]. The copy is
+         * byte-for-byte identical: no byte-order mark is added, so the bytes
+         * MuPDF reads match the source file exactly.
+         */
         private fun copyWithSuffix(file: File, suffix: String): File {
             val temp = File(file.parentFile, ".${java.util.UUID.randomUUID()}.$suffix")
             return try {
-                if (suffix == "txt") {
-                    copyAsPlainText(file, temp)
-                } else {
-                    file.copyTo(temp, overwrite = true)
-                }
+                file.copyTo(temp, overwrite = true)
                 temp
             } catch (t: Throwable) {
                 runCatching { temp.delete() }
                 throw t
-            }
-        }
-
-        /**
-         * Writes a `.txt` copy that MuPDF's text handler will claim.
-         *
-         * MuPDF 1.28.5 recognises Markdown from the content, not only from the
-         * suffix: its deliberately rough detector treats any text whose first
-         * non-space character is `#` as Markdown. A source or configuration
-         * file starting with a `#` comment would therefore lose its comment
-         * markers, indentation and line layout. Prefixing a UTF-8 byte-order
-         * mark makes that detector reject the guess, while the text handler
-         * strips the mark before it lays the file out. Files that already have
-         * a byte-order mark are copied unchanged.
-         */
-        private fun copyAsPlainText(file: File, target: File) {
-            val head = ByteArray(3)
-            val read = file.inputStream().use { it.read(head) }
-            fun byteAt(index: Int): Int = head[index].toInt() and 0xFF
-
-            val hasBom = (read >= 3 &&
-                byteAt(0) == 0xEF && byteAt(1) == 0xBB && byteAt(2) == 0xBF) ||
-                (read >= 2 &&
-                    ((byteAt(0) == 0xFF && byteAt(1) == 0xFE) ||
-                        (byteAt(0) == 0xFE && byteAt(1) == 0xFF)))
-
-            target.outputStream().use { output ->
-                if (read > 0 && !hasBom) {
-                    output.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
-                }
-                file.inputStream().use { input -> input.copyTo(output) }
             }
         }
 

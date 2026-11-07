@@ -1,6 +1,7 @@
 26.11.7
 + treats source and configuration files as plain text: JSON, YAML, TOML, CSV/TSV, C/C++, Java, JS/TS, shell, XML and similar suffixes are opened through a temporary `.txt` copy; an unknown suffix is detected from its bytes when MuPDF cannot open it.
-+ keeps that text literal: a leading `#` comment is no longer mistaken for Markdown, so comment markers, indentation and line layout survive.
++ text selection now draws a stronger blue highlight plus two round handles; either end can be dragged after the long-press, and crossing the handles swaps the range endpoints instead of breaking the gesture.
++ the temporary copy is byte-for-byte identical: PDFr never adds a byte-order mark. MuPDF's own content detector still treats a file whose first line starts with `# ` as Markdown, so such a comment may render as a heading without the marker.
 + advertises `text/*` plus the common application text MIME types, so those files work in other apps' "Open with" and share menus without a separate PDFr entry per extension.
 + opens the remaining formats MuPDF 1.28.5 supports: Markdown, MOBI/PRC/PDB, CBT, HTML/XHTML, SVG, common images, PNM/PAM, and OOXML Office (DOCX/XLSX/PPTX/HWPX).
 + PDFr now advertises those types as an "Open with" and share target; legacy binary .doc/.xls/.ppt are intentionally not advertised because MuPDF cannot read them.
