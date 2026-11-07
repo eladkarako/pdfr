@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,8 +71,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -104,12 +107,14 @@ import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.ShareSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
-private const val MIN_ZOOM = 1f
-private const val MAX_ZOOM = 6f
 private const val DEFAULT_PAGE_ASPECT = 1.4142f
 private const val RENDER_SETTLE_MS = 120L
+private const val CONTENT_WIDTH_SETTLE_MS = 200L
 private const val ZOOM_ANIMATION_MS = 260
 
 // A fixed blue, rather than a theme colour: reader pages are always white, so
@@ -686,16 +691,113 @@ private fun DocumentReader(
     val scope = rememberCoroutineScope()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
 
+    // Rendering and reflow follow the gesture with a short delay. Everything
+    // is scaled from `zoom` immediately, so the page never waits for the
+    // slower, sharper pass before changing size.
+    var renderZoom by remember(state.file.absolutePath) { mutableFloatStateOf(1f) }
+    LaunchedEffect(state.file.absolutePath, zoom) {
+        if (state.reflowable) return@LaunchedEffect
+        if (zoom == renderZoom) return@LaunchedEffect
+        delay(RENDER_SETTLE_MS)
+        renderZoom = zoom
+    }
+
+    // Reflowable pages are rendered at the viewport width for the last layout.
+    // Keep the scroll rack wide enough for pages that have not re-rendered for
+    // a newer layout yet, so they are not clipped while the new bitmaps land.
+    var widthZoomFloor by remember(state.file.absolutePath) {
+        mutableFloatStateOf(state.layoutZoom)
+    }
+    LaunchedEffect(state.file.absolutePath, state.layoutVersion) {
+        widthZoomFloor = minOf(widthZoomFloor, state.layoutZoom)
+        delay(CONTENT_WIDTH_SETTLE_MS)
+        widthZoomFloor = state.layoutZoom
+    }
+
+    var pinchActive by remember { mutableStateOf(false) }
+    var pinchStartZoom by remember { mutableFloatStateOf(1f) }
+    var pinchStartScroll by remember { mutableIntStateOf(0) }
+    var pinchStartFocus by remember { mutableStateOf(Offset.Zero) }
+    var pinchFocus by remember { mutableStateOf(Offset.Zero) }
+
+    // Page under the pinch centroid and the relative point inside it. As
+    // pages grow or shrink, the list is scrolled so that point stays under
+    // the fingers instead of drifting up towards the start of the document.
+    // Moving both fingers pans the view while it is held.
+    var pinchAnchorPage by remember { mutableIntStateOf(-1) }
+    var pinchAnchorFraction by remember { mutableFloatStateOf(0f) }
+
+    // Relative point inside the page that currently fills most of the
+    // viewport, captured before a zoom reflow. It is the page the reader
+    // bookmarks, so restoring the same fraction keeps the reading position
+    // instead of snapping back to the top of that page.
+    var restorePageFraction by remember(state.file.absolutePath) { mutableFloatStateOf(-1f) }
+
+    fun primaryVisibleItem() = listState.layoutInfo.let { layout ->
+        val start = layout.viewportStartOffset
+        val end = layout.viewportEndOffset
+        layout.visibleItemsInfo.maxByOrNull { item ->
+            val overlapStart = maxOf(item.offset, start)
+            val overlapEnd = minOf(item.offset + item.size, end)
+            (overlapEnd - overlapStart).coerceAtLeast(0)
+        }
+    }
+
+    fun visiblePageFraction(): Float {
+        val item = primaryVisibleItem() ?: return 0f
+        if (item.size <= 0) return 0f
+        val top = maxOf(item.offset, listState.layoutInfo.viewportStartOffset)
+        return ((top - item.offset).toFloat() / item.size).coerceIn(0f, 1f)
+    }
+
+    // Keep the remembered fraction in step with ordinary scrolling, so a
+    // later reflow (rotation, window resize) restores the place the reader
+    // actually stopped at, not the place they were at before scrolling.
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }.collect { scrolling ->
+            if (!scrolling) restorePageFraction = visiblePageFraction()
+        }
+    }
+
+    // Keep the point under the fingers fixed while the content grows or
+    // shrinks, both across the page and between pages. `pinchFocus` follows
+    // the centroid, so moving both fingers pans the view at the same time.
+    LaunchedEffect(zoom, pinchFocus, pinchActive) {
+        if (!pinchActive) return@LaunchedEffect
+        withFrameNanos { }
+        val ratio = zoom / pinchStartZoom
+        horizontalScroll.scrollTo(
+            ZoomMath.anchoredScroll(
+                startScroll = pinchStartScroll,
+                startFocusX = pinchStartFocus.x,
+                focusX = pinchFocus.x,
+                ratio = ratio,
+            ),
+        )
+
+        val anchor = pinchAnchorPage
+        if (anchor >= 0) {
+            val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == anchor }
+            if (item != null && item.size > 0) {
+                val delta = ZoomMath.anchorDelta(
+                    itemOffset = item.offset,
+                    itemSize = item.size,
+                    fraction = pinchAnchorFraction,
+                    focusY = pinchFocus.y,
+                )
+                if (abs(delta) > 1f) {
+                    listState.scrollBy(delta)
+                }
+            }
+        }
+    }
+
     // Double-tap glides between 100%, 200%, 400% and 600% instead of jumping.
     // Pinch zoom stays continuous and can stop on any value in that range.
     val doubleTapZoom = {
-        val target = when {
-            latestZoom < 2f -> 2f
-            latestZoom < 4f -> 4f
-            latestZoom < MAX_ZOOM -> MAX_ZOOM
-            else -> MIN_ZOOM
-        }
+        val target = ZoomMath.nextDoubleTapZoom(latestZoom)
         zoomJob?.cancel()
+        restorePageFraction = visiblePageFraction()
         zoomJob = scope.launch {
             animate(
                 initialValue = latestZoom,
@@ -712,34 +814,77 @@ private fun DocumentReader(
         modifier = Modifier
             .fillMaxSize()
             .twoFingerPinchZoom(
-                minZoom = MIN_ZOOM,
-                maxZoom = MAX_ZOOM,
+                minZoom = ZoomMath.MIN_ZOOM,
+                maxZoom = ZoomMath.MAX_ZOOM,
                 currentZoom = { latestZoom },
-                onZoom = onZoom,
-                onZoomStart = { zoomJob?.cancel() },
+                onZoom = { value, focus ->
+                    pinchFocus = focus
+                    onZoom(value)
+                },
+                onZoomStart = { focus ->
+                    zoomJob?.cancel()
+                    pinchStartZoom = latestZoom
+                    pinchStartScroll = horizontalScroll.value
+                    pinchStartFocus = focus
+                    pinchFocus = focus
+                    pinchActive = true
+                    restorePageFraction = visiblePageFraction()
+                    val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                        focus.y >= info.offset && focus.y < info.offset + info.size
+                    } ?: listState.layoutInfo.visibleItemsInfo.firstOrNull()
+                    if (item != null && item.size > 0) {
+                        pinchAnchorPage = item.index
+                        pinchAnchorFraction = ((focus.y - item.offset) / item.size)
+                            .coerceIn(0f, 1f)
+                    } else {
+                        pinchAnchorPage = -1
+                    }
+                },
+                onZoomEnd = { pinchActive = false },
             ),
     ) {
         val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
         val viewportHeightPx = with(density) { maxHeight.toPx() }.toInt()
 
-        LaunchedEffect(viewportWidthPx, viewportHeightPx, densityDpi, zoom) {
+        // A pinch is scaled locally, so the expensive reflow only needs to
+        // run once the fingers rest. Deferring it also avoids repaginating
+        // halfway through the gesture, which would shift the text away from
+        // the point being held.
+        LaunchedEffect(viewportWidthPx, viewportHeightPx, densityDpi, zoom, pinchActive) {
+            if (pinchActive) return@LaunchedEffect
             viewModel.onViewportChanged(viewportWidthPx, viewportHeightPx, densityDpi, zoom)
         }
 
-        // Reflowable formats lay their text out at the current zoom, so their
-        // page keeps the viewport width. Fixed-layout pages are rasterised
-        // wider and panned horizontally instead.
-        val displayScale = if (state.reflowable) 1f else zoom
-        val pageWidthPx = (viewportWidthPx * displayScale).toInt().coerceAtLeast(1)
+        // Reflowable layouts only change when the new layout arrives; until
+        // then the previous layout is scaled by zoom / layoutZoom. Fixed-layout
+        // pages are rasterised wider and panned horizontally instead.
+        val contentScale = if (state.reflowable) {
+            ZoomMath.reflowRackScale(zoom, state.layoutZoom, widthZoomFloor)
+        } else {
+            zoom
+        }
+        val pageWidthPx = (viewportWidthPx * contentScale).toInt().coerceAtLeast(1)
         val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
 
-        LaunchedEffect(state.file.absolutePath, displayScale) {
+        LaunchedEffect(state.file.absolutePath) {
             horizontalScroll.scrollTo(0)
         }
 
         LaunchedEffect(state.file.absolutePath, state.layoutVersion, state.anchorPage) {
-            if (state.pageCount > 0) {
-                listState.scrollToItem(state.anchorPage.coerceIn(0, state.pageCount - 1))
+            if (state.pageCount <= 0) return@LaunchedEffect
+            val page = state.anchorPage.coerceIn(0, state.pageCount - 1)
+            val fraction = restorePageFraction
+            listState.scrollToItem(page)
+            if (fraction > 0f) {
+                // Let the reflowed page be measured, then keep the same
+                // relative point in it instead of snapping to its top. The
+                // fraction stays remembered, so a reflow that lands while a
+                // pinch is still running does not fall back to the page top.
+                withFrameNanos { }
+                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
+                if (item != null && item.size > 0) {
+                    listState.scrollToItem(page, (fraction * item.size).roundToInt())
+                }
             }
         }
 
@@ -749,14 +894,7 @@ private fun DocumentReader(
         // screen instead of waiting for the previous page to leave entirely.
         val visiblePage by remember {
             derivedStateOf {
-                val layout = listState.layoutInfo
-                val viewportStart = layout.viewportStartOffset
-                val viewportEnd = layout.viewportEndOffset
-                layout.visibleItemsInfo.maxByOrNull { item ->
-                    val overlapStart = maxOf(item.offset, viewportStart)
-                    val overlapEnd = minOf(item.offset + item.size, viewportEnd)
-                    (overlapEnd - overlapStart).coerceAtLeast(0)
-                }?.index ?: listState.firstVisibleItemIndex
+                primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex
             }
         }
         LaunchedEffect(visiblePage) {
@@ -785,8 +923,11 @@ private fun DocumentReader(
                     PageItem(
                         index = index,
                         documentKey = state.file.absolutePath,
-                        pageWidthPx = pageWidthPx,
-                        pageWidthDp = pageWidthDp,
+                        viewportWidthPx = viewportWidthPx,
+                        reflowable = state.reflowable,
+                        liveZoom = zoom,
+                        layoutZoom = state.layoutZoom,
+                        renderZoom = renderZoom,
                         layoutVersion = state.layoutVersion,
                         selection = selection,
                         viewModel = viewModel,
@@ -833,45 +974,60 @@ private fun DocumentReader(
 private fun PageItem(
     index: Int,
     documentKey: String,
-    pageWidthPx: Int,
-    pageWidthDp: Dp,
+    viewportWidthPx: Int,
+    reflowable: Boolean,
+    liveZoom: Float,
+    layoutZoom: Float,
+    renderZoom: Float,
     layoutVersion: Int,
     selection: SelectionState?,
     viewModel: ReaderViewModel,
     onDoubleTap: () -> Unit,
 ) {
-    // Rendering follows the pinch with a short delay. The page box still
-    // resizes immediately, so the gesture feels live while the native renderer
-    // only runs once the fingers rest.
-    var renderWidth by remember(documentKey, index, layoutVersion) {
-        mutableIntStateOf(pageWidthPx)
-    }
-    LaunchedEffect(documentKey, index, layoutVersion, pageWidthPx) {
-        if (pageWidthPx != renderWidth) {
-            delay(RENDER_SETTLE_MS)
-            renderWidth = pageWidthPx
-        }
+    // Keep the last bitmap on screen while a sharper one is prepared. For
+    // reflowable pages `renderedLayoutZoom` is the layout zoom of that bitmap,
+    // so it can be stretched to the live zoom and swapped for the new layout
+    // without the text changing size.
+    var rendered by remember(documentKey, index) { mutableStateOf<RenderedPage?>(null) }
+    var renderedLayoutZoom by remember(documentKey, index) {
+        mutableFloatStateOf(layoutZoom)
     }
 
-    var rendered by remember(documentKey, index, layoutVersion, renderWidth) {
-        mutableStateOf<RenderedPage?>(null)
+    val pageWidthPx = if (reflowable) {
+        (viewportWidthPx *
+            ZoomMath.reflowPageScale(liveZoom, renderedLayoutZoom))
+            .roundToInt()
+            .coerceAtLeast(1)
+    } else {
+        (viewportWidthPx * liveZoom).roundToInt().coerceAtLeast(1)
+    }
+    val renderWidthPx = if (reflowable) {
+        // Reflowable pages always fill the viewport; their text gets larger
+        // because the layout itself is narrower, not because the bitmap is.
+        viewportWidthPx
+    } else {
+        (viewportWidthPx * renderZoom).roundToInt().coerceAtLeast(1)
     }
 
-    LaunchedEffect(documentKey, index, layoutVersion, renderWidth) {
-        rendered = viewModel.renderPage(index, renderWidth)
+    LaunchedEffect(documentKey, index, layoutVersion, renderWidthPx) {
+        val page = viewModel.renderPage(index, renderWidthPx) ?: return@LaunchedEffect
+        rendered = page
+        renderedLayoutZoom = layoutZoom
     }
 
     // Drop the page bitmap as soon as LazyColumn disposes this item; the LRU
     // cache still keeps it if it will be needed again, but off-screen items
     // should not pin large bitmaps in memory.
-    DisposableEffect(documentKey, index, layoutVersion, renderWidth) {
+    DisposableEffect(documentKey, index) {
         onDispose { rendered = null }
     }
 
     val bounds = rendered?.bounds
     val aspect = bounds?.let { if (it.width > 0f) it.height / it.width else DEFAULT_PAGE_ASPECT }
         ?: DEFAULT_PAGE_ASPECT
-    val pageHeightDp = with(LocalDensity.current) { (pageWidthPx * aspect).toDp() }
+    val density = LocalDensity.current
+    val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
+    val pageHeightDp = with(density) { (pageWidthPx * aspect).toDp() }
 
     // A standard long-press detector still fires when a second finger joins
     // late in a pinch. Track the pointer count in the Initial pass and refuse
@@ -1151,8 +1307,9 @@ private fun Modifier.twoFingerPinchZoom(
     minZoom: Float,
     maxZoom: Float,
     currentZoom: () -> Float,
-    onZoom: (Float) -> Unit,
-    onZoomStart: () -> Unit = {},
+    onZoom: (Float, Offset) -> Unit,
+    onZoomStart: (Offset) -> Unit = {},
+    onZoomEnd: () -> Unit = {},
 ): Modifier = pointerInput(minZoom, maxZoom) {
     awaitEachGesture {
         awaitFirstDown(requireUnconsumed = false)
@@ -1166,24 +1323,34 @@ private fun Modifier.twoFingerPinchZoom(
             val pressed = event.changes.filter { it.pressed }
 
             if (pressed.size >= 2) {
-                val distance = (pressed[0].position - pressed[1].position).getDistance()
+                val first = pressed[0].position
+                val second = pressed[1].position
+                val distance = (first - second).getDistance()
                 if (!pinching) {
                     if (distance > 8f) {
                         pinching = true
                         startDistance = distance
                         startZoom = currentZoom()
-                        onZoomStart()
+                        onZoomStart((first + second) / 2f)
                     }
                 } else if (startDistance > 0f && distance > 0f) {
-                    val scale = distance / startDistance
-                    if (scale.isFinite()) {
-                        onZoom((startZoom * scale).coerceIn(minZoom, maxZoom))
-                    }
+                    onZoom(
+                        ZoomMath.pinchZoom(
+                            startZoom = startZoom,
+                            startDistance = startDistance,
+                            distance = distance,
+                            minZoom = minZoom,
+                            maxZoom = maxZoom,
+                        ),
+                        (first + second) / 2f,
+                    )
                     // Stop the scroll container from also moving under the pinch.
                     pressed.forEach { it.consume() }
                 }
             }
         } while (event.changes.any { it.pressed })
+
+        if (pinching) onZoomEnd()
     }
 }
 

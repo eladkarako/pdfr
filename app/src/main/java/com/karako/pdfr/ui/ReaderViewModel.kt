@@ -50,6 +50,12 @@ sealed interface ReaderState {
         val monospaceAvailable: Boolean = false,
         val layoutVersion: Int = 0,
         val anchorPage: Int = 0,
+        /**
+         * Zoom the current reflow layout was produced at. The UI keeps showing
+         * the old layout scaled by `zoom / layoutZoom` until the new layout is
+         * ready, so a pinch never snaps to a new size.
+         */
+        val layoutZoom: Float = 1f,
     ) : ReaderState
 
     data class Locked(
@@ -264,7 +270,7 @@ class ReaderViewModel(
             widthPx = widthPx,
             heightPx = heightPx,
             densityDpi = densityDpi,
-            zoom = zoom.coerceIn(MIN_ZOOM, MAX_ZOOM),
+            zoom = ZoomMath.clamp(zoom),
         )
         val previous = viewport
         if (next == previous) return
@@ -550,6 +556,10 @@ class ReaderViewModel(
     ): Boolean {
         val version = ++generation
         lastModified?.takeIf { it > 0L }?.let { file.setLastModified(it) }
+        // The reader resets its zoom when the document changes, so the first
+        // layout must be built for 100% as well, not for the previous file's
+        // pinch level.
+        viewport = viewport?.copy(zoom = ZoomMath.MIN_ZOOM)
 
         layoutJob?.cancel()
         selectionJob?.cancel()
@@ -618,6 +628,7 @@ class ReaderViewModel(
                 monospace = monospace,
                 monospaceAvailable = opened.isPlainText,
                 anchorPage = page,
+                layoutZoom = ZoomMath.clamp((viewport ?: defaultViewport()).zoom),
             )
 
             if (previous != null && previous !== opened) {
@@ -661,6 +672,7 @@ class ReaderViewModel(
         val spec = layoutSpec(viewport)
         if (!force && spec == lastLayout) return
 
+        val layoutZoom = ZoomMath.clamp(viewport.zoom)
         layoutJob?.cancel()
         val version = generation
 
@@ -695,6 +707,7 @@ class ReaderViewModel(
                 pageCount = result.pageCount,
                 layoutVersion = ready.layoutVersion + 1,
                 anchorPage = result.page,
+                layoutZoom = layoutZoom,
             )
         }
     }
@@ -896,7 +909,7 @@ class ReaderViewModel(
 
     private fun layoutSpec(viewport: Viewport): LayoutSpec {
         val pointsPerPixel = 72f / viewport.densityDpi
-        val zoom = viewport.zoom.coerceIn(MIN_ZOOM, MAX_ZOOM)
+        val zoom = ZoomMath.clamp(viewport.zoom)
         return LayoutSpec(
             widthPt = (viewport.widthPx * pointsPerPixel / zoom).coerceAtLeast(32f),
             heightPt = (viewport.heightPx * pointsPerPixel / zoom).coerceAtLeast(32f),
@@ -971,10 +984,8 @@ class ReaderViewModel(
         const val KEY_MTIME = "document_modified"
 
         const val TEXT_EM = 11f
-        const val MIN_ZOOM = 1f
-        const val MAX_ZOOM = 6f
         const val SELECTION_UPDATE_DELAY_MS = 16L
-        const val REFLOW_DEBOUNCE_MS = 140L
+        const val REFLOW_DEBOUNCE_MS = 80L
         const val BITMAP_EVICT_DEBOUNCE_MS = 240L
     }
 }

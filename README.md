@@ -77,9 +77,10 @@ intact wherever the target provider allows its timestamp to be updated.
   handles swaps the range endpoints instead of breaking the gesture. Use
   **Copy**, **Select all** or **Close** in the floating bar.
 - 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
-  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
-  larger text layout; fixed-layout pages are rasterised at the larger size and
-  panned horizontally.
+  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). The page resizes live
+  under the fingers and the touched spot stays in place; the sharper bitmap and
+  the larger reflow layout arrive when the gesture ends. Fixed-layout pages can
+  be panned horizontally while zoomed.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
