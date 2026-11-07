@@ -29,9 +29,10 @@ are laid out to the current screen width and zoom level.
 - **Open with / Share to PDFr**, or pick a file from the in-app button.
 - **Text selection and copying** - long-press a word, drag to extend the
   selection, then use **Copy**, **Select all** or **Close** in the floating bar.
-- **Zoom** from 100% to 600% with the menu, a two-finger pinch, or a double-tap
-  (2x, 4x, 6x, back to 1x). Reflowable books get a larger text layout;
-  fixed-layout pages are rasterised at the larger size and panned horizontally.
+- **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
+  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
+  larger text layout; fixed-layout pages are rasterised at the larger size and
+  panned horizontally.
 - **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -96,7 +97,7 @@ app/src/test/                # JVM tests (no device, no native code)
 app/src/androidTest/         # MuPDF/qpdf integration tests + PDF writer
 tools/make_test_files.js     # generates manual-test documents + Gutenberg books
 tools/fetch_gutenberg.py     # standalone Project Gutenberg downloader
-scripts/                     # Windows helpers: emulator, install, tests, gestures
+tools/                       # Windows helpers: AVD, emulator, install, tests, gestures
 ```
 
 MuPDF's native objects are not concurrency-safe, so every MuPDF call runs on a
@@ -123,8 +124,12 @@ qpdf or libjpeg sources.
 
 ```bash
 ./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-universal-debug.apk
+adb install -r build/app/outputs/apk/debug/app-universal-debug.apk
 ```
+
+Gradle writes this module's output to `build/app` (not `app/build`), so the
+source tree stays free of generated files. Release APKs and AABs are also
+copied to `build/release` after `assembleRelease` or `bundleRelease`.
 
 The build produces one APK per ABI plus a universal APK; use the matching
 split for smaller installs (for example `app-x86_64-debug.apk` on an x86_64
@@ -144,27 +149,27 @@ Three layers, all runnable from the repository root:
 
 | Layer | Command | Needs a device? |
 | --- | --- | --- |
-| JVM unit tests | `scripts\run-unit-tests.bat` (or `gradlew :app:testDebugUnitTest`) | no |
-| MuPDF integration tests | `scripts\run-instrumented-tests.bat` | yes |
-| Manual checklist | `scripts\manual-testing.bat` | yes |
+| JVM unit tests | `tools\run-unit-tests.bat` (or `gradlew :app:testDebugUnitTest`) | no |
+| MuPDF integration tests | `tools\run-instrumented-tests.bat` | yes |
+| Manual checklist | `tools\manual-testing.bat` | yes |
 
 - `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`.
 - `app/src/androidTest/README.md` - opens, renders, selects, reorders,
   rotates, compacts, linearizes through qpdf, unlocks AES-256 PDFs and toggles
   plain-text monospace on real MuPDF.
-- `scripts/README.md` - emulator/install helpers, fixture pushing and the
-  manual checklist, including a raw-multitouch pinch helper.
-- `tools/README.md` - the dependency-free fixture generator and the Project
-  Gutenberg downloader.
+- `tools/README.md` - AVD creation, emulator/install helpers, fixture pushing,
+  the manual checklist, the raw-multitouch pinch helper, and the
+  dependency-free fixture generator/Project Gutenberg downloader.
 
 Typical first run:
 
 ```bat
-scripts\start-emulator.bat
-scripts\install-debug.bat
-scripts\push-fixtures.bat
-scripts\run-instrumented-tests.bat
-scripts\manual-testing.bat
+tools\create-test-avd.bat
+tools\start-emulator.bat
+tools\install-debug.bat
+tools\push-fixtures.bat
+tools\run-instrumented-tests.bat
+tools\manual-testing.bat
 ```
 
 The instrumented tests generate their own PDFs at runtime (including a
