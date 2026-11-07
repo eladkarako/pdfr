@@ -1,4 +1,4 @@
-# 📄 PDFr
+<h1>📄 <code>PDFr</code> <small><code>com.karako.pdfr</code></small></h1>
 
 📱 PDF reader for Android.
 
@@ -10,7 +10,7 @@
 - 🔒 no data collection.
 - 🗂️ documents are copied into the app's private cache only while they are open.
 
-## 📚 Formats supported
+<details><summary><h2>📚 Formats supported</h2></summary>
 
 | Format | Extension(s) | Definition | Key traits |
 |--------|--------------|------------|------------|
@@ -38,6 +38,8 @@ zoom level.
 for each extension. The in-app picker also offers `text/*` and
 `application/octet-stream`; text detection fills in providers that report no
 useful MIME type.
+
+</details>
 
 <hr/>
 
@@ -102,15 +104,6 @@ intact wherever the target provider allows its timestamp to be updated.
   the usual title/author/subject/keywords/creator/producer/date metadata.
 - 📤 **Share** the open document through Android's share sheet / print spooler.
 - 📍 **Reading position** is preserved across rotation, reflow and process death.
-
-</details>
-
-<hr/>
-
-<details><summary><h2>⚙️ engines:</h2></summary>
-
-- 🧩 [MuPDF](https://mupdf.com/)
-- 🔧 [qPDF](https://github.com/qpdf/qpdf)
 
 </details>
 
@@ -377,6 +370,15 @@ If the app works fully offline, it does not need the internet. If it fails to lo
 1. 📴 Remove the proxy from the Wi-Fi network settings.
 2. 🗑️ Remove the Burp CA certificate from **Settings > Security > Encryption & credentials > User credentials**.
 3. ⏹️ Stop Burp Suite and delete the temporary project if you no longer need the logs.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>⚙️ engines</h2></summary>
+
+- 🧩 [MuPDF](https://mupdf.com/)
+- 🔧 [qPDF](https://github.com/qpdf/qpdf)
 
 </details>
 
