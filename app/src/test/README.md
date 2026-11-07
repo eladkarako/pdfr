@@ -5,7 +5,7 @@ These tests run on the development machine, not on a device:
 ```bat
 gradlew :app:testDebugUnitTest
 :: or
-scripts\run-unit-tests.bat
+tools\run-unit-tests.bat
 ```
 
 They deliberately avoid Android classes, so they need no emulator and no
@@ -18,7 +18,7 @@ native MuPDF library.
 | `DocumentInfoTest` | PDF detection for the Reorder/Rotate/Linearize/Compact menu items and metadata presence. |
 
 Reports are written to
-`app/build/reports/tests/testDebugUnitTest/index.html`.
+`build/app/reports/tests/testDebugUnitTest/index.html`.
 
 Device-level coverage of MuPDF itself lives in
 `app/src/androidTest/README.md`.

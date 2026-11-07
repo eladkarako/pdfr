@@ -5,15 +5,16 @@ They generate their own PDF/TXT fixtures at runtime, so nothing binary is
 committed.
 
 ```bat
-scripts\start-emulator.bat
-scripts\install-debug.bat
-scripts\run-instrumented-tests.bat
+tools\create-test-avd.bat
+tools\start-emulator.bat
+tools\install-debug.bat
+tools\run-instrumented-tests.bat
 ```
 
 Run one class or one test:
 
 ```bat
-scripts\run-instrumented-tests.bat com.karako.pdfr.MuPdfDocumentInstrumentedTest
+tools\run-instrumented-tests.bat com.karako.pdfr.MuPdfDocumentInstrumentedTest
 adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTest#reorderKeepsRequestedOrderAndDuplicates com.karako.pdfr.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
