@@ -670,6 +670,36 @@ ${'Markdown text reflows to the current window width, just like EPUB and plain t
   // `.md` copy instead.
   fs.writeFileSync(path.join(out, 'guide.markdown'), guideMarkdown, 'utf8');
 
+  // Text-based configuration and source files. MuPDF has no handler for these
+  // suffixes, so the reader copies them to a temporary .txt before opening.
+  fs.writeFileSync(
+    path.join(out, 'config.yaml'),
+    `# PDFr YAML fixture
+name: PDFr
+formats:
+  - markdown
+  - office
+  - source
+reader:
+  reflow: true
+  monospace: true
+`,
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(out, 'main.c'),
+    `/* PDFr C fixture */
+#include <stdio.h>
+
+int main(void)
+{
+    printf("Hello from a .c file\\n");
+    return 0;
+}
+`,
+    'utf8',
+  );
+
   // Image and PNM fixtures. MuPDF renders each image as a one-page document.
   fs.writeFileSync(path.join(out, 'image.png'), png(480, 320, [40, 110, 200]));
   writePpm(path.join(out, 'image.ppm'), 480, 320, [200, 90, 40]);

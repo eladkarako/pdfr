@@ -68,6 +68,21 @@ if errorlevel 1 (
   goto mediastore
 )
 
+rem A file with an unknown suffix arrives as application/octet-stream, which
+rem PDFr deliberately does not advertise as an "Open with" type. Send the
+rem VIEW intent to MainActivity explicitly and without a MIME hint, so the app
+rem can detect text from the bytes. This mirrors a provider that reports no
+rem useful type.
+if /i "%MIME%"=="application/octet-stream" (
+  echo [PDFr] Opening %BASE% without a MIME hint...
+  "%ADB%" shell am start -a android.intent.action.VIEW -n com.karako.pdfr/.MainActivity -d "content://com.karako.pdfr.fileprovider/shared_documents/%BASE%"
+  if errorlevel 1 (
+    echo [HINT] If PDFr shows "no access", open the folder icon and pick the file manually.
+    exit /b 1
+  )
+  exit /b 0
+)
+
 echo [PDFr] Opening %BASE% (%MIME%)...
 "%ADB%" shell am start -a android.intent.action.VIEW -d "content://com.karako.pdfr.fileprovider/shared_documents/%BASE%" -t "%MIME%"
 if errorlevel 1 (
@@ -111,9 +126,34 @@ if /i "%~x1"==".cbz" set "MIME=application/vnd.comicbook+zip"
 if /i "%~x1"==".txt" set "MIME=text/plain"
 if /i "%~x1"==".nfo" set "MIME=text/plain"
 if /i "%~x1"==".text" set "MIME=text/plain"
+if /i "%~x1"==".log" set "MIME=text/plain"
+if /i "%~x1"==".cfg" set "MIME=text/plain"
+if /i "%~x1"==".ini" set "MIME=text/plain"
+if /i "%~x1"==".conf" set "MIME=text/plain"
+if /i "%~x1"==".properties" set "MIME=text/plain"
+if /i "%~x1"==".md" set "MIME=text/markdown"
+if /i "%~x1"==".markdown" set "MIME=text/markdown"
 if /i "%~x1"==".html" set "MIME=text/html"
 if /i "%~x1"==".htm" set "MIME=text/html"
 if /i "%~x1"==".xhtml" set "MIME=application/xhtml+xml"
+if /i "%~x1"==".yaml" set "MIME=application/x-yaml"
+if /i "%~x1"==".yml" set "MIME=application/x-yaml"
+if /i "%~x1"==".toml" set "MIME=application/toml"
+if /i "%~x1"==".json" set "MIME=application/json"
+if /i "%~x1"==".jsonl" set "MIME=application/x-ndjson"
+if /i "%~x1"==".ndjson" set "MIME=application/x-ndjson"
+if /i "%~x1"==".xml" set "MIME=application/xml"
+if /i "%~x1"==".csv" set "MIME=text/csv"
+if /i "%~x1"==".tsv" set "MIME=text/tab-separated-values"
+if /i "%~x1"==".js" set "MIME=application/javascript"
+if /i "%~x1"==".mjs" set "MIME=application/javascript"
+if /i "%~x1"==".cjs" set "MIME=application/javascript"
+if /i "%~x1"==".sh" set "MIME=application/x-sh"
+if /i "%~x1"==".bash" set "MIME=application/x-sh"
+if /i "%~x1"==".c" set "MIME=text/x-c"
+if /i "%~x1"==".h" set "MIME=text/x-c"
+if /i "%~x1"==".cpp" set "MIME=text/x-c++"
+if /i "%~x1"==".hpp" set "MIME=text/x-c++"
 if /i "%~x1"==".fb2" set "MIME=application/x-fictionbook+xml"
 if /i "%~x1"==".svg" set "MIME=image/svg+xml"
 exit /b 0

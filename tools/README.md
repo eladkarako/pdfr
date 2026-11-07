@@ -90,18 +90,22 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
 12. **Markdown / Office** - open `guide.md` and `sample.docx`; headings, lists
     and paragraphs should reflow. `guide.markdown` also works through the
     temporary `.md` alias.
-13. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
+13. **Source and config text** - open `config.yaml` and `main.c`; both should
+    reflow as monospace plain text. Copy `notes.txt` to `notes.xyz` and open it:
+    the unknown suffix must fall back to text detection. JSON, CSV, TSV, shell
+    scripts and other source files use the same path.
+14. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
     document that stays sharp when zoomed.
-14. **Save as** - with any document open, tap the middle **Save** button, pick a
+15. **Save as** - with any document open, tap the middle **Save** button, pick a
     destination, and confirm the copy has the same name, extension and content.
     Re-download the saved file and check that its modified time matches the
     source where the provider supports timestamps.
-15. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
+16. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
     HTML should all render and reflow.
-16. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
+17. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
     change to the last page as soon as that page occupies most of the screen,
     not after the previous page has completely left.
-17. **Rotation / process death** - rotate while reading, then enable
+18. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
 
@@ -177,6 +181,8 @@ uses only the Python standard library.
 | `sample.cbz` | Three solid-colour PNG pages. |
 | `guide.md` | Markdown headings, lists, a link, a code block, a quote and a long paragraph. |
 | `guide.markdown` | Same content with a suffix MuPDF does not know, to exercise the temporary `.md` alias. |
+| `config.yaml` | A small YAML file, opened through the temporary `.txt` text path. |
+| `main.c` | A small C source file, also opened as plain text. |
 | `sample.docx` | A minimal WordprocessingML document with three paragraphs. |
 | `image.png` | A 480x320 solid-colour image, one page when opened. |
 | `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |

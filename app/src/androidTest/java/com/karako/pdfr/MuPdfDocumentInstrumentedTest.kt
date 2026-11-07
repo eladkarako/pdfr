@@ -406,6 +406,64 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun sourceAndConfigFilesOpenAsPlainText() {
+        val samples = mapOf(
+            "cfg" to "key=value\nsecond=line",
+            "ini" to "[section]\nkey=value",
+            "yaml" to "key: value\nlist:\n  - one",
+            "yml" to "key: value",
+            "json" to "{\"key\":\"value\"}",
+            "csv" to "name,value\nalpha,1",
+            "tsv" to "name\tvalue\nalpha\t1",
+            "c" to "int main(void) { return 0; }",
+            "cpp" to "#include <iostream>\nint main() { return 0; }",
+            "js" to "console.log('hello');",
+            "sh" to "#!/bin/sh\necho hello",
+            "xml" to "<root><item>value</item></root>",
+            // No MuPDF handler and no known extension: the fallback has to
+            // detect the bytes as text and retry through a .txt copy.
+            "xyz" to "unknown suffix but still plain text",
+        )
+
+        for ((extension, body) in samples) {
+            val file = File(dir, "sample.$extension").apply { writeText(body) }
+            val doc = open(file)
+            try {
+                assertTrue(".$extension should reflow", doc.isReflowable)
+                assertTrue(".$extension should be plain text", doc.isPlainText)
+                assertTrue(".$extension layout failed", onMuPdf { doc.layout(400f, 800f, 11f) })
+                val text = textOf(doc, 0)
+                assertTrue(".$extension produced no text: '$text'", text.isNotBlank())
+            } finally {
+                close(doc)
+            }
+        }
+    }
+
+    @Test
+    fun leadingHashCommentsStayLiteralText() {
+        // MuPDF's content recogniser treats text whose first non-space
+        // character is '#' as Markdown. Source and configuration files often
+        // start with a '#' comment, so the reader must not hand them to the
+        // Markdown handler.
+        for (name in listOf("config.yaml", "script.sh", "notes.txt")) {
+            val file = File(dir, name).apply {
+                writeText("# comment stays visible\nkey: value\n  indented: true\n")
+            }
+            val doc = open(file)
+            try {
+                assertTrue("$name should be plain text", doc.isPlainText)
+                assertTrue("$name layout failed", onMuPdf { doc.layout(400f, 800f, 11f) })
+                val text = textOf(doc, 0)
+                assertTrue("$name lost the comment marker: '$text'", text.contains("# comment"))
+                assertTrue("$name lost indentation: '$text'", text.contains("  indented"))
+            } finally {
+                close(doc)
+            }
+        }
+    }
+
+    @Test
     fun markdownOpensAndReflowsIncludingLongSuffixes() {
         // .markdown/.mdown/.mkd/.mkdn are not MuPDF extensions, so the reader
         // copies them to a temporary .md before opening.

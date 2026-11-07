@@ -449,7 +449,7 @@ class ReaderViewModel(
 
         try {
             val (opened, info) = withContext(MuPdf.dispatcher) {
-                val doc = MuPdfDocument.open(file, displayName, password)
+                val doc = MuPdfDocument.open(file, displayName, password, mimeType)
                 try {
                     var appliedLayout: LayoutSpec? = null
                     if (doc.isReflowable) {

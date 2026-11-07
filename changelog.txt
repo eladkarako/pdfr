@@ -1,4 +1,7 @@
 26.11.7
++ treats source and configuration files as plain text: JSON, YAML, TOML, CSV/TSV, C/C++, Java, JS/TS, shell, XML and similar suffixes are opened through a temporary `.txt` copy; an unknown suffix is detected from its bytes when MuPDF cannot open it.
++ keeps that text literal: a leading `#` comment is no longer mistaken for Markdown, so comment markers, indentation and line layout survive.
++ advertises `text/*` plus the common application text MIME types, so those files work in other apps' "Open with" and share menus without a separate PDFr entry per extension.
 + opens the remaining formats MuPDF 1.28.5 supports: Markdown, MOBI/PRC/PDB, CBT, HTML/XHTML, SVG, common images, PNM/PAM, and OOXML Office (DOCX/XLSX/PPTX/HWPX).
 + PDFr now advertises those types as an "Open with" and share target; legacy binary .doc/.xls/.ppt are intentionally not advertised because MuPDF cannot read them.
 + plain-text aliases now cover .log, .nfo and the longer Markdown suffixes through a temporary canonical-suffix copy.

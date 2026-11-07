@@ -1,6 +1,7 @@
 package com.karako.pdfr.data
 
 import java.io.File
+import java.io.IOException
 
 /**
  * The document types PDFr advertises. MuPDF can sniff the real format from
@@ -11,6 +12,10 @@ import java.io.File
  * HTML/XHTML, plain text, SVG, common image formats, and the OOXML Office
  * formats (DOCX/XLSX/PPTX) plus HWPX. The old binary Office formats
  * (.doc/.xls/.ppt) have no MuPDF handler and are intentionally not mapped.
+ *
+ * Text-based source and configuration files (JSON, YAML, CSV, C/C++, JS,
+ * shell scripts and so on) are read as plain text. MuPDF has no handler for
+ * their suffixes, so [muPdfAliasForName] gives them a temporary `.txt` copy.
  */
 object DocumentFormats {
 
@@ -26,6 +31,15 @@ object DocumentFormats {
     const val HTML = "text/html"
     const val XHTML = "application/xhtml+xml"
     const val SVG = "image/svg+xml"
+    const val TEXT = "text/plain"
+    const val CSV = "text/csv"
+    const val TSV = "text/tab-separated-values"
+    const val JSON = "application/json"
+    const val XML = "application/xml"
+    const val YAML = "application/x-yaml"
+    const val TOML = "application/toml"
+    const val JAVASCRIPT = "application/javascript"
+    const val SHELL = "application/x-sh"
 
     const val DOCX =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -36,9 +50,11 @@ object DocumentFormats {
     const val HWPX = "application/haansofthwpx"
 
     /**
-     * MIME types offered to the system document picker. The image wildcard covers all
-     * raster formats MuPDF understands; `application/octet-stream` lets the
-     * user reach files whose provider does not report a useful MIME type.
+     * MIME types offered to the system document picker. `text/plain` and the
+     * text wildcard cover source/configuration files; the image wildcard
+     * covers all raster formats MuPDF understands. `application/octet-stream`
+     * lets the user reach files whose provider does not report a useful MIME
+     * type; PDFr then sniffs whether the bytes are text.
      */
     val PICKER_MIME_TYPES = arrayOf(
         PDF,
@@ -52,10 +68,32 @@ object DocumentFormats {
         MOBI,
         MARKDOWN,
         "text/x-markdown",
-        "text/plain",
+        TEXT,
+        "text/*",
         HTML,
         XHTML,
         SVG,
+        CSV,
+        TSV,
+        JSON,
+        "application/x-ndjson",
+        "application/jsonl",
+        XML,
+        YAML,
+        "application/yaml",
+        TOML,
+        JAVASCRIPT,
+        "application/x-javascript",
+        "application/ecmascript",
+        SHELL,
+        "application/x-shellscript",
+        "application/sql",
+        "application/x-httpd-php",
+        "application/x-perl",
+        "application/x-python",
+        "application/x-ruby",
+        "application/x-tex",
+        "application/x-properties",
         "image/*",
         DOCX,
         XLSX,
@@ -64,8 +102,27 @@ object DocumentFormats {
         "application/octet-stream",
     )
 
-    /** Extensions MuPDF renders as reflowable plain text. */
-    private val plainTextExtensions = setOf("txt", "nfo", "text", "log")
+    /**
+     * Extensions MuPDF should render as reflowable plain text. This is broader
+     * than MuPDF's own suffix list: code and configuration files are text even
+     * though MuPDF has no dedicated handler for them.
+     */
+    private val plainTextExtensions = setOf(
+        // Plain text, notes and logs.
+        "txt", "text", "log", "nfo",
+        // Configuration and data files.
+        "cfg", "ini", "conf", "config", "properties", "env",
+        "yaml", "yml", "toml", "json", "jsonl", "ndjson", "csv", "tsv",
+        "xml", "plist", "reg", "inf", "diff", "patch",
+        // Source code.
+        "c", "h", "cc", "cpp", "cxx", "hh", "hpp", "hxx",
+        "cs", "java", "kt", "kts", "groovy", "scala", "swift", "m", "mm",
+        "js", "mjs", "cjs", "jsx", "ts", "tsx", "py", "pyw", "rb", "php",
+        "go", "rs", "dart", "lua", "pl", "pm", "r", "jl", "sql",
+        "sh", "bash", "zsh", "fish", "ksh", "csh", "bat", "cmd", "ps1", "psm1",
+        "css", "scss", "sass", "less", "vue", "svelte",
+        "tex", "bib", "asm", "s", "v", "vhd", "vhdl",
+    )
 
     /**
      * Extensions MuPDF recognises only under a different suffix. The reader
@@ -77,6 +134,35 @@ object DocumentFormats {
         "mdown" to "md",
         "mkd" to "md",
         "mkdn" to "md",
+    )
+
+    /** MIME types that describe text even though they are not under text wildcard. */
+    private val applicationTextMimeTypes = setOf(
+        JSON,
+        "application/x-json",
+        XML,
+        YAML,
+        "application/yaml",
+        TOML,
+        JAVASCRIPT,
+        "application/x-javascript",
+        "application/ecmascript",
+        SHELL,
+        "application/x-shellscript",
+        "application/x-csh",
+        "application/sql",
+        "application/x-ndjson",
+        "application/jsonl",
+        "application/ndjson",
+        "application/x-httpd-php",
+        "application/x-php",
+        "application/x-perl",
+        "application/x-python",
+        "application/x-ruby",
+        "application/x-tex",
+        "application/x-properties",
+        "application/csv",
+        "application/tsv",
     )
 
     private val byExtension = mapOf(
@@ -99,11 +185,32 @@ object DocumentFormats {
         "htm" to HTML,
         "html" to HTML,
         "xhtml" to XHTML,
-        "txt" to "text/plain",
-        "nfo" to "text/plain",
-        "text" to "text/plain",
-        "log" to "text/plain",
         "svg" to SVG,
+
+        // Text and data. Other source/configuration suffixes fall back to
+        // text/plain through plainTextExtensions.
+        "txt" to TEXT,
+        "nfo" to TEXT,
+        "text" to TEXT,
+        "log" to TEXT,
+        "csv" to CSV,
+        "tsv" to TSV,
+        "json" to JSON,
+        "jsonl" to "application/x-ndjson",
+        "ndjson" to "application/x-ndjson",
+        "xml" to XML,
+        "yaml" to YAML,
+        "yml" to YAML,
+        "toml" to TOML,
+        "js" to JAVASCRIPT,
+        "mjs" to JAVASCRIPT,
+        "cjs" to JAVASCRIPT,
+        "sh" to SHELL,
+        "bash" to SHELL,
+        "zsh" to SHELL,
+        "fish" to SHELL,
+        "ksh" to SHELL,
+        "csh" to SHELL,
 
         // OOXML Office documents and HWPX.
         "docx" to DOCX,
@@ -141,26 +248,103 @@ object DocumentFormats {
     fun mimeTypeForName(name: String): String? {
         val extension = name.substringAfterLast('.', "").lowercase()
         return byExtension[extension]
+            ?: TEXT.takeIf { extension in plainTextExtensions }
     }
 
-    /** True for `.txt`, `.nfo`, `.text` and `.log` documents. */
+    /** True for every suffix PDFr treats as reflowable plain text. */
     fun isPlainTextName(name: String): Boolean {
         val extension = name.substringAfterLast('.', "").lowercase()
         return extension in plainTextExtensions
     }
 
+    /** True for the text wildcard and the application MIME types that carry text. */
+    fun isTextMimeType(mimeType: String?): Boolean {
+        val mime = baseMimeType(mimeType) ?: return false
+        return mime.startsWith("text/") || mime in applicationTextMimeTypes
+    }
+
     /**
      * Returns the canonical suffix MuPDF understands for [name], or null when
-     * the original extension already works. `.nfo` becomes `.txt`; Markdown
-     * aliases become `.md`.
+     * the original extension already works. Every plain-text suffix becomes
+     * `.txt`, including MuPDF's own `txt`/`text`/`log`: [MuPdfDocument] then
+     * adds a byte-order mark that stops MuPDF's content recogniser from
+     * mistaking a leading `#` for Markdown. Markdown aliases become `.md`.
      */
     fun muPdfAliasForName(name: String): String? {
         val extension = name.substringAfterLast('.', "").lowercase()
-        return mupdfAliases[extension]
+        mupdfAliases[extension]?.let { return it }
+        if (extension in plainTextExtensions) {
+            return "txt"
+        }
+        return null
+    }
+
+    /**
+     * Uses a provider's MIME type as a hint when the file name has no useful
+     * extension. HTML/XHTML/Markdown keep their real handlers; other text
+     * formats are opened as plain text.
+     */
+    fun muPdfSuffixForMime(mimeType: String?): String? {
+        val mime = baseMimeType(mimeType) ?: return null
+        return when {
+            mime == HTML -> "html"
+            mime == XHTML -> "xhtml"
+            mime == MARKDOWN || mime == "text/x-markdown" -> "md"
+            isTextMimeType(mime) -> "txt"
+            else -> null
+        }
     }
 
     fun mimeTypeForFile(file: File): String =
         mimeTypeForName(file.name) ?: "application/octet-stream"
+
+    /**
+     * Best-effort detection for files with an unknown suffix. MuPDF's `open`
+     * has already failed by the time this is called, so binary magic numbers
+     * are rejected and a text file is retried through a `.txt` copy.
+     */
+    fun looksLikeText(file: File, maxBytes: Int = 64 * 1024): Boolean {
+        val sample = ByteArray(maxBytes.coerceAtLeast(1))
+        val read = try {
+            file.inputStream().use { stream ->
+                var total = 0
+                while (total < sample.size) {
+                    val count = stream.read(sample, total, sample.size - total)
+                    if (count < 0) break
+                    total += count
+                }
+                total
+            }
+        } catch (_: IOException) {
+            return false
+        }
+        if (read <= 0) return true
+        if (hasBinarySignature(sample, read)) return false
+
+        // MuPDF's text handler understands UTF-8 and UTF-16 BOMs.
+        if (read >= 3 &&
+            sample[0] == 0xEF.toByte() &&
+            sample[1] == 0xBB.toByte() &&
+            sample[2] == 0xBF.toByte()
+        ) {
+            return true
+        }
+        if (read >= 2 &&
+            ((sample[0] == 0xFF.toByte() && sample[1] == 0xFE.toByte()) ||
+                (sample[0] == 0xFE.toByte() && sample[1] == 0xFF.toByte()))
+        ) {
+            return true
+        }
+
+        var controls = 0
+        for (index in 0 until read) {
+            val byte = sample[index].toInt() and 0xFF
+            if (byte == 0) return false
+            val allowedControl = byte == 0x09 || byte == 0x0A || byte == 0x0D || byte == 0x0C
+            if (byte < 0x20 && !allowedControl) controls++
+        }
+        return controls * 100 <= read
+    }
 
     /**
      * Returns the extension (without the dot) when it is a short, sane
@@ -171,5 +355,26 @@ object DocumentFormats {
         if (extension.length !in 1..8) return null
         if (!extension.all { it.isLetterOrDigit() }) return null
         return extension
+    }
+
+    private fun baseMimeType(mimeType: String?): String? = mimeType
+        ?.substringBefore(';')
+        ?.trim()
+        ?.lowercase()
+        ?.takeIf { it.isNotEmpty() }
+
+    private fun hasBinarySignature(bytes: ByteArray, length: Int): Boolean {
+        fun startsWith(vararg values: Int): Boolean {
+            if (length < values.size) return false
+            return values.indices.all { (bytes[it].toInt() and 0xFF) == values[it] }
+        }
+        return startsWith(0x25, 0x50, 0x44, 0x46) || // %PDF
+            startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, OOXML, EPUB, CBZ
+            startsWith(0x89, 0x50, 0x4E, 0x47) || // PNG
+            startsWith(0xFF, 0xD8, 0xFF) || // JPEG
+            startsWith(0x47, 0x49, 0x46, 0x38) || // GIF8
+            startsWith(0x7F, 0x45, 0x4C, 0x46) || // ELF
+            startsWith(0x1F, 0x8B) || // gzip
+            startsWith(0x42, 0x4D) // BMP
     }
 }

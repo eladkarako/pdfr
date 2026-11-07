@@ -483,6 +483,53 @@ class MuPdfDocument private constructor(
             }
         }
 
+        /** Copies [file] next to itself with the canonical [suffix]. */
+        private fun copyWithSuffix(file: File, suffix: String): File {
+            val temp = File(file.parentFile, ".${java.util.UUID.randomUUID()}.$suffix")
+            return try {
+                if (suffix == "txt") {
+                    copyAsPlainText(file, temp)
+                } else {
+                    file.copyTo(temp, overwrite = true)
+                }
+                temp
+            } catch (t: Throwable) {
+                runCatching { temp.delete() }
+                throw t
+            }
+        }
+
+        /**
+         * Writes a `.txt` copy that MuPDF's text handler will claim.
+         *
+         * MuPDF 1.28.5 recognises Markdown from the content, not only from the
+         * suffix: its deliberately rough detector treats any text whose first
+         * non-space character is `#` as Markdown. A source or configuration
+         * file starting with a `#` comment would therefore lose its comment
+         * markers, indentation and line layout. Prefixing a UTF-8 byte-order
+         * mark makes that detector reject the guess, while the text handler
+         * strips the mark before it lays the file out. Files that already have
+         * a byte-order mark are copied unchanged.
+         */
+        private fun copyAsPlainText(file: File, target: File) {
+            val head = ByteArray(3)
+            val read = file.inputStream().use { it.read(head) }
+            fun byteAt(index: Int): Int = head[index].toInt() and 0xFF
+
+            val hasBom = (read >= 3 &&
+                byteAt(0) == 0xEF && byteAt(1) == 0xBB && byteAt(2) == 0xBF) ||
+                (read >= 2 &&
+                    ((byteAt(0) == 0xFF && byteAt(1) == 0xFE) ||
+                        (byteAt(0) == 0xFE && byteAt(1) == 0xFF)))
+
+            target.outputStream().use { output ->
+                if (read > 0 && !hasBom) {
+                    output.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
+                }
+                file.inputStream().use { input -> input.copyTo(output) }
+            }
+        }
+
         /**
          * Opens [file] with MuPDF. If the document needs a password, [password]
          * must be the user's password; otherwise the appropriate typed
@@ -492,35 +539,52 @@ class MuPdfDocument private constructor(
             file: File,
             displayName: String,
             password: String?,
+            mimeType: String? = null,
         ): MuPdfDocument {
             // Touching Context first makes the native library load once, before
             // any document object is created.
             Context.init()
 
-            // MuPDF picks its handler from the file extension, and it does not
-            // know `.nfo` or the longer Markdown suffixes. Its magic-string
-            // overload is unusable in MuPDF 1.28.5 (the native method reads the
-            // magic as an Archive and aborts), so give it a temporary copy
-            // with the canonical suffix.
-            val alias = DocumentFormats.muPdfAliasForName(file.name)
-            val temporaryFile = if (alias != null) {
-                val temp = File(file.parentFile, ".${java.util.UUID.randomUUID()}.$alias")
-                try {
-                    file.copyTo(temp, overwrite = true)
-                    temp
-                } catch (t: Throwable) {
-                    runCatching { temp.delete() }
-                    throw t
-                }
+            // MuPDF picks its handler from the file extension. It does not
+            // know `.nfo`, the longer Markdown suffixes, or source and
+            // configuration formats such as `.json`, `.yaml` or `.cpp`. Its
+            // magic-string overload is unusable in MuPDF 1.28.5 (the native
+            // method reads the magic as an Archive and aborts), so give those
+            // files a temporary copy with the canonical suffix. When the name
+            // has no useful extension, a provider MIME type can supply one.
+            val knownMime = DocumentFormats.mimeTypeForName(file.name)
+            val mimeSuffix = if (knownMime == null) {
+                DocumentFormats.muPdfSuffixForMime(mimeType)
             } else {
                 null
             }
+            val alias = DocumentFormats.muPdfAliasForName(file.name) ?: mimeSuffix
+            var temporaryFile = alias?.let { copyWithSuffix(file, it) }
 
             val document = try {
                 Document.openDocument((temporaryFile ?: file).absolutePath)
-            } catch (t: Throwable) {
-                runCatching { temporaryFile?.delete() }
-                throw t
+            } catch (first: Throwable) {
+                // A truly unknown suffix may still be a text file. Retry it as
+                // `.txt` only after MuPDF failed, and only when the bytes look
+                // textual (a corrupt PDF or an image must not become raw text).
+                if (temporaryFile == null &&
+                    knownMime == null &&
+                    DocumentFormats.looksLikeText(file)
+                ) {
+                    val temp = copyWithSuffix(file, "txt")
+                    try {
+                        val retried = Document.openDocument(temp.absolutePath)
+                        temporaryFile = temp
+                        retried
+                    } catch (second: Throwable) {
+                        runCatching { temp.delete() }
+                        first.addSuppressed(second)
+                        throw first
+                    }
+                } else {
+                    runCatching { temporaryFile?.delete() }
+                    throw first
+                }
             }
 
             var needsPassword = false

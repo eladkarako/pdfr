@@ -25,11 +25,19 @@
 | 🖼️ Images and PNM/PAM | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.jp2`, `.jpx`, `.jxr`, `.wdp`, `.hdp`, `.psd`, `.pnm`, `.pbm`, `.pgm`, `.ppm`, `.pam`, `.pfm`, `.jb2` | Single-page raster or vector images. PNM/PAM is a family of simple, uncompressed image formats. | Each image opens as a one-page document. SVG is handled as a vector page and stays sharp when zoomed. |
 | 🌐 HTML, XHTML and SVG | `.html`, `.htm`, `.xhtml`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
 | 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
+| 🧾 Source, config and data | `.cfg`, `.ini`, `.conf`, `.properties`, `.yaml`, `.yml`, `.toml`, `.json`, `.jsonl`, `.csv`, `.tsv`, `.xml`, `.c`, `.h`, `.cpp`, `.hpp`, `.cs`, `.java`, `.kt`, `.js`, `.ts`, `.py`, `.rb`, `.go`, `.rs`, `.php`, `.sh`, `.bat`, `.ps1`, `.sql`, `.css` and similar | Text files written for a program rather than for a reader: configuration, structured data and source code. | Shown as reflowable plain text with the monospace toggle. MuPDF has no handler for these suffixes, so PDFr opens a temporary `.txt` copy; the copy is kept literal even when the file starts with a `#` comment, which MuPDF would otherwise mistake for Markdown. A file with an entirely unknown suffix is also detected from its bytes and opened as text when MuPDF cannot handle it. |
 
 💡 note: The same continuous-scroll reader is used for every format. Fixed-layout
 documents are rasterised page by page; reflowable documents (EPUB, MOBI, FB2,
 Markdown, Office, HTML and text) are laid out to the current screen width and
 zoom level.
+
+📄 PDFr advertises the `text/*` family plus the common application text types
+(JSON, XML, YAML, TOML, JavaScript, shell, SQL and others) for **Open with** and
+**Share**, so configuration and source files do not need a PDFr-specific entry
+for each extension. The in-app picker also offers `text/*` and
+`application/octet-stream`; text detection fills in providers that report no
+useful MIME type.
 
 <hr/>
 

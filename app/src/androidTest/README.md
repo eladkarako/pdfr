@@ -45,6 +45,9 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 - Markdown: reflow and text extraction for `.md`, `.markdown`, `.mdown`, `.mkd`
   and `.mkdn` (the longer suffixes go through a temporary `.md` copy).
 - DOCX: a generated OOXML package opens as reflowable HTML.
+- Source/config text: `.cfg`, `.ini`, `.yaml`, `.yml`, `.json`, `.csv`, `.tsv`,
+  `.c`, `.cpp`, `.js`, `.sh` and `.xml` open as plain text, and an unknown
+  `.xyz` suffix falls back to text detection.
 - PNG: opens as a one-page fixed-layout document and renders.
 - PDFs reject the text-only monospace override.
 
