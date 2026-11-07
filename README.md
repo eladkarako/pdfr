@@ -12,13 +12,15 @@
 
 ## 📚 Formats supported
 
-- 📕 PDF
-- 📘 EPUB
-- 📄 XPS / OXPS
-- 🦸 CBZ (comics)
-- 📖 FB2
-- 🌐 HTML and SVG
-- 📝 plain text (`.txt`, `.nfo`, `.text`)
+| Format | Extension(s) | Definition | Key traits |
+|--------|--------------|------------|------------|
+| 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for printing and scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
+| 📘 EPUB | `.epub` | An open, reflowable ebook standard maintained by the IDPF. It is a ZIP container holding HTML, CSS, images, and metadata. | The most widely supported ebook format, and the one most publishers use. Text adapts to the screen, and readers can change fonts and sizes. |
+| 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a print and document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
+| 🦸 CBZ (comic book archive) | `.cbz` (also `.cbr` for RAR) | A comic archive: a ZIP file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
+| 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
+| 🌐 HTML and SVG | `.html`, `.htm`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
+| 📝 Plain text | `.txt`, `.text`, `.nfo` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
 
 💡 note: The same continuous-scroll reader is used for every format. Fixed-layout
 documents are rasterised page by page; reflowable documents (EPUB, FB2, text)
