@@ -7,7 +7,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karako.pdfr.ui.ReaderApp
@@ -30,13 +33,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             PDFrTheme {
-                val state by viewModel.state.collectAsStateWithLifecycle()
-                val selection by viewModel.selection.collectAsStateWithLifecycle()
-                ReaderApp(
-                    state = state,
-                    selection = selection,
-                    viewModel = viewModel,
-                )
+                // PDFr is intentionally left-to-right only. Keep the toolbar
+                // order stable even if the device locale is RTL.
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    val state by viewModel.state.collectAsStateWithLifecycle()
+                    val selection by viewModel.selection.collectAsStateWithLifecycle()
+                    ReaderApp(
+                        state = state,
+                        selection = selection,
+                        viewModel = viewModel,
+                    )
+                }
             }
         }
     }

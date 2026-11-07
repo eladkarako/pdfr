@@ -15,6 +15,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:layoutDirection="ltr"
         android:supportsRtl="false"
         android:theme="@style/Theme.PDFr">
 
