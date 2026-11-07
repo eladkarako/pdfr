@@ -12,10 +12,10 @@
   emulator's /dev/input/event2; use `adb shell getevent -lp` to find another.
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File scripts/gestures.ps1 pinch-out
+  powershell -ExecutionPolicy Bypass -File tools/gestures.ps1 pinch-out
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File scripts/gestures.ps1 double-tap
+  powershell -ExecutionPolicy Bypass -File tools/gestures.ps1 double-tap
 #>
 [CmdletBinding()]
 param(

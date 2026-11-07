@@ -1,6 +1,7 @@
 ::@echo off
 chcp 65001 1>nul 2>nul
-pushd "%~dp0"
+pushd "%~dp0.."
+if not exist "build\logs" mkdir "build\logs"
 
 set "LANG=en_US.UTF-8"
 set "LANGUAGE=en_US"
@@ -21,8 +22,8 @@ set "TZ=UTC"
 
 set "NO_COLOR=1"
 
-echo.>"__keystore_generate.log"
-call "node.exe" "__keystore_generate.js" 2>&1 | "tee.exe" --append "__keystore_generate.log"
+echo.>"build\logs\__keystore_generate.log"
+call "node.exe" "tools\__keystore_generate.js" 2>&1 | "tee.exe" --append "build\logs\__keystore_generate.log"
 
 pause
 popd

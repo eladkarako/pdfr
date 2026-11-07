@@ -11,7 +11,7 @@ if not defined ANDROID_SDK_ROOT if exist "%LOCALAPPDATA%\Android\Sdk" set "ANDRO
 
 if not defined ADB set "ADB=%ANDROID_SDK_ROOT%\platform-tools\adb.exe"
 if not defined EMULATOR set "EMULATOR=%ANDROID_SDK_ROOT%\emulator\emulator.exe"
-if not defined PDFR_AVD set "PDFR_AVD=pdfr_full"
+if not defined PDFR_AVD set "PDFR_AVD=qpdf_full"
 if not defined PDFR_FIXTURES set "PDFR_FIXTURES=%PDFR_ROOT%\build\test-fixtures"
 
 exit /b 0

@@ -1,6 +1,7 @@
 @echo off
 chcp 65001 1>nul 2>nul
-pushd "%~dp0"
+pushd "%~dp0.."
+if not exist "build\logs" mkdir "build\logs"
 
 set "LANG=en_US.UTF-8"
 set "LANGUAGE=en_US"
@@ -28,21 +29,21 @@ timeout /t 2
 set "NO_COLOR=1"
 
 ::---------------------- cleanup log file.
-echo.>"__clean_hard.log"
+echo.>"build\logs\__clean_hard.log"
 
 title .gradle folder (local)
-pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
-echo.>>"__clean_hard.log"
-echo.>>"__clean_hard.log"
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
 
 title .gradle folder (user profile)
-pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "__clean_hard.log"
-echo.>>"__clean_hard.log"
-echo.>>"__clean_hard.log"
+pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force $env:USERPROFILE\.gradle -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
+echo.>>"build\logs\__clean_hard.log"
 
 title gradle clean
-call ".\gradlew.bat" clean --console=plain 2>&1 | "tee.exe" --append "__clean_hard.log"
-::call ".\gradlew.bat" clean --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "__clean_hard.log"
+call ".\gradlew.bat" clean --console=plain 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
+::call ".\gradlew.bat" clean --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
 
 timeout /t 2
 call ".\gradlew.bat" --stop

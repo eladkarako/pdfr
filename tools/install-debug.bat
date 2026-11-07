@@ -20,7 +20,7 @@ if not defined ABI (
 )
 if not defined ABI set "ABI=x86_64"
 
-set "APK=%PDFR_ROOT%\app\build\outputs\apk\debug\app-%ABI%-debug.apk"
+set "APK=%PDFR_ROOT%\build\app\outputs\apk\debug\app-%ABI%-debug.apk"
 if not exist "%APK%" (
   echo [ERROR] APK not found: "%APK%"
   echo         Build once, or pass a supported ABI: armeabi-v7a, arm64-v8a, x86, x86_64.

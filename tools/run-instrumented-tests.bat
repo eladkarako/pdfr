@@ -19,17 +19,17 @@ set /p ABI=<"%ABI_FILE%"
 del "%ABI_FILE%" >nul 2>&1
 if not defined ABI set "ABI=x86_64"
 
-set "APP_APK=%PDFR_ROOT%\app\build\outputs\apk\debug\app-%ABI%-debug.apk"
+set "APP_APK=%PDFR_ROOT%\build\app\outputs\apk\debug\app-%ABI%-debug.apk"
 if not exist "%APP_APK%" (
   echo [ERROR] App APK not found: "%APP_APK%"
   exit /b 1
 )
 
 set "TEST_APK="
-for %%F in ("%PDFR_ROOT%\app\build\outputs\apk\androidTest\debug\*%ABI%*androidTest.apk") do set "TEST_APK=%%~fF"
-if not defined TEST_APK for %%F in ("%PDFR_ROOT%\app\build\outputs\apk\androidTest\debug\*androidTest.apk") do set "TEST_APK=%%~fF"
+for %%F in ("%PDFR_ROOT%\build\app\outputs\apk\androidTest\debug\*%ABI%*androidTest.apk") do set "TEST_APK=%%~fF"
+if not defined TEST_APK for %%F in ("%PDFR_ROOT%\build\app\outputs\apk\androidTest\debug\*androidTest.apk") do set "TEST_APK=%%~fF"
 if not defined TEST_APK (
-  echo [ERROR] No instrumented test APK found under app\build\outputs\apk\androidTest\debug.
+  echo [ERROR] No instrumented test APK found under build\app\outputs\apk\androidTest\debug.
   exit /b 1
 )
 

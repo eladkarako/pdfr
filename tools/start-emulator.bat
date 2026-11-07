@@ -18,7 +18,7 @@ if errorlevel 1 (
   echo         Available AVDs:
   type "%AVD_LIST%"
   echo.
-  echo         Set PDFR_AVD to one of them, or create an AVD named pdfr_full.
+  echo         Set PDFR_AVD to one of them, or run create-test-avd.bat.
   del "%AVD_LIST%" >nul 2>&1
   exit /b 1
 )

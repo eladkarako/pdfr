@@ -1,6 +1,7 @@
 @echo off
 chcp 65001 1>nul 2>nul
-pushd "%~dp0"
+pushd "%~dp0.."
+if not exist "build\logs" mkdir "build\logs"
 
 set "LANG=en_US.UTF-8"
 set "LANGUAGE=en_US"
@@ -19,34 +20,24 @@ set "LC_TELEPHONE=en_US.UTF-8"
 set "LC_TIME=en_US.UTF-8"
 set "TZ=UTC"
 
+call ".\gradlew.bat" --stop
+timeout /t 5
 call "taskkill.exe" /F /IM "java.exe"  /T
 call "taskkill.exe" /F /IM "javaw.exe" /T
 timeout /t 2
-call "taskkill.exe" /F /IM "java.exe"  /T
-call "taskkill.exe" /F /IM "javaw.exe" /T
-timeout /t 2
-
-echo.>"__verify.log"
 
 set "NO_COLOR=1"
+::---------------------- build log file.
+echo.>"build\logs\__build.log"
+title gradle clean assembleRelease
+call ".\gradlew.bat" clean assembleRelease --console=plain 2>&1 | "tee.exe" --append "build\logs\__build.log"
+::call ".\gradlew.bat" clean assembleRelease --info --stacktrace --console=plain 2>&1 | "tee.exe" --append "build\logs\__build.log"
 
-set "TARGET="
-if ["%~1"] neq [""] ( 
-  set "TARGET=%~1"
-) else ( 
-  set "TARGET=app\build\outputs\apk\release\app-arm64-v8a-release.apk"
-)
-
-title verify signature (jarsigner)
-call "jarsigner.exe" -verify "-verbose:all" -certs "%TARGET%" 2>&1 | "tee.exe" --append "__verify_apk.log"
-
-echo.>>"__verify_apk.log"
-echo.>>"__verify_apk.log"
-
-title verify signature (apksigner)
-call "%LocalAppData%\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs --verbose "%TARGET%" 2>&1 | "tee.exe" --append "__verify_apk.log"
-
+timeout /t 2
+call ".\gradlew.bat" --stop
 timeout /t 5
+call "taskkill.exe" /F /IM "java.exe"  /T
+call "taskkill.exe" /F /IM "javaw.exe" /T
 popd
 exit /b 0
 :: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview  - (adds to the PATH C:\Program Files\coreutils\bin) \tee.exe
