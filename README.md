@@ -1,60 +1,37 @@
 # PDFr
 
-document reader for android  
-powered by [MuPDF](https://mupdf.com/) and [qPDF](https://github.com/qpdf/qpdf)
+PDF reader for Android.
 
-## Privacy
+## 👀 Privacy
 
-- no network permission is declared or merged into the manifest.
+- no network permission.
 - no ads.
 - no analytics.
 - no data collection.
 - documents are copied into the app's private cache only while they are open.
 
-## Formats
+## Formats supported
 
 - PDF
 - EPUB
 - XPS / OXPS
 - CBZ (comics)
-- FB2, plain text (`.txt`, `.nfo`, `.text`), HTML and SVG (whatever MuPDF can
-  recognise)
+- FB2
+- HTML and SVG
+- plain text (`.txt`, `.nfo`, `.text`)
 
-The same continuous-scroll reader is used for every format. Fixed-layout
+note: The same continuous-scroll reader is used for every format. Fixed-layout
 documents are rasterised page by page; reflowable documents (EPUB, FB2, text)
 are laid out to the current screen width and zoom level.
 
-## Features
+<hr/>
 
-- **Open with / Share to PDFr**, or pick a file from the in-app button.
-- **Text selection and copying** - long-press a word, drag to extend the
-  selection, then use **Copy**, **Select all** or **Close** in the floating bar.
-- **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
-  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
-  larger text layout; fixed-layout pages are rasterised at the larger size and
-  panned horizontally.
-- **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
-  the order you want them. Pages you leave out are deleted; `e` is the last
-  page, spaces are ignored, and repeats are kept. PDFr writes a new,
-  unencrypted PDF into its cache and opens it in place of the current document.
-- **Rotate 180°** (PDF only): turns the listed pages upside down. The range
-  defaults to `1-e`, and only the pages you list are rotated.
-- **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
-  native library to write a genuinely linearized PDF, so the first page can be
-  shown before the rest of the file is read. The new copy replaces the current
-  document.
-- **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
-  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
-  stays a separate, clearly named action.
-- **Monospace** override for plain-text documents, from the overflow menu.
-- **Password-protected documents** are unlocked in memory by MuPDF. No
-  decrypted copy is written when merely reading; any rewrite saves its
-  replacement without encryption.
-- **Document info**: file name, size, type/format, page count, encryption, and
-  the usual title/author/subject/keywords/creator/producer/date metadata.
-- **Share** the open document through Android's share sheet / print spooler.
-- **Reading position** is preserved across rotation, reflow and process death.
+### engines: 
 
+- [MuPDF](https://mupdf.com/)
+- [qPDF](https://github.com/qpdf/qpdf)
+
+<hr/>
 
 ## How opening works
 
@@ -71,6 +48,8 @@ There is deliberately no undo stack and no original PDF kept around: use
 **Open another document** (or the system picker) to go back to the source file.
 Every rewrite saves without encryption, so a rewritten encrypted PDF opens
 without a password.
+
+<hr/>
 
 ## Architecture
 
@@ -112,7 +91,42 @@ Android ABI and exposed through a tiny JNI function
 checked into `app/src/main/jniLibs/`, so a normal Gradle build never needs the
 qpdf or libjpeg sources.
 
-## Build
+<hr/>
+
+## Features
+
+- **Open with / Share to PDFr**, or pick a file from the in-app button.
+- **Text selection and copying** - long-press a word, drag to extend the
+  selection, then use **Copy**, **Select all** or **Close** in the floating bar.
+- **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
+  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). Reflowable books get a
+  larger text layout; fixed-layout pages are rasterised at the larger size and
+  panned horizontally.
+- **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
+  the order you want them. Pages you leave out are deleted; `e` is the last
+  page, spaces are ignored, and repeats are kept. PDFr writes a new,
+  unencrypted PDF into its cache and opens it in place of the current document.
+- **Rotate 180°** (PDF only): turns the listed pages upside down. The range
+  defaults to `1-e`, and only the pages you list are rotated.
+- **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
+  native library to write a genuinely linearized PDF, so the first page can be
+  shown before the rest of the file is read. The new copy replaces the current
+  document.
+- **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
+  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
+  stays a separate, clearly named action.
+- **Monospace** override for plain-text documents, from the overflow menu.
+- **Password-protected documents** are unlocked in memory by MuPDF. No
+  decrypted copy is written when merely reading; any rewrite saves its
+  replacement without encryption.
+- **Document info**: file name, size, type/format, page count, encryption, and
+  the usual title/author/subject/keywords/creator/producer/date metadata.
+- **Share** the open document through Android's share sheet / print spooler.
+- **Reading position** is preserved across rotation, reflow and process death.
+
+<hr/>
+
+## 📦 Build
 
 - JDK 17
 - Android SDK 36
@@ -135,6 +149,8 @@ The build produces one APK per ABI plus a universal APK; use the matching
 split for smaller installs (for example `app-x86_64-debug.apk` on an x86_64
 emulator).
 
+<hr/>
+
 ### Rebuilding the qpdf bridge
 
 `build/qpdf/` holds the downloaded qpdf and libjpeg-turbo sources and the
@@ -142,6 +158,8 @@ per-ABI build trees. `tools/build-qpdf-android.ps1` configures and builds all
 four ABIs with the Android NDK, strips the resulting `libqpdfjni.so`, and copies
 it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp` or the
 qpdf version changes; a normal clone builds from the checked-in libraries.
+
+<hr/>
 
 ## Testing
 
@@ -200,15 +218,132 @@ Without signing material Gradle still builds, but the release APK is signed
 with the debug key. Back up the real keystore and its password: losing either
 means future versions can no longer update an installed app.
 
-## Native size
+<hr/>
 
+<details><summary><h2>Native size</h2></summary>
 MuPDF is a real document engine, so the native library is the largest part of
 the APK: roughly 11 MB for arm64-v8a, 8 MB for armeabi-v7a and 11 MB each for
 the x86 ABIs. The qpdf JNI bridge adds about 3.1 MB per ABI after stripping.
 The app ships ABI splits plus a universal APK, so users only need to install the
 APK for their device.
+</details>
 
-## License
+<hr/>
+
+<details><summary><h2>Checking That an App Has No Internet Access</h2></summary>
+
+this app is provided with this file `/app/src/main/res/xml/network_security_config.xml`  
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+```
+
+meaning you can wire-up a packet inspection application,  
+to make sure there are no requests generated from the app,  
+this includes opening up HTML files! (but I should test it).
+
+this most likely be moved to debug builds, but for now I'll keep in in the release too.
+
+<hr/>
+
+## What this guide is about
+
+This guide shows you how to check whether an Android app sends any data over the internet. It uses **Burp Suite**, a free tool that acts as a proxy. The proxy sits between your device and the internet, so any network request the app makes passes through it and shows up in Burp's logs. You can use this to confirm an app is offline, or to see exactly what it tries to send.
+
+Burp Suite can only see traffic that goes through the proxy. Some apps ignore the device's proxy settings, so a clean Burp log is good evidence but not proof on its own. The final section covers a firewall step that closes that gap.
+
+## What you need
+
+- A computer on the same Wi-Fi network as your Android device (or an Android emulator)
+- **Burp Suite Community Edition** (free), from the PortSwigger website
+- The Android app you want to test (an APK or installed app)
+- Java, if your version of Burp requires it
+
+## Step 1: Start Burp Suite
+
+1. Open Burp Suite and create a temporary project.
+2. Go to **Proxy > Proxy settings** (or **Proxy > Options**).
+3. Confirm there is a listener on **127.0.0.1:8080** and that it is running.
+4. Turn **Intercept** off so traffic is logged without pausing requests.
+
+## Step 2: Find your computer's IP address
+
+- **Windows:** run `ipconfig` in Command Prompt and note the IPv4 address under your Wi-Fi adapter.
+- **macOS:** open **System Settings > Wi-Fi > Details** and note the IP address.
+- **Linux:** run `ip addr` and note the address on your Wi-Fi interface.
+
+## Step 3: Point the Android device at Burp
+
+1. On the Android device, open **Settings > Network & internet > Internet** (the name varies by manufacturer).
+2. Long-press your Wi-Fi network and choose **Modify network**.
+3. Under **Proxy**, select **Manual**.
+4. Enter your computer's IP address as the proxy hostname and **8080** as the port.
+5. Save.
+
+If you use an emulator, set the proxy in the emulator's Wi-Fi settings to your computer's IP address and port 8080.
+
+## Step 4: Install the Burp certificate (for HTTPS)
+
+Without this step, Burp can see that HTTPS connections were attempted but cannot read their contents.
+
+1. On the Android device, open a browser and go to **http://burp** (this only works while the proxy is set).
+2. Download the **CA Certificate**.
+3. Go to **Settings > Security > Encryption & credentials > Install a certificate > CA certificate** and install the file.
+
+Apps built for Android 7.0 and later usually ignore user-installed certificates unless their network security config allows them. If an app refuses the Burp certificate, Burp will log a failed TLS handshake for that connection. That failure is still useful evidence of an attempted connection.
+
+## Step 5: Run the app and check the logs
+
+1. Open the app and use every feature you want to test, including login, settings, and any screens that load content.
+2. In Burp, check these tabs:
+   - **Proxy > HTTP history** lists every plain HTTP and decrypted HTTPS request.
+   - **Proxy > WebSockets history** lists any WebSocket traffic.
+   - **Dashboard > Event log** shows connection errors, including failed TLS handshakes.
+3. Record any hostnames or IP addresses the app contacts.
+
+**Interpreting the results:**
+
+- **No entries at all:** the app made no requests through the proxy. Continue to the firewall step to confirm.
+- **Entries present:** the app is connecting to the internet. Note the destinations and the data sent.
+- **Only failed TLS entries:** the app attempted HTTPS connections that were rejected, which still means it tried to connect.
+
+## Step 6: Confirm with a firewall (recommended)
+
+Some apps ignore the system proxy or use direct sockets, so they would not appear in Burp. To block them outright:
+
+1. Install a per-app firewall. On Android, **NetGuard** works without root and uses a local VPN to block internet access per app.
+2. Block the target app's internet access (Wi-Fi and mobile data).
+3. Use the app again and check whether it still loads content or reports errors.
+4. Watch the firewall's connection log, which records blocked attempts even when Burp shows nothing.
+
+If the app works fully offline, it does not need the internet. If it fails to load anything or shows errors, it depends on the network.
+
+## Limitations
+
+- Burp only sees traffic routed through the proxy.
+- Apps with certificate pinning may refuse Burp's certificate, so their HTTPS content stays hidden.
+- A clean Burp log does not rule out network use by other means, such as DNS lookups or direct sockets. Use the firewall step to check.
+- Use this only on apps and devices you own or have permission to test.
+
+## After testing
+
+1. Remove the proxy from the Wi-Fi network settings.
+2. Remove the Burp CA certificate from **Settings > Security > Encryption & credentials > User credentials**.
+3. Stop Burp Suite and delete the temporary project if you no longer need the logs.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>License</h2></summary>
 
 PDFr is licensed under the **GNU Affero General Public License v3.0**
 (`LICENSE`). This is required because it links against MuPDF, which is also
@@ -220,3 +355,5 @@ MuPDF: https://mupdf.com/ - Copyright Artifex Software, Inc.
 qpdf: https://qpdf.readthedocs.io/ - Apache License 2.0, Copyright Jay
 Berkenbilt and contributors. libjpeg-turbo: https://libjpeg-turbo.org/ -
 IJG/BSD-style licenses. Both are linked statically into `libqpdfjni.so`.
+
+</details>
