@@ -14,7 +14,7 @@ the default `%LOCALAPPDATA%\Android\Sdk`). Everything can be overridden:
 | `ANDROID_SDK_ROOT` / `ANDROID_HOME` | auto-detected | Android SDK location |
 | `ADB` | `%ANDROID_SDK_ROOT%\platform-tools\adb.exe` | adb binary |
 | `EMULATOR` | `%ANDROID_SDK_ROOT%\emulator\emulator.exe` | emulator binary |
-| `PDFR_AVD` | `qpdf_full` | AVD to start (override if your AVD has another name) |
+| `PDFR_AVD` | `pdfr_full` | AVD to start (override if your AVD has another name) |
 | `PDFR_FIXTURES` | `<repo>\build\test-fixtures` | generated fixture folder |
 
 ### The short version
@@ -31,7 +31,7 @@ tools\manual-testing.bat
 
 | Script | What it does |
 | --- | --- |
-| `create-test-avd.bat [name] [ram-mb]` | Creates the `qpdf_full` API 35 x86_64 AVD with 1536 MB RAM. Installs the system image if it is missing. Safe to re-run. |
+| `create-test-avd.bat [name] [ram-mb]` | Creates the `pdfr_full` API 35 x86_64 AVD with 1536 MB RAM. Installs the system image if it is missing. Safe to re-run. |
 | `start-emulator.bat [avd]` | Starts the AVD without a snapshot and waits until `sys.boot_completed`. |
 | `stop-emulator.bat` | `adb emu kill`. |
 | `install-debug.bat [abi]` | Builds `:app:assembleDebug`, detects the device ABI and installs the matching split APK. |
@@ -102,7 +102,7 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
 fingers through `input`. That needs `adb root` (the script runs it for you),
 which is available on emulators but usually not on retail phones.
 
-Defaults are tuned for the `qpdf_full` AVD (1080x2340, input device
+Defaults are tuned for the `pdfr_full` AVD (1080x2340, input device
 `/dev/input/event2`). On another device:
 
 ```bat
@@ -209,7 +209,7 @@ network.
 
 ## Creating the test AVD
 
-`create-test-avd.bat` creates an AVD named `qpdf_full` on a fresh machine:
+`create-test-avd.bat` creates an AVD named `pdfr_full` on a fresh machine:
 
 ```bat
 tools\create-test-avd.bat
@@ -222,7 +222,7 @@ AVD with 1536 MB RAM and a 512 MB SD card. Optional arguments override the name
 and RAM:
 
 ```bat
-tools\create-test-avd.bat qpdf_full 1536
+tools\create-test-avd.bat pdfr_full 1536
 ```
 
 Re-running the script recreates the AVD with the same name.

@@ -5,18 +5,18 @@
 .DESCRIPTION
   Finds the Android SDK, installs the requested system image when it is
   missing, and creates (or recreates) a Pixel 5 AVD. The default name is
-  qpdf_full and the default RAM is 1536 MB, which is enough for API 35 x86_64
+  pdfr_full and the default RAM is 1536 MB, which is enough for API 35 x86_64
   without reserving as much memory as the old 2 GB AVD.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name qpdf_full -RamMb 1536
+  powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name pdfr_full -RamMb 1536
 #>
 [CmdletBinding()]
 param(
-    [string]$Name = 'qpdf_full',
+    [string]$Name = 'pdfr_full',
     [int]$RamMb = 1536,
     [string]$Api = '35',
     [string]$Abi = 'x86_64',
