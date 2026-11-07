@@ -442,7 +442,7 @@ class ReaderViewModel(
                 try {
                     var appliedLayout: LayoutSpec? = null
                     if (doc.isReflowable) {
-                        if (doc.isPlainText) doc.applyMonospace(monospace)
+                        doc.applyReaderStyle(monospace)
                         val spec = layoutSpec(viewport ?: defaultViewport())
                         if (doc.layout(spec.widthPt, spec.heightPt, spec.em)) {
                             appliedLayout = spec
@@ -544,7 +544,7 @@ class ReaderViewModel(
 
             val result = withContext(MuPdf.dispatcher) {
                 val mark = doc.makeBookmark(currentPage)
-                doc.applyMonospace(monospace)
+                doc.applyReaderStyle(monospace)
                 if (!doc.layout(spec.widthPt, spec.heightPt, spec.em)) {
                     return@withContext null
                 }
@@ -741,10 +741,9 @@ class ReaderViewModel(
 
     private fun defaultViewport(): Viewport {
         val metrics = getApplication<Application>().resources.displayMetrics
-        val margin = (16 * metrics.density).toInt()
         return Viewport(
-            widthPx = (metrics.widthPixels - 2 * margin).coerceAtLeast(200),
-            heightPx = (metrics.heightPixels - 2 * margin).coerceAtLeast(300),
+            widthPx = metrics.widthPixels.coerceAtLeast(200),
+            heightPx = metrics.heightPixels.coerceAtLeast(300),
             densityDpi = metrics.densityDpi,
             zoom = 1f,
         )
