@@ -17,7 +17,6 @@ import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.Qpdf
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
-import com.karako.pdfr.data.TextSelection
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -68,16 +67,20 @@ sealed interface ReaderState {
     data class Error(val message: String) : ReaderState
 }
 
-/** A selection inside one page, in MuPDF page coordinates. */
+/**
+ * The text menu for one page, in MuPDF page coordinates.
+ *
+ * A long-press only opens the menu: [quads] and [text] stay empty until the
+ * reader chooses "Select all", so nothing is highlighted before that. Copying
+ * uses the same [text] that is drawn.
+ */
 data class SelectionState(
     val page: Int,
     val quads: List<SelectionQuad>,
     val text: String,
-    val dragging: Boolean,
-)
-
-/** Which end of an existing selection the user is dragging. */
-enum class SelectionEdge { Start, End }
+) {
+    val hasText: Boolean get() = text.isNotBlank() && quads.isNotEmpty()
+}
 
 class ReaderViewModel(
     application: Application,
@@ -113,15 +116,6 @@ class ReaderViewModel(
     private var password: String? = null
     private var monospace = false
 
-    private var draggingSelection = false
-    private var selectionAnchor: SelectionAnchor? = null
-
-    /** Requested endpoints of the current selection, in page coordinates. */
-    private var selectionRange: SelectionRange? = null
-
-    /** The opposite endpoint held still while a selection handle is dragged. */
-    private var handleDrag: HandleDrag? = null
-
     private data class Viewport(
         val widthPx: Int,
         val heightPx: Int,
@@ -133,32 +127,6 @@ class ReaderViewModel(
         val widthPt: Float,
         val heightPt: Float,
         val em: Float,
-    )
-
-    private data class SelectionAnchor(
-        val page: Int,
-        val wordStartX: Float,
-        val wordStartY: Float,
-        val wordEndX: Float,
-        val wordEndY: Float,
-    )
-
-    private data class SelectionStart(
-        val snapped: com.karako.pdfr.data.SnappedSelection,
-        val selection: TextSelection,
-    )
-
-    private data class SelectionRange(
-        val page: Int,
-        val startX: Float,
-        val startY: Float,
-        val endX: Float,
-        val endY: Float,
-    )
-
-    private data class HandleDrag(
-        val fixedX: Float,
-        val fixedY: Float,
     )
 
     private data class LayoutResult(
@@ -193,9 +161,6 @@ class ReaderViewModel(
         }
 
         _selection.value = null
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
         password = null
         // Plain text is monospace by default; non-text documents reset this in
         // load(). Starting true makes the text override visible immediately.
@@ -237,9 +202,6 @@ class ReaderViewModel(
         if (password.isEmpty()) return
 
         _selection.value = null
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
 
         // Stay in the Locked state while authenticating. The password dialog
         // therefore remains on screen and can show an inline error instead of
@@ -306,157 +268,30 @@ class ReaderViewModel(
         return withContext(MuPdf.dispatcher) { doc.pageBounds(index) }
     }
 
-    fun startSelection(page: Int, x: Float, y: Float) {
-        // A long-press can also fire while a handle is being dragged. The
-        // handle gesture owns that touch; starting a new selection here would
-        // replace the range the user is adjusting.
-        if (handleDrag != null) return
-        val doc = document ?: return
+    /**
+     * Opens the page's text menu without selecting anything. Called on a
+     * long-press: the reader decides whether to select the whole page.
+     */
+    fun showSelectionMenu(page: Int) {
         selectionJob?.cancel()
-        val version = ++selectionVersion
-
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
-        draggingSelection = true
-        _selection.value = null
-
-        selectionJob = viewModelScope.launch {
-            val start = withContext(MuPdf.dispatcher) {
-                val snapped = doc.snapWord(page, x, y) ?: return@withContext null
-                val text = doc.select(
-                    page,
-                    snapped.startX,
-                    snapped.startY,
-                    snapped.endX,
-                    snapped.endY,
-                ) ?: return@withContext null
-                if (text.text.isBlank() || text.quads.isEmpty()) return@withContext null
-                SelectionStart(snapped, text)
-            }
-
-            if (version != selectionVersion) return@launch
-            if (start == null) {
-                clearSelection()
-                return@launch
-            }
-
-            selectionAnchor = SelectionAnchor(
-                page = page,
-                wordStartX = start.snapped.startX,
-                wordStartY = start.snapped.startY,
-                wordEndX = start.snapped.endX,
-                wordEndY = start.snapped.endY,
-            )
-            publish(page = page, selection = start.selection)
-        }
-    }
-
-    fun updateSelection(page: Int, x: Float, y: Float) {
-        val doc = document ?: return
-        val anchor = selectionAnchor ?: return
-        if (page != anchor.page || !draggingSelection) return
-
-        selectionJob?.cancel()
-        val version = ++selectionVersion
-
-        selectionJob = viewModelScope.launch {
-            // Coalesce a burst of touch moves into one native selection.
-            delay(SELECTION_UPDATE_DELAY_MS)
-
-            val result = withContext(MuPdf.dispatcher) {
-                val bounds = doc.pageBounds(page) ?: return@withContext null
-                val clampedX = x.coerceIn(bounds.x0, bounds.x1)
-                val clampedY = y.coerceIn(bounds.y0, bounds.y1)
-
-                // Extend from whichever edge of the long-pressed word is
-                // farther from the finger, so dragging either way is natural.
-                // Keep the points in reading order; MuPDF's highlight/copy
-                // expect the start of the selection first.
-                val afterWord = clampedY > anchor.wordEndY + 0.5f ||
-                    (kotlin.math.abs(clampedY - anchor.wordEndY) <= 0.5f &&
-                        clampedX >= anchor.wordEndX)
-                val startX = if (afterWord) anchor.wordStartX else clampedX
-                val startY = if (afterWord) anchor.wordStartY else clampedY
-                val endX = if (afterWord) clampedX else anchor.wordEndX
-                val endY = if (afterWord) clampedY else anchor.wordEndY
-
-                doc.select(page, startX, startY, endX, endY)
-            } ?: return@launch
-
-            if (version != selectionVersion) return@launch
-            if (result.text.isBlank() || result.quads.isEmpty()) return@launch
-            publish(page = page, selection = result)
-        }
-    }
-
-    fun finishSelection() {
-        draggingSelection = false
-        _selection.value = _selection.value?.copy(dragging = false)
+        selectionJob = null
+        ++selectionVersion
+        _selection.value = SelectionState(page = page, quads = emptyList(), text = "")
     }
 
     /**
-     * Starts dragging one end of an existing selection. The opposite end stays
-     * fixed, so the range can be corrected after the initial long-press
-     * gesture has ended.
+     * Selects the complete text of [page]. MuPDF's block walker is used instead
+     * of a corner-to-corner rectangle, so text that lives in separate blocks or
+     * columns is included too.
      */
-    fun beginSelectionHandle(edge: SelectionEdge) {
-        val range = selectionRange ?: return
-        handleDrag = HandleDrag(
-            fixedX = if (edge == SelectionEdge.Start) range.endX else range.startX,
-            fixedY = if (edge == SelectionEdge.Start) range.endY else range.startY,
-        )
-        draggingSelection = true
-        _selection.value = _selection.value?.copy(dragging = true)
-    }
-
-    fun updateSelectionHandle(x: Float, y: Float) {
-        val doc = document ?: return
-        val range = selectionRange ?: return
-        val drag = handleDrag ?: return
-
-        selectionJob?.cancel()
-        val version = ++selectionVersion
-
-        selectionJob = viewModelScope.launch {
-            // Coalesce a burst of touch moves into one native selection.
-            delay(SELECTION_UPDATE_DELAY_MS)
-
-            val result = withContext(MuPdf.dispatcher) {
-                val bounds = doc.pageBounds(range.page) ?: return@withContext null
-                val clampedX = x.coerceIn(bounds.x0, bounds.x1)
-                val clampedY = y.coerceIn(bounds.y0, bounds.y1)
-
-                // Keep the endpoints in reading order. Dragging one handle
-                // past the other simply swaps which edge is under the finger.
-                val movingFirst = isBefore(clampedX, clampedY, drag.fixedX, drag.fixedY)
-                val startX = if (movingFirst) clampedX else drag.fixedX
-                val startY = if (movingFirst) clampedY else drag.fixedY
-                val endX = if (movingFirst) drag.fixedX else clampedX
-                val endY = if (movingFirst) drag.fixedY else clampedY
-
-                doc.select(range.page, startX, startY, endX, endY)
-            } ?: return@launch
-
-            if (version != selectionVersion) return@launch
-            if (result.text.isBlank() || result.quads.isEmpty()) return@launch
-            publish(page = range.page, selection = result)
-        }
-    }
-
-    fun finishSelectionHandle() {
-        handleDrag = null
-        finishSelection()
-    }
-
     fun selectAll(page: Int) {
         val doc = document ?: return
         selectionJob?.cancel()
         val version = ++selectionVersion
 
-        selectionAnchor = null
-        handleDrag = null
-        draggingSelection = false
+        // Keep the menu visible while the native selection is prepared; the
+        // Copy button appears as soon as the highlight is published.
+        _selection.value = SelectionState(page = page, quads = emptyList(), text = "")
 
         selectionJob = viewModelScope.launch {
             val result = withContext(MuPdf.dispatcher) { doc.selectAll(page) }
@@ -467,7 +302,11 @@ class ReaderViewModel(
             ) {
                 clearSelection()
             } else {
-                publish(page = page, selection = result)
+                _selection.value = SelectionState(
+                    page = page,
+                    quads = result.quads,
+                    text = result.text,
+                )
             }
         }
     }
@@ -476,39 +315,8 @@ class ReaderViewModel(
         selectionVersion++
         selectionJob?.cancel()
         selectionJob = null
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
-        draggingSelection = false
         _selection.value = null
     }
-
-    private fun publish(page: Int, selection: TextSelection) {
-        // Anchor handle drags to the vertical middle of the first and last
-        // selected lines. The bottom corners are what the handles are drawn
-        // from, but MuPDF can associate a point on the bottom edge with the
-        // next line, which made a dragged range jump to the wrong word.
-        val first = selection.quads.first()
-        val last = selection.quads.last()
-        selectionRange = SelectionRange(
-            page = page,
-            startX = first.llX,
-            startY = (first.ulY + first.llY) / 2f,
-            endX = last.lrX,
-            endY = (last.urY + last.lrY) / 2f,
-        )
-        _selection.value = SelectionState(
-            page = page,
-            quads = selection.quads,
-            text = selection.text,
-            dragging = draggingSelection,
-        )
-    }
-
-    /** True when the first point comes before the second in reading order. */
-    private fun isBefore(x: Float, y: Float, otherX: Float, otherY: Float): Boolean =
-        y < otherY - 0.5f ||
-            (kotlin.math.abs(y - otherY) <= 0.5f && x < otherX)
 
     private var selectionVersion = 0
 
@@ -563,10 +371,6 @@ class ReaderViewModel(
 
         layoutJob?.cancel()
         selectionJob?.cancel()
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
-        draggingSelection = false
         _selection.value = null
 
         try {
@@ -940,9 +744,6 @@ class ReaderViewModel(
         savedState[KEY_MTIME] = lastModified
 
         _selection.value = null
-        selectionAnchor = null
-        selectionRange = null
-        handleDrag = null
         _state.value = ReaderState.Locked(
             file = file,
             displayName = displayName,
@@ -953,8 +754,6 @@ class ReaderViewModel(
 
     private fun fail(error: Exception) {
         _selection.value = null
-        selectionRange = null
-        handleDrag = null
         _state.value = ReaderState.Error(
             error.message?.takeIf { it.isNotBlank() }
                 ?: getApplication<Application>().getString(R.string.error_generic),
@@ -984,7 +783,6 @@ class ReaderViewModel(
         const val KEY_MTIME = "document_modified"
 
         const val TEXT_EM = 11f
-        const val SELECTION_UPDATE_DELAY_MS = 16L
         const val REFLOW_DEBOUNCE_MS = 80L
         const val BITMAP_EVICT_DEBOUNCE_MS = 240L
     }

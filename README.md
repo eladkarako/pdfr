@@ -21,7 +21,6 @@
 | 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
 | 📚 MOBI / PalmDoc | `.mobi`, `.prc`, `.pdb` | Older Amazon and Palm ebook containers, including the Mobipocket format that predates KF8 and AZW3. | Readable but reflowed without DRM support. Most modern Kindle books use AZW3/KFX, which MuPDF does not open. |
 | 📝 Markdown | `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn` | Plain text with lightweight heading, list, link and code syntax. | Reflows to the screen width. MuPDF converts it to HTML before layout; longer suffixes are handled through a temporary `.md` copy. |
-| 📄 Office (OOXML) | `.docx`, `.xlsx`, `.pptx`, `.hwpx` | ZIP-based XML office documents. HWPX is the open XML format used by Hangul Word Processor. | Rendered as reflowable HTML: text, basic formatting and tables survive, while exact page layout, macros and charts do not. Legacy binary `.doc`, `.xls` and `.ppt` are **not** supported. |
 | 🖼️ Images and PNM/PAM | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.jp2`, `.jpx`, `.jxr`, `.wdp`, `.hdp`, `.psd`, `.pnm`, `.pbm`, `.pgm`, `.ppm`, `.pam`, `.pfm`, `.jb2` | Single-page raster or vector images. PNM/PAM is a family of simple, uncompressed image formats. | Each image opens as a one-page document. SVG is handled as a vector page and stays sharp when zoomed. |
 | 🌐 HTML, XHTML and SVG | `.html`, `.htm`, `.xhtml`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
 | 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
@@ -29,8 +28,8 @@
 
 💡 note: The same continuous-scroll reader is used for every format. Fixed-layout
 documents are rasterised page by page; reflowable documents (EPUB, MOBI, FB2,
-Markdown, Office, HTML and text) are laid out to the current screen width and
-zoom level.
+Markdown, HTML and text) are laid out to the current screen width and
+zoom level. Office files (DOCX/XLSX/PPTX/HWPX) are not supported.
 
 📄 PDFr advertises the `text/*` family plus the common application text types
 (JSON, XML, YAML, TOML, JavaScript, shell, SQL and others) for **Open with** and
@@ -74,15 +73,18 @@ intact wherever the target provider allows its timestamp to be updated.
 - 💾 **Save as** next to **Open**: choose a destination and keep the current
   format, filename, extension and, where the provider supports it, the original
   modification time.
-- ✂️ **Text selection and copying** - long-press a word, drag to extend the
-  selection, then fine-tune either end with the round blue handles. Crossing the
-  handles swaps the range endpoints instead of breaking the gesture. Use
-  **Copy**, **Select all** or **Close** in the floating bar.
+- ✂️ **Text selection and copying** - long-press anywhere on a page to open the
+  page menu, then choose **Select all** to highlight every text block on that
+  page and expose **Copy**. Tapping elsewhere dismisses the menu. There are no
+  drag handles: selection is intentionally page-wide for now.
 - 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
-  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). The page resizes live
-  under the fingers and the touched spot stays in place; the sharper bitmap and
-  the larger reflow layout arrive when the gesture ends. Fixed-layout pages can
-  be panned horizontally while zoomed.
+  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). The content resizes and
+  pans under the fingers around the midpoint between them; the sharper bitmap
+  and the larger reflow layout arrive when the gesture ends. Fixed-layout pages
+  can be panned horizontally while zoomed.
+- 📍 **Page indicator** fades away while you read and wakes on any scroll, pan or
+  zoom. The overflow menu and info dialog scroll when needed and never cover
+  more than three quarters of the screen.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,

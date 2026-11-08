@@ -10,7 +10,9 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -18,9 +20,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,15 +77,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -108,7 +109,10 @@ import com.karako.pdfr.data.ShareSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -116,15 +120,66 @@ private const val DEFAULT_PAGE_ASPECT = 1.4142f
 private const val RENDER_SETTLE_MS = 120L
 private const val CONTENT_WIDTH_SETTLE_MS = 200L
 private const val ZOOM_ANIMATION_MS = 260
+private const val ANCHOR_LAYOUT_WAIT_MS = 120L
+private const val POST_PINCH_SETTLE_MS = 700L
+
+/**
+ * After the deferred reflow lands, the scroll rack keeps old pages wide until
+ * [CONTENT_WIDTH_SETTLE_MS] has passed and the replacement bitmaps have
+ * rendered. The pinch anchor must stay alive through that second resize, or
+ * the content jumps once more after the gesture.
+ */
+private const val POST_PINCH_RENDER_MS = 420L
+private const val PINCH_START_DISTANCE = 8f
+
+// The page badge starts slightly transparent and quietly disappears while the
+// reader is idle. Any scroll, zoom or pan restores it immediately.
+private const val PAGE_BADGE_START_ALPHA = 0.78f
+private const val PAGE_BADGE_END_ALPHA = 0.05f
+private const val PAGE_BADGE_FADE_MS = 5000
+
+// Menus and dialogs never cover more than this share of the screen.
+private const val DIALOG_MAX_HEIGHT_FRACTION = 0.75f
+private const val DIALOG_CHROME_DP = 160f
 
 // A fixed blue, rather than a theme colour: reader pages are always white, so
 // this stays visible even when the app's primary colour is very dark.
-private val SELECTION_FILL = Color(0x592196F3)
-private val SELECTION_OUTLINE = Color(0xB30D47A1)
-private val SELECTION_HANDLE = Color(0xFF0D47A1)
-private const val SELECTION_HANDLE_RADIUS_DP = 8f
-private const val SELECTION_HANDLE_STEM_DP = 11f
-private const val SELECTION_TOUCH_RADIUS_DP = 28f
+private val SELECTION_FILL = Color(0x992196F3)
+private val SELECTION_OUTLINE = Color(0xE60D47A1)
+
+/**
+ * A pinch session as seen from the reader's layout.
+ *
+ * [startScroll]/[startFocus] describe the gesture at the moment it began; the
+ * anchor is applied as a function of the current zoom and midpoint, so moving
+ * both fingers pans while the same content point stays under them.
+ */
+private data class PinchAnchor(
+    val id: Int,
+    val startZoom: Float,
+    val startScroll: Int,
+    val startFocus: Offset,
+    val page: Int,
+    val fraction: Float,
+)
+
+/** Everything whose change requires the pinch anchor to be recomputed. */
+private data class PinchSignal(
+    val zoom: Float,
+    val focus: Offset,
+    val maxScroll: Int,
+    val layoutVersion: Int,
+    val anchorSize: Int,
+)
+
+/** Everything that wakes the page badge before it fades again. */
+private data class BadgeSignal(
+    val page: Int,
+    val zoom: Float,
+    val active: Boolean,
+    val verticalOffset: Int,
+    val horizontalOffset: Int,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,6 +213,7 @@ fun ReaderApp(
     var showCompactDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var showOverflowMenu by remember { mutableStateOf(false) }
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
@@ -261,6 +317,9 @@ fun ReaderApp(
                                 DropdownMenu(
                                     expanded = showOverflowMenu,
                                     onDismissRequest = { showOverflowMenu = false },
+                                    modifier = Modifier.heightIn(
+                                        max = screenHeightDp * DIALOG_MAX_HEIGHT_FRACTION,
+                                    ),
                                 ) {
                                     if (state.info.isPdf) {
                                         DropdownMenuItem(
@@ -715,17 +774,18 @@ private fun DocumentReader(
     }
 
     var pinchActive by remember { mutableStateOf(false) }
-    var pinchStartZoom by remember { mutableFloatStateOf(1f) }
-    var pinchStartScroll by remember { mutableIntStateOf(0) }
-    var pinchStartFocus by remember { mutableStateOf(Offset.Zero) }
+    var pinchAnchor by remember { mutableStateOf<PinchAnchor?>(null) }
     var pinchFocus by remember { mutableStateOf(Offset.Zero) }
+    var pinchSessionId by remember { mutableIntStateOf(0) }
 
-    // Page under the pinch centroid and the relative point inside it. As
-    // pages grow or shrink, the list is scrolled so that point stays under
-    // the fingers instead of drifting up towards the start of the document.
-    // Moving both fingers pans the view while it is held.
-    var pinchAnchorPage by remember { mutableIntStateOf(-1) }
-    var pinchAnchorFraction by remember { mutableFloatStateOf(0f) }
+    // Layout version a pinch has already restored to. The reading-position
+    // effect must not run again for that version after the anchor is
+    // released, or it would scroll away from the point the pinch kept.
+    var pinchLayoutVersion by remember { mutableIntStateOf(-1) }
+
+    // The page badge is a quiet hint, not a permanent overlay: it wakes on any
+    // navigation, scroll, zoom or pan and then fades to almost nothing.
+    val badgeAlpha = remember { Animatable(PAGE_BADGE_START_ALPHA) }
 
     // Relative point inside the page that currently fills most of the
     // viewport, captured before a zoom reflow. It is the page the reader
@@ -759,36 +819,32 @@ private fun DocumentReader(
         }
     }
 
-    // Keep the point under the fingers fixed while the content grows or
-    // shrinks, both across the page and between pages. `pinchFocus` follows
-    // the centroid, so moving both fingers pans the view at the same time.
-    LaunchedEffect(zoom, pinchFocus, pinchActive) {
-        if (!pinchActive) return@LaunchedEffect
-        withFrameNanos { }
-        val ratio = zoom / pinchStartZoom
-        horizontalScroll.scrollTo(
-            ZoomMath.anchoredScroll(
-                startScroll = pinchStartScroll,
-                startFocusX = pinchStartFocus.x,
-                focusX = pinchFocus.x,
-                ratio = ratio,
-            ),
-        )
+    // The pinch's zoom anchor is applied inside BoxWithConstraints, where the
+    // new page width is known; see `LaunchedEffect(anchor.id)` below.
+    val latestLayoutVersion by rememberUpdatedState(state.layoutVersion)
 
-        val anchor = pinchAnchorPage
-        if (anchor >= 0) {
-            val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == anchor }
-            if (item != null && item.size > 0) {
-                val delta = ZoomMath.anchorDelta(
-                    itemOffset = item.offset,
-                    itemSize = item.size,
-                    fraction = pinchAnchorFraction,
-                    focusY = pinchFocus.y,
-                )
-                if (abs(delta) > 1f) {
-                    listState.scrollBy(delta)
-                }
-            }
+    // Any page change, scroll, zoom or pan wakes the badge. `collectLatest`
+    // restarts the fade timer while movement continues, so the badge stays
+    // readable during a gesture and only fades once the reader stops.
+    LaunchedEffect(listState, horizontalScroll) {
+        snapshotFlow {
+            BadgeSignal(
+                page = primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex,
+                zoom = latestZoom,
+                active = pinchActive || listState.isScrollInProgress ||
+                    horizontalScroll.isScrollInProgress,
+                verticalOffset = listState.firstVisibleItemScrollOffset,
+                horizontalOffset = horizontalScroll.value,
+            )
+        }.collectLatest {
+            badgeAlpha.snapTo(PAGE_BADGE_START_ALPHA)
+            badgeAlpha.animateTo(
+                targetValue = PAGE_BADGE_END_ALPHA,
+                animationSpec = tween(
+                    durationMillis = PAGE_BADGE_FADE_MS,
+                    easing = LinearEasing,
+                ),
+            )
         }
     }
 
@@ -823,22 +879,32 @@ private fun DocumentReader(
                 },
                 onZoomStart = { focus ->
                     zoomJob?.cancel()
-                    pinchStartZoom = latestZoom
-                    pinchStartScroll = horizontalScroll.value
-                    pinchStartFocus = focus
-                    pinchFocus = focus
-                    pinchActive = true
                     restorePageFraction = visiblePageFraction()
                     val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
                         focus.y >= info.offset && focus.y < info.offset + info.size
-                    } ?: listState.layoutInfo.visibleItemsInfo.firstOrNull()
-                    if (item != null && item.size > 0) {
-                        pinchAnchorPage = item.index
-                        pinchAnchorFraction = ((focus.y - item.offset) / item.size)
-                            .coerceIn(0f, 1f)
-                    } else {
-                        pinchAnchorPage = -1
-                    }
+                    } ?: primaryVisibleItem()
+                    pinchFocus = focus
+                    pinchActive = true
+                    pinchAnchor = PinchAnchor(
+                        id = ++pinchSessionId,
+                        startZoom = latestZoom,
+                        startScroll = horizontalScroll.value,
+                        startFocus = focus,
+                        page = item?.index ?: -1,
+                        fraction = if (item != null && item.size > 0) {
+                            ((focus.y - item.offset) / item.size)
+                                .coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        },
+                    )
+                },
+                onPan = { dx, dy ->
+                    // Move the content with the fingers immediately. Waiting
+                    // for the zoom layout to catch up made a two-finger drag
+                    // feel like it was stuck in treacle.
+                    horizontalScroll.dispatchRawDelta(-dx)
+                    listState.dispatchRawDelta(-dy)
                 },
                 onZoomEnd = { pinchActive = false },
             ),
@@ -866,11 +932,94 @@ private fun DocumentReader(
         val pageWidthPx = (viewportWidthPx * contentScale).toInt().coerceAtLeast(1)
         val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
 
+        // A pinch changes the page size, but the scroll rack only grows after
+        // the next measure. Compensate in two steps: these effects run whenever
+        // the zoom, the midpoint or the measured layout changes, so a scroll
+        // that was clamped before the new width landed is corrected as soon as
+        // the layout catches up instead of anchoring to the page's left edge.
+        suspend fun applyPinchAnchor(anchor: PinchAnchor) {
+            val ratio = latestZoom / anchor.startZoom
+            val target = ZoomMath.anchoredScroll(
+                startScroll = anchor.startScroll,
+                startFocusX = anchor.startFocus.x,
+                focusX = pinchFocus.x,
+                ratio = ratio,
+            )
+            val horizontalDelta = (target - horizontalScroll.value).toFloat()
+            if (abs(horizontalDelta) >= 0.5f) {
+                horizontalScroll.dispatchRawDelta(horizontalDelta)
+            }
+
+            if (anchor.page >= 0) {
+                val item = listState.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.index == anchor.page }
+                if (item != null && item.size > 0) {
+                    val verticalDelta = ZoomMath.anchorDelta(
+                        itemOffset = item.offset,
+                        itemSize = item.size,
+                        fraction = anchor.fraction,
+                        focusY = pinchFocus.y,
+                    )
+                    if (abs(verticalDelta) > 1f) {
+                        listState.dispatchRawDelta(verticalDelta)
+                    }
+                }
+            }
+        }
+
+        val activeAnchor = pinchAnchor
+        if (activeAnchor != null) {
+            LaunchedEffect(activeAnchor.id) {
+                snapshotFlow {
+                    PinchSignal(
+                        zoom = latestZoom,
+                        focus = pinchFocus,
+                        maxScroll = horizontalScroll.maxValue,
+                        layoutVersion = latestLayoutVersion,
+                        anchorSize = if (activeAnchor.page >= 0) {
+                            listState.layoutInfo.visibleItemsInfo
+                                .firstOrNull { it.index == activeAnchor.page }?.size ?: 0
+                        } else {
+                            0
+                        },
+                    )
+                }.collect {
+                    applyPinchAnchor(activeAnchor)
+                }
+            }
+
+            // The deferred reflow lands after the fingers lift. Keep the
+            // anchor through that layout change and the width-floor switch
+            // that follows it (or a short fallback), then release it so
+            // ordinary scrolling owns the position again.
+            LaunchedEffect(activeAnchor.id, pinchActive) {
+                if (pinchActive) return@LaunchedEffect
+                val version = latestLayoutVersion
+                withTimeoutOrNull(POST_PINCH_SETTLE_MS) {
+                    snapshotFlow { latestLayoutVersion }.first { it != version }
+                }
+                // New bitmaps and the rack width both change after the version
+                // bump. The anchor effect keeps correcting while this delay
+                // runs, so the page never drifts during the hand-off.
+                delay(POST_PINCH_RENDER_MS)
+                withFrameNanos { }
+                applyPinchAnchor(activeAnchor)
+                pinchLayoutVersion = latestLayoutVersion
+                restorePageFraction = visiblePageFraction()
+                if (pinchAnchor?.id == activeAnchor.id) pinchAnchor = null
+            }
+        }
+
         LaunchedEffect(state.file.absolutePath) {
             horizontalScroll.scrollTo(0)
         }
 
         LaunchedEffect(state.file.absolutePath, state.layoutVersion, state.anchorPage) {
+            // A pinch keeps its own anchor through the delayed reflow; the
+            // restored reading fraction must not fight it, or run again for
+            // the layout version the pinch already settled.
+            if (pinchActive || pinchAnchor != null) return@LaunchedEffect
+            if (pinchLayoutVersion == state.layoutVersion) return@LaunchedEffect
             if (state.pageCount <= 0) return@LaunchedEffect
             val page = state.anchorPage.coerceIn(0, state.pageCount - 1)
             val fraction = restorePageFraction
@@ -943,15 +1092,18 @@ private fun DocumentReader(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
-                onCopy = { copySelection(context, selection.text) },
+                onCopy = {
+                    copySelection(context, selection.text)
+                    viewModel.clearSelection()
+                },
                 onSelectAll = { viewModel.selectAll(selection.page) },
-                onClose = viewModel::clearSelection,
             )
         } else if (state.pageCount > 0) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .alpha(badgeAlpha.value),
                 shape = RoundedCornerShape(50),
                 tonalElevation = 3.dp,
                 shadowElevation = 3.dp,
@@ -962,8 +1114,8 @@ private fun DocumentReader(
                         (visiblePage + 1).coerceAtMost(state.pageCount),
                         state.pageCount,
                     ),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
@@ -1049,31 +1201,17 @@ private fun PageItem(
             }
             .then(
                 if (bounds != null) {
-                    Modifier
-                        .pointerInput(documentKey, index) {
-                            detectTapGestures(onDoubleTap = { onDoubleTap() })
-                        }
-                        .pointerInput(documentKey, index, bounds, pageWidthPx) {
-                            detectDragGesturesAfterLongPress(
-                                onDragStart = { offset ->
-                                    if (!multiTouch.value) {
-                                        bounds.toPagePoint(offset, pageWidthPx)?.let { point ->
-                                            viewModel.startSelection(index, point.x, point.y)
-                                        }
-                                    }
-                                },
-                                onDrag = { change, _ ->
-                                    change.consume()
-                                    if (!multiTouch.value) {
-                                        bounds.toPagePoint(change.position, pageWidthPx)?.let { point ->
-                                            viewModel.updateSelection(index, point.x, point.y)
-                                        }
-                                    }
-                                },
-                                onDragEnd = { viewModel.finishSelection() },
-                                onDragCancel = { viewModel.finishSelection() },
-                            )
-                        }
+                    Modifier.pointerInput(documentKey, index) {
+                        detectTapGestures(
+                            onTap = { viewModel.clearSelection() },
+                            onDoubleTap = { onDoubleTap() },
+                            onLongPress = {
+                                if (!multiTouch.value) {
+                                    viewModel.showSelectionMenu(index)
+                                }
+                            },
+                        )
+                    }
                 } else {
                     Modifier
                 },
@@ -1092,9 +1230,6 @@ private fun PageItem(
                     selection = selection,
                     bounds = page.bounds,
                     pageWidthPx = pageWidthPx,
-                    onHandleStart = viewModel::beginSelectionHandle,
-                    onHandleMove = viewModel::updateSelectionHandle,
-                    onHandleEnd = viewModel::finishSelectionHandle,
                 )
             }
         }
@@ -1102,158 +1237,33 @@ private fun PageItem(
 }
 
 /**
- * Draws the selected text and two draggable handles. The handles sit at the
- * first and last selected line; dragging one keeps the opposite end fixed, so
- * the range can still be corrected after the initial long-press has ended.
+ * Draws the highlight for a page-wide selection. There are deliberately no
+ * drag handles: a long-press offers "Select all", and tapping elsewhere
+ * dismisses it.
  */
 @Composable
 private fun SelectionOverlay(
     selection: SelectionState,
     bounds: PageBounds,
     pageWidthPx: Int,
-    onHandleStart: (SelectionEdge) -> Unit,
-    onHandleMove: (Float, Float) -> Unit,
-    onHandleEnd: () -> Unit,
 ) {
     if (bounds.width <= 0f || selection.quads.isEmpty() || pageWidthPx <= 0) return
 
     val density = LocalDensity.current
-    val radiusPx = with(density) { SELECTION_HANDLE_RADIUS_DP.dp.toPx() }
-    val stemPx = with(density) { SELECTION_HANDLE_STEM_DP.dp.toPx() }
-    val touchPx = with(density) { SELECTION_TOUCH_RADIUS_DP.dp.toPx() }
     val outlineWidth = with(density) { 1.5.dp.toPx() }
-    val handleStroke = with(density) { 2.dp.toPx() }
-
     val scale = pageWidthPx.toFloat() / bounds.width
-    fun pageToView(x: Float, y: Float) = Offset(
-        (x - bounds.x0) * scale,
-        (y - bounds.y0) * scale,
-    )
 
-    fun handleCenter(point: Offset, width: Float, height: Float): Offset = Offset(
-        x = point.x.coerceIn(radiusPx, (width - radiusPx).coerceAtLeast(radiusPx)),
-        y = (point.y + stemPx)
-            .coerceIn(radiusPx, (height - radiusPx).coerceAtLeast(radiusPx)),
-    )
-
-    val first = selection.quads.first()
-    val last = selection.quads.last()
-    // Handles are drawn just below the first/last line, but the selection
-    // endpoint is the middle of that line: a point on the bottom edge can be
-    // read by MuPDF as belonging to the next line.
-    val startAnchor = Offset(first.llX, (first.ulY + first.llY) / 2f)
-    val endAnchor = Offset(last.lrX, (last.urY + last.lrY) / 2f)
-    val startPoint = pageToView(first.llX, first.llY)
-    val endPoint = pageToView(last.lrX, last.lrY)
-
-    // The selection changes while a handle is dragged, but the pointer input
-    // must not restart mid-gesture. Keep the hit-test points and anchors up to
-    // date in separate state instead of keying the gesture on every quad.
-    val startPointState = rememberUpdatedState(startPoint)
-    val endPointState = rememberUpdatedState(endPoint)
-    val startAnchorState = rememberUpdatedState(startAnchor)
-    val endAnchorState = rememberUpdatedState(endAnchor)
-    var activeEdge by remember(selection.page) { mutableStateOf<SelectionEdge?>(null) }
-
-    Canvas(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(selection.page, bounds, pageWidthPx) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    val startCenter = handleCenter(
-                        startPointState.value,
-                        size.width.toFloat(),
-                        size.height.toFloat(),
-                    )
-                    val endCenter = handleCenter(
-                        endPointState.value,
-                        size.width.toFloat(),
-                        size.height.toFloat(),
-                    )
-                    val startDistance = (down.position - startCenter).getDistance()
-                    val endDistance = (down.position - endCenter).getDistance()
-                    val edge = when {
-                        startDistance <= touchPx && startDistance <= endDistance ->
-                            SelectionEdge.Start
-                        endDistance <= touchPx -> SelectionEdge.End
-                        else -> null
-                    } ?: return@awaitEachGesture
-
-                    val downPage = Offset(
-                        bounds.x0 + down.position.x / scale,
-                        bounds.y0 + down.position.y / scale,
-                    )
-                    val anchor = when (edge) {
-                        SelectionEdge.Start -> startAnchorState.value
-                        SelectionEdge.End -> endAnchorState.value
-                    }
-                    // Keep the same relative grab point for the whole gesture,
-                    // so the endpoint does not jump towards the finger when the
-                    // handle sits below the line.
-                    val grabOffset = downPage - anchor
-
-                    down.consume()
-                    activeEdge = edge
-                    onHandleStart(edge)
-                    try {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes
-                                .firstOrNull { it.id == down.id }
-                                ?: break
-                            if (!change.pressed) break
-                            change.consume()
-                            val target = Offset(
-                                bounds.x0 + change.position.x / scale,
-                                bounds.y0 + change.position.y / scale,
-                            ) - grabOffset
-                            onHandleMove(target.x, target.y)
-                        }
-                    } finally {
-                        activeEdge = null
-                        onHandleEnd()
-                    }
-                }
-            },
-    ) {
+    Canvas(modifier = Modifier.fillMaxSize()) {
         val path = Path()
         selection.quads.forEach { quad ->
-            path.moveTo(quad.ulX * scale - bounds.x0 * scale, quad.ulY * scale - bounds.y0 * scale)
-            path.lineTo(quad.urX * scale - bounds.x0 * scale, quad.urY * scale - bounds.y0 * scale)
-            path.lineTo(quad.lrX * scale - bounds.x0 * scale, quad.lrY * scale - bounds.y0 * scale)
-            path.lineTo(quad.llX * scale - bounds.x0 * scale, quad.llY * scale - bounds.y0 * scale)
+            path.moveTo((quad.ulX - bounds.x0) * scale, (quad.ulY - bounds.y0) * scale)
+            path.lineTo((quad.urX - bounds.x0) * scale, (quad.urY - bounds.y0) * scale)
+            path.lineTo((quad.lrX - bounds.x0) * scale, (quad.lrY - bounds.y0) * scale)
+            path.lineTo((quad.llX - bounds.x0) * scale, (quad.llY - bounds.y0) * scale)
             path.close()
         }
         drawPath(path, SELECTION_FILL)
         drawPath(path, SELECTION_OUTLINE, style = Stroke(width = outlineWidth))
-
-        fun drawHandle(center: Offset, active: Boolean) {
-            val radius = if (active) radiusPx * 1.25f else radiusPx
-            drawLine(
-                color = SELECTION_HANDLE,
-                start = Offset(center.x, center.y - stemPx),
-                end = center,
-                strokeWidth = handleStroke,
-                cap = StrokeCap.Round,
-            )
-            drawCircle(Color.White, radius = radius + handleStroke, center = center)
-            drawCircle(SELECTION_HANDLE, radius = radius, center = center)
-            drawCircle(
-                Color.White.copy(alpha = 0.85f),
-                radius = radius * 0.32f,
-                center = center,
-            )
-        }
-
-        drawHandle(
-            handleCenter(startPoint, size.width, size.height),
-            activeEdge == SelectionEdge.Start,
-        )
-        drawHandle(
-            handleCenter(endPoint, size.width, size.height),
-            activeEdge == SelectionEdge.End,
-        )
     }
 }
 
@@ -1263,7 +1273,6 @@ private fun SelectionBar(
     modifier: Modifier,
     onCopy: () -> Unit,
     onSelectAll: () -> Unit,
-    onClose: () -> Unit,
 ) {
     Surface(
         modifier = modifier,
@@ -1275,17 +1284,14 @@ private fun SelectionBar(
             modifier = Modifier.padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(
-                onClick = onCopy,
-                enabled = selection.text.isNotBlank(),
-            ) {
-                Text(stringResource(R.string.copy))
-            }
-            TextButton(onClick = onSelectAll) {
-                Text(stringResource(R.string.select_all))
-            }
-            TextButton(onClick = onClose) {
-                Text(stringResource(R.string.close))
+            if (selection.hasText) {
+                TextButton(onClick = onCopy) {
+                    Text(stringResource(R.string.copy))
+                }
+            } else {
+                TextButton(onClick = onSelectAll) {
+                    Text(stringResource(R.string.select_all))
+                }
             }
         }
     }
@@ -1301,7 +1307,12 @@ private fun copySelection(context: Context, text: String) {
 /**
  * Pinch-to-zoom that only reacts to two or more fingers. Single-finger drags
  * are left alone, so vertical scrolling, horizontal panning and long-press
- * selection keep working exactly as before.
+ * menu gestures keep working exactly as before.
+ *
+ * The whole gesture is observed in the Initial pass so it can claim the touch
+ * as soon as a second finger joins. Zoom is anchored on the midpoint between
+ * the fingers, and [onPan] receives the midpoint movement so the reader can
+ * move the content immediately instead of waiting for the zoom layout.
  */
 private fun Modifier.twoFingerPinchZoom(
     minZoom: Float,
@@ -1309,59 +1320,70 @@ private fun Modifier.twoFingerPinchZoom(
     currentZoom: () -> Float,
     onZoom: (Float, Offset) -> Unit,
     onZoomStart: (Offset) -> Unit = {},
+    onPan: (Float, Float) -> Unit = { _, _ -> },
     onZoomEnd: () -> Unit = {},
 ): Modifier = pointerInput(minZoom, maxZoom) {
     awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
 
         var pinching = false
         var startDistance = 0f
         var startZoom = 1f
+        var lastFocus: Offset? = null
 
-        do {
-            val event = awaitPointerEvent()
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
             val pressed = event.changes.filter { it.pressed }
+
+            if (pressed.isEmpty()) break
 
             if (pressed.size >= 2) {
                 val first = pressed[0].position
                 val second = pressed[1].position
                 val distance = (first - second).getDistance()
+                val focus = (first + second) / 2f
+
                 if (!pinching) {
-                    if (distance > 8f) {
+                    if (distance > PINCH_START_DISTANCE) {
                         pinching = true
                         startDistance = distance
                         startZoom = currentZoom()
-                        onZoomStart((first + second) / 2f)
+                        lastFocus = focus
+                        onZoomStart(focus)
                     }
-                } else if (startDistance > 0f && distance > 0f) {
-                    onZoom(
-                        ZoomMath.pinchZoom(
-                            startZoom = startZoom,
-                            startDistance = startDistance,
-                            distance = distance,
-                            minZoom = minZoom,
-                            maxZoom = maxZoom,
-                        ),
-                        (first + second) / 2f,
-                    )
-                    // Stop the scroll container from also moving under the pinch.
-                    pressed.forEach { it.consume() }
+                } else {
+                    if (startDistance > 0f && distance > 0f) {
+                        onZoom(
+                            ZoomMath.pinchZoom(
+                                startZoom = startZoom,
+                                startDistance = startDistance,
+                                distance = distance,
+                                minZoom = minZoom,
+                                maxZoom = maxZoom,
+                            ),
+                            focus,
+                        )
+                    }
+                    lastFocus?.let { previous ->
+                        onPan(focus.x - previous.x, focus.y - previous.y)
+                    }
+                    lastFocus = focus
                 }
+
+                // The reader moves the content itself, so the scroll
+                // containers must not also follow the same fingers.
+                pressed.forEach { it.consume() }
+            } else if (pinching) {
+                // Lifting one finger ends the pinch. The remaining finger
+                // must not turn into a scroll halfway through the gesture.
+                break
+            } else {
+                lastFocus = null
             }
-        } while (event.changes.any { it.pressed })
+        }
 
         if (pinching) onZoomEnd()
     }
-}
-
-private fun PageBounds.toPagePoint(position: Offset, displayWidthPx: Int): Offset? {
-    if (width <= 0f || displayWidthPx <= 0) return null
-    val scale = displayWidthPx.toFloat() / width
-    if (!scale.isFinite() || scale <= 0f) return null
-    return Offset(
-        x = x0 + position.x / scale,
-        y = y0 + position.y / scale,
-    )
 }
 
 @Composable
@@ -1370,6 +1392,12 @@ private fun DocumentInfoDialog(
     onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
+    // Leave room for the title, buttons and dialog padding so the whole
+    // dialog stays within 3/4 of the screen and only the text scrolls.
+    val maxTextHeight = (
+        LocalConfiguration.current.screenHeightDp.dp * DIALOG_MAX_HEIGHT_FRACTION -
+            DIALOG_CHROME_DP.dp
+        ).coerceAtLeast(96.dp)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1378,7 +1406,7 @@ private fun DocumentInfoDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 460.dp)
+                    .heightIn(max = maxTextHeight)
                     .verticalScroll(rememberScrollState()),
             ) {
                 InfoRow(stringResource(R.string.file_name), info.fileName)

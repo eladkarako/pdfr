@@ -1,16 +1,18 @@
 26.11.7
 + treats source and configuration files as plain text: JSON, YAML, TOML, CSV/TSV, C/C++, Java, JS/TS, shell, XML and similar suffixes are opened through a temporary `.txt` copy; an unknown suffix is detected from its bytes when MuPDF cannot open it.
-+ text selection now draws a stronger blue highlight plus two round handles; either end can be dragged after the long-press, and crossing the handles swaps the range endpoints instead of breaking the gesture.
++ long-press now opens a page menu instead of selecting a word: choose **Select all** to highlight every text block on the page, then **Copy**; tapping elsewhere dismisses it. The old drag handles and range adjustment were removed.
 + the temporary copy is byte-for-byte identical: PDFr never adds a byte-order mark. MuPDF's own content detector still treats a file whose first line starts with `# ` as Markdown, so such a comment may render as a heading without the marker.
 + advertises `text/*` plus the common application text MIME types, so those files work in other apps' "Open with" and share menus without a separate PDFr entry per extension.
-+ opens the remaining formats MuPDF 1.28.5 supports: Markdown, MOBI/PRC/PDB, CBT, HTML/XHTML, SVG, common images, PNM/PAM, and OOXML Office (DOCX/XLSX/PPTX/HWPX).
-+ PDFr now advertises those types as an "Open with" and share target; legacy binary .doc/.xls/.ppt are intentionally not advertised because MuPDF cannot read them.
++ opens the remaining formats MuPDF 1.28.5 supports: Markdown, MOBI/PRC/PDB, CBT, HTML/XHTML, SVG, common images and PNM/PAM.
++ PDFr now advertises those types as an "Open with" and share target. Office documents (DOCX/XLSX/PPTX/HWPX) are not supported.
 + plain-text aliases now cover .log, .nfo and the longer Markdown suffixes through a temporary canonical-suffix copy.
 + added a middle Save button next to Open that copies the current document in its existing format, keeping the original filename, extension and, where the provider supports it, the original modification time.
 + toolbar order is now share, info, open, save, menu; "Open another" was removed from the overflow menu because Open has its own button.
-+ test fixtures now include guide.md, sample.docx, image.png and image.ppm, with unit tests for the new format mappings and aliases.
-+ pinch zoom now resizes the content live under the fingers at any size, keeps the touched spot in place, and only reflows or re-rasterises for sharpness once the gesture ends; a zoomed fixed-layout page can still be panned horizontally.
-+ added `ZoomMathTest` plus fixed-layout/reflow zoom instrumented tests, and `tools\zoom-probe.ps1`, which records before/down/mid/late/settled screenshots and reports whether a pinch settles without a jump.
++ test fixtures now include guide.md, image.png and image.ppm, with unit tests for the new format mappings and aliases.
++ pinch zoom now anchors on the midpoint between the fingers instead of the first finger, pans immediately during the gesture, and re-applies its anchor once the delayed layout/reflow catches up, so a pinch no longer drifts towards the starter finger.
++ the page indicator is slightly larger, starts dimmer and fades to almost invisible over five seconds; scrolling, panning, zooming or changing pages wakes it.
++ the overflow menu and the document-info dialog are capped at three quarters of the screen height and scroll their contents.
++ added `ZoomMathTest` plus fixed-layout/reflow zoom instrumented tests, `tools\zoom-probe.ps1`, which records before/down/mid/late/settled screenshots and reports whether a pinch settles without a jump, and `tools\reader-actions.ps1` for reproducible long-press, tap, menu and info checks.
 
 26.11.6
 + page indicator now follows the page that fills most of the viewport, so it updates before the previous page leaves the screen.

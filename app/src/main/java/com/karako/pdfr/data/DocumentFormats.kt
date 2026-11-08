@@ -9,9 +9,8 @@ import java.io.IOException
  * filters and the share sheet.
  *
  * MuPDF 1.28.5 accepts PDF, EPUB, MOBI, FB2, CBZ/CBT, XPS/OXPS, Markdown,
- * HTML/XHTML, plain text, SVG, common image formats, and the OOXML Office
- * formats (DOCX/XLSX/PPTX) plus HWPX. The old binary Office formats
- * (.doc/.xls/.ppt) have no MuPDF handler and are intentionally not mapped.
+ * HTML/XHTML, plain text, SVG and common image formats. Office documents
+ * (DOCX/XLSX/PPTX/HWPX) are intentionally not advertised yet.
  *
  * Text-based source and configuration files (JSON, YAML, CSV, C/C++, JS,
  * shell scripts and so on) are read as plain text. MuPDF has no handler for
@@ -40,14 +39,6 @@ object DocumentFormats {
     const val TOML = "application/toml"
     const val JAVASCRIPT = "application/javascript"
     const val SHELL = "application/x-sh"
-
-    const val DOCX =
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    const val XLSX =
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    const val PPTX =
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-    const val HWPX = "application/haansofthwpx"
 
     /**
      * MIME types offered to the system document picker. `text/plain` and the
@@ -95,10 +86,6 @@ object DocumentFormats {
         "application/x-tex",
         "application/x-properties",
         "image/*",
-        DOCX,
-        XLSX,
-        PPTX,
-        HWPX,
         "application/octet-stream",
     )
 
@@ -214,12 +201,6 @@ object DocumentFormats {
         "fish" to SHELL,
         "ksh" to SHELL,
         "csh" to SHELL,
-
-        // OOXML Office documents and HWPX.
-        "docx" to DOCX,
-        "xlsx" to XLSX,
-        "pptx" to PPTX,
-        "hwpx" to HWPX,
 
         // Raster images.
         "bmp" to "image/bmp",
@@ -371,7 +352,7 @@ object DocumentFormats {
             return values.indices.all { (bytes[it].toInt() and 0xFF) == values[it] }
         }
         return startsWith(0x25, 0x50, 0x44, 0x46) || // %PDF
-            startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, OOXML, EPUB, CBZ
+            startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, EPUB, CBZ
             startsWith(0x89, 0x50, 0x4E, 0x47) || // PNG
             startsWith(0xFF, 0xD8, 0xFF) || // JPEG
             startsWith(0x47, 0x49, 0x46, 0x38) || // GIF8

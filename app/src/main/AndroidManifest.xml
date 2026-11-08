@@ -92,17 +92,6 @@
                 <data android:scheme="content" android:mimeType="image/x-portable-greymap" />
                 <data android:scheme="content" android:mimeType="image/x-portable-pixmap" />
                 <data android:scheme="content" android:mimeType="image/x-portable-floatmap" />
-                <data
-                    android:scheme="content"
-                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
-                <data
-                    android:scheme="content"
-                    android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-                <data
-                    android:scheme="content"
-                    android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
-                <data android:scheme="content" android:mimeType="application/haansofthwpx" />
-                <data android:scheme="content" android:mimeType="application/vnd.hancom.hwpx" />
             </intent-filter>
 
             <!-- file:// is intentionally unsupported: under scoped storage an
@@ -169,14 +158,6 @@
                 <data android:mimeType="image/x-portable-greymap" />
                 <data android:mimeType="image/x-portable-pixmap" />
                 <data android:mimeType="image/x-portable-floatmap" />
-                <data
-                    android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
-                <data
-                    android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-                <data
-                    android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
-                <data android:mimeType="application/haansofthwpx" />
-                <data android:mimeType="application/vnd.hancom.hwpx" />
             </intent-filter>
         </activity>
 

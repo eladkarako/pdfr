@@ -336,56 +336,6 @@ ${body}
   ]);
 }
 
-function escapeXml(text) {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/**
- * A minimal WordprocessingML package. MuPDF only needs `_rels/.rels` pointing
- * at `word/document.xml`; the content types and document relationships are
- * included so the fixture also opens in real Office software.
- */
-function writeDocx(file, paragraphs) {
-  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-${paragraphs
-  .map((text) => `    <w:p><w:r><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>`)
-  .join('\n')}
-  </w:body>
-</w:document>
-`;
-
-  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
-</Relationships>
-`;
-
-  const documentRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>
-`;
-
-  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-  <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-</Types>
-`;
-
-  writeZipStored(file, [
-    { name: '[Content_Types].xml', data: Buffer.from(contentTypes, 'utf8') },
-    { name: '_rels/.rels', data: Buffer.from(rootRels, 'utf8') },
-    { name: 'word/document.xml', data: Buffer.from(documentXml, 'utf8') },
-    { name: 'word/_rels/document.xml.rels', data: Buffer.from(documentRels, 'utf8') },
-  ]);
-}
-
 // ---------------------------------------------------------------------------
 // PNG / CBZ
 // ---------------------------------------------------------------------------
@@ -678,7 +628,7 @@ ${'Markdown text reflows to the current window width, just like EPUB and plain t
 name: PDFr
 formats:
   - markdown
-  - office
+  - images
   - source
 reader:
   reflow: true
@@ -703,14 +653,6 @@ int main(void)
   // Image and PNM fixtures. MuPDF renders each image as a one-page document.
   fs.writeFileSync(path.join(out, 'image.png'), png(480, 320, [40, 110, 200]));
   writePpm(path.join(out, 'image.ppm'), 480, 320, [200, 90, 40]);
-
-  // New-style Office document (OOXML). MuPDF 1.28 renders DOCX, XLSX, PPTX
-  // and HWPX; legacy binary .doc/.xls/.ppt have no handler.
-  writeDocx(path.join(out, 'sample.docx'), [
-    'PDFr DOCX fixture',
-    'MuPDF renders this WordprocessingML document as reflowable HTML.',
-    'A second paragraph checks paragraph spacing and text wrapping.',
-  ]);
 
   if (!values['no-gutenberg']) {
     const timeoutMs = Number.parseInt(values['gutenberg-timeout'], 10);

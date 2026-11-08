@@ -11,8 +11,10 @@
   viewport between the "before" shot and the gesture.
 
   Every run writes before/down/mid/late/settled PNGs to build\zoom-probe\. The
-  late and settled files are hashed: when they are identical, the debounced
-  re-render or reflow landed at exactly the live size.
+  late and settled shots are compared over the reading area (the toolbar and
+  the fading page badge are ignored): a stable score means the deferred render
+  or reflow landed at exactly the live size, while a large score points at a
+  settle jump.
 
   Coordinates default to the pdfr_full AVD (1080x2340). Override
   -ScreenWidth/-ScreenHeight and -EventDevice (find it with
@@ -22,7 +24,7 @@
   powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterY 0.17 -SkipRoot
+  powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterX 0.3 -CenterY 0.17 -SkipRoot
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pan -StartY 1700 -EndY 900
@@ -40,6 +42,11 @@ param(
     # with recognisable content, for example 0.17 for the title of a PDF page.
     [double]$CenterY = 0.45,
 
+    # Fraction of the screen width where the pinch centroid sits. Move it away
+    # from the centre to check that the zoom stays anchored to the midpoint
+    # rather than to the page's left edge or the first finger.
+    [double]$CenterX = 0.5,
+
     [int]$StartGap = 280,
     [int]$EndGap = 620,
     [int]$Gap = 420,
@@ -49,6 +56,11 @@ param(
 
     [int]$Steps = 8,
     [int]$SettleMs = 700,
+
+    # Time between the last finger move and the "late" screenshot. The input
+    # event still has to travel through adb, so capturing immediately raced the
+    # final zoom and made the probe report a jump that never happened.
+    [int]$LateDelayMs = 400,
 
     [string]$OutDir,
     [string]$Prefix = 'zoom',
@@ -124,7 +136,7 @@ function Save-Shot([string]$Name) {
 }
 
 $device = $EventDevice
-$centerX = [int]($ScreenWidth / 2)
+$centerX = [int]($ScreenWidth * $CenterX)
 $centerY = [int]($ScreenHeight * $CenterY)
 
 Ensure-Root
@@ -193,7 +205,7 @@ switch ($Action) {
         Save-Shot 'mid'
 
         Send-Move $endLeft $endRight $centerY
-        Start-Sleep -Milliseconds 150
+        Start-Sleep -Milliseconds $LateDelayMs
         Save-Shot 'late'
 
         Send-Up
@@ -215,7 +227,7 @@ switch ($Action) {
         Save-Shot 'mid'
 
         Send-Move $endLeft $endRight $centerY
-        Start-Sleep -Milliseconds 150
+        Start-Sleep -Milliseconds $LateDelayMs
         Save-Shot 'late'
 
         Send-Up
@@ -243,7 +255,7 @@ switch ($Action) {
             Start-Sleep -Milliseconds 25
         }
         Send-Move $leftX $rightX $EndY
-        Start-Sleep -Milliseconds 150
+        Start-Sleep -Milliseconds $LateDelayMs
         Save-Shot 'late'
 
         Send-Up
@@ -261,13 +273,71 @@ Save-Shot 'settled'
 
 $late = Join-Path $OutDir "$Prefix-late.png"
 $settled = Join-Path $OutDir "$Prefix-settled.png"
+
+# Compare only the reading area: the toolbar and the fading page badge must not
+# count as movement. A real settle jump shifts a large fraction of the page,
+# while a sharper re-render only changes edge pixels by a small amount.
+function Get-SettleDifference([string]$LatePath, [string]$SettledPath) {
+    Add-Type -AssemblyName System.Drawing
+
+    $lateBitmap = [System.Drawing.Bitmap]::FromFile($LatePath)
+    $settledBitmap = [System.Drawing.Bitmap]::FromFile($SettledPath)
+    try {
+        if ($lateBitmap.Width -ne $settledBitmap.Width -or
+            $lateBitmap.Height -ne $settledBitmap.Height) {
+            return [pscustomobject]@{ Mean = 255.0; Changed = 1.0; Comparable = $false }
+        }
+
+        $width = $lateBitmap.Width
+        $height = $lateBitmap.Height
+        $left = 0
+        $right = $width
+        $top = [int]($height * 0.14)
+        $bottom = [int]($height * 0.90)
+        $step = 4
+
+        $total = 0.0
+        $count = 0
+        $changed = 0
+        for ($y = $top; $y -lt $bottom; $y += $step) {
+            for ($x = $left; $x -lt $right; $x += $step) {
+                $a = $lateBitmap.GetPixel($x, $y)
+                $b = $settledBitmap.GetPixel($x, $y)
+                $difference = ([Math]::Abs($a.R - $b.R) +
+                    [Math]::Abs($a.G - $b.G) +
+                    [Math]::Abs($a.B - $b.B)) / 3.0
+                $total += $difference
+                $count++
+                if ($difference -gt 24) { $changed++ }
+            }
+        }
+
+        return [pscustomobject]@{
+            Mean = if ($count -gt 0) { $total / $count } else { 0.0 }
+            Changed = if ($count -gt 0) { $changed / [double]$count } else { 0.0 }
+            Comparable = $true
+        }
+    } finally {
+        $lateBitmap.Dispose()
+        $settledBitmap.Dispose()
+    }
+}
+
 if ((Test-Path $late) -and (Test-Path $settled)) {
-    $lateHash = (Get-FileHash -Algorithm SHA256 $late).Hash
-    $settledHash = (Get-FileHash -Algorithm SHA256 $settled).Hash
-    if ($lateHash -eq $settledHash) {
-        Write-Host '[PDFr] late and settled are identical: no settle jump.'
+    $difference = Get-SettleDifference $late $settled
+    if (-not $difference.Comparable) {
+        Write-Host '[PDFr] late and settled have different sizes: compare them for a jump.'
+    } elseif ($difference.Mean -lt 1.5 -and $difference.Changed -lt 0.02) {
+        Write-Host ('[PDFr] late and settled are stable: no settle jump ' +
+            "(mean {0:N2}, changed {1:P1})." -f $difference.Mean, $difference.Changed)
+    } elseif ($difference.Mean -lt 6.0 -and $difference.Changed -lt 0.15) {
+        Write-Host ('[PDFr] late and settled differ slightly, likely a sharper ' +
+            "re-render rather than a jump (mean {0:N2}, changed {1:P1})." -f
+            $difference.Mean, $difference.Changed)
     } else {
-        Write-Host '[PDFr] late and settled differ: compare them for a size or position jump.'
+        Write-Host ('[PDFr] late and settled differ substantially: compare them ' +
+            "for a size or position jump (mean {0:N2}, changed {1:P1})." -f
+            $difference.Mean, $difference.Changed)
     }
 }
 

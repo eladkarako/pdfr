@@ -48,11 +48,7 @@ class DocumentFormatsTest {
     }
 
     @Test
-    fun mapsOfficeAndImageExtensions() {
-        assertEquals(DocumentFormats.DOCX, DocumentFormats.mimeTypeForName("letter.docx"))
-        assertEquals(DocumentFormats.XLSX, DocumentFormats.mimeTypeForName("sheet.xlsx"))
-        assertEquals(DocumentFormats.PPTX, DocumentFormats.mimeTypeForName("deck.pptx"))
-        assertEquals(DocumentFormats.HWPX, DocumentFormats.mimeTypeForName("note.hwpx"))
+    fun mapsImageExtensions() {
         assertEquals("image/png", DocumentFormats.mimeTypeForName("image.png"))
         assertEquals("image/jpeg", DocumentFormats.mimeTypeForName("photo.jpeg"))
         assertEquals("image/x-portable-anymap", DocumentFormats.mimeTypeForName("image.pnm"))
@@ -61,9 +57,13 @@ class DocumentFormatsTest {
     }
 
     @Test
-    fun legacyOfficeFormatsStayUnmapped() {
-        // MuPDF has no handler for the old binary Office formats, so PDFr must
-        // not claim to open them.
+    fun officeFormatsStayUnmapped() {
+        // Office support is intentionally absent: neither OOXML
+        // (DOCX/XLSX/PPTX/HWPX) nor the old binary formats are advertised.
+        assertNull(DocumentFormats.mimeTypeForName("letter.docx"))
+        assertNull(DocumentFormats.mimeTypeForName("sheet.xlsx"))
+        assertNull(DocumentFormats.mimeTypeForName("deck.pptx"))
+        assertNull(DocumentFormats.mimeTypeForName("note.hwpx"))
         assertNull(DocumentFormats.mimeTypeForName("letter.doc"))
         assertNull(DocumentFormats.mimeTypeForName("sheet.xls"))
         assertNull(DocumentFormats.mimeTypeForName("deck.ppt"))
@@ -209,8 +209,12 @@ class DocumentFormatsTest {
         assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains(DocumentFormats.PDF))
         assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains(DocumentFormats.EPUB))
         assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains(DocumentFormats.MARKDOWN))
-        assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains(DocumentFormats.DOCX))
         assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains("image/*"))
+        assertFalse(
+            DocumentFormats.PICKER_MIME_TYPES.any { mime ->
+                mime.contains("openxmlformats") || mime.contains("hwpx")
+            },
+        )
     }
 
     @Test

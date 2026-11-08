@@ -9,8 +9,6 @@ import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
 import com.artifex.mupdf.fitz.Page
-import com.artifex.mupdf.fitz.Point
-import com.artifex.mupdf.fitz.Quad
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.RectI
 import com.artifex.mupdf.fitz.StructuredText
@@ -47,13 +45,6 @@ data class SelectionQuad(
 data class TextSelection(
     val quads: List<SelectionQuad>,
     val text: String,
-)
-
-data class SnappedSelection(
-    val startX: Float,
-    val startY: Float,
-    val endX: Float,
-    val endY: Float,
 )
 
 /**
@@ -256,45 +247,42 @@ class MuPdfDocument private constructor(
         }
     }
 
-    /** Selects the word at a page-space point. */
-    fun snapWord(index: Int, x: Float, y: Float): SnappedSelection? = synchronized(this) {
-        val text = structuredText(index) ?: return null
-
-        return runCatching {
-            val start = Point(x, y)
-            val end = Point(x, y)
-            text.snapSelection(start, end, StructuredText.SELECT_WORDS)
-            if (!start.x.isFinite() || !start.y.isFinite() ||
-                !end.x.isFinite() || !end.y.isFinite()
-            ) {
-                null
-            } else {
-                SnappedSelection(start.x, start.y, end.x, end.y)
-            }
-        }.getOrNull()
-    }
-
-    fun select(
-        index: Int,
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float,
-    ): TextSelection? = synchronized(this) {
-        val text = structuredText(index) ?: return null
-
-        return runCatching {
-            val start = Point(startX, startY)
-            val end = Point(endX, endY)
-            val quads = text.highlight(start, end) ?: return null
-            val copy = text.copy(start, end).orEmpty()
-            TextSelection(quads.map { it.toSelectionQuad() }, copy)
-        }.getOrNull()
-    }
-
+    /**
+     * Selects every text block on [index], in reading order.
+     *
+     * MuPDF's selection rectangle (`highlight`) is limited to the text flow it
+     * starts in, so it can miss a second column or a detached block. Walking the
+     * structured text's blocks includes all of them; each line contributes one
+     * highlight quad.
+     */
     fun selectAll(index: Int): TextSelection? = synchronized(this) {
-        val bounds = pageBounds(index) ?: return null
-        select(index, bounds.x0, bounds.y0, bounds.x1, bounds.y1)
+        val text = structuredText(index) ?: return null
+
+        return runCatching {
+            val blocks = text.getBlocks() ?: return null
+            val quads = ArrayList<SelectionQuad>()
+            val copy = StringBuilder()
+
+            for (block in blocks) {
+                for (line in block.lines) {
+                    // MuPDF already computes the line box. Per-character quads
+                    // can be infinite for synthetic glyphs (for example the
+                    // newline at the end of a line), which would turn the
+                    // highlight into a page-sized rectangle.
+                    val bbox = line.bbox
+                    if (bbox != null && !bbox.isEmpty() && bbox.isValid()) {
+                        quads.add(bbox.toSelectionQuad())
+                    }
+                    for (ch in line.chars) {
+                        if (Character.isValidCodePoint(ch.c)) copy.appendCodePoint(ch.c)
+                    }
+                    copy.append('\n')
+                }
+                copy.append('\n')
+            }
+
+            if (quads.isEmpty()) null else TextSelection(quads, copy.toString().trim())
+        }.getOrNull()
     }
 
     fun info(): DocumentInfo = synchronized(this) {
@@ -596,15 +584,15 @@ class MuPdfDocument private constructor(
             }
         }
 
-        private fun Quad.toSelectionQuad() = SelectionQuad(
-            ulX = ul_x,
-            ulY = ul_y,
-            urX = ur_x,
-            urY = ur_y,
-            llX = ll_x,
-            llY = ll_y,
-            lrX = lr_x,
-            lrY = lr_y,
+        private fun Rect.toSelectionQuad() = SelectionQuad(
+            ulX = x0,
+            ulY = y0,
+            urX = x1,
+            urY = y0,
+            llX = x0,
+            llY = y1,
+            lrX = x1,
+            lrY = y1,
         )
     }
 }

@@ -41,7 +41,8 @@ tools\manual-testing.bat
 | `open-fixture.bat <name> [mime]` | Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then sends the app its own FileProvider URI. Needs the debug build. Falls back to a MediaStore `ACTION_VIEW` if the app is not debuggable. |
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
-| `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then reports whether `late` and `settled` are identical. Writes to `build\zoom-probe\` by default. |
+| `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
+| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `info`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
 
@@ -69,7 +70,10 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
 3. **Pinch zoom** - two-finger spread clamps at 600%, pinch together clamps at
    100%. Single-finger scrolling still works while zoomed. `zoom-probe.ps1`
    records the sequence for later inspection.
-4. **Text selection** - long-press a word, drag, then adjust either end with the blue handles before choosing Copy / Select all / Close.
+4. **Text selection** - long-press anywhere on a page to open the page menu,
+   choose **Select all**, and check that every text block (including footers)
+   is highlighted and that **Copy** appears. Tapping the page dismisses it.
+   `reader-actions.ps1 -Action select-all` repeats this automatically.
 5. **Reorder pages** - overflow menu -> Reorder pages -> `1-3,7,9-e,3` on
    `sample.pdf` produces an 11-page `sample (reordered).pdf`. `show-cache.bat`
    should show the new name; the old cache file is gone. Pages not listed are
@@ -89,9 +93,9 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
     overflow -> Monospace: on/off. All three should reflow.
 11. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
     zoom enlarges the layout.
-12. **Markdown / Office** - open `guide.md` and `sample.docx`; headings, lists
-    and paragraphs should reflow. `guide.markdown` also works through the
-    temporary `.md` alias.
+12. **Markdown** - open `guide.md`; headings, lists and paragraphs should
+    reflow. `guide.markdown` also works through the temporary `.md` alias.
+    Office files (DOCX/XLSX/PPTX/HWPX) are not supported.
 13. **Source and config text** - open `config.yaml` and `main.c`; both should
     reflow as monospace plain text. Copy `notes.txt` to `notes.xyz` and open it:
     the unknown suffix must fall back to text detection. JSON, CSV, TSV, shell
@@ -164,18 +168,71 @@ Each run writes `-before`, `-down`, `-mid`, `-late` and `-settled` PNGs to
 - `down` still shows the old size, while `mid` already shows the page enlarged
   under the fingers (live resize, not a snap after the gesture);
 - the touched point stays in place between `down` and `mid`;
-- `late` and `settled` are identical: the debounced bitmap/reflow landed at
-  exactly the live size (the script hashes both files and says so);
+- `late` and `settled` score as stable (mean under 1.5, fewer than 2% of sampled
+  pixels changed): the debounced bitmap/reflow landed at exactly the live size.
+  The toolbar and the fading page badge are excluded from the comparison;
 - a two-finger `pan` moves the content without changing its size.
+
+Reflowable documents repaginate when the deferred layout lands after the finger
+lift, so `late` (still the old pages, scaled) and `settled` (new pagination)
+differ by design. Use fixed-layout `sample.pdf` for the no-jump check; for
+reflowable text, confirm that the content under the midpoint stays put during
+the gesture and that scrolling afterwards feels normal.
 
 Use `-SkipRoot` when adbd is already root (the usual emulator state). Plain
 `adb root` can restart adbd, resize the viewport for a frame and trigger an
 extra reflow, which looks like a jump between `before` and `down`.
 
-Other options: `-CenterY 0.17`, `-StartGap`, `-EndGap`, `-Gap`, `-StartY`,
-`-EndY`, `-Steps`, `-SettleMs`, `-OutDir`, `-Prefix`, `-EventDevice`,
-`-ScreenWidth` and `-ScreenHeight`. The same actions are available from the
-`manual-testing.bat` menu as option 11.
+Other options: `-CenterX 0.3`, `-CenterY 0.17`, `-StartGap`, `-EndGap`,
+`-Gap`, `-StartY`, `-EndY`, `-Steps`, `-SettleMs`, `-OutDir`, `-Prefix`,
+`-EventDevice`, `-ScreenWidth` and `-ScreenHeight`. Moving `-CenterX` away from
+0.5 is the quickest way to confirm a pinch anchors on the midpoint between the
+fingers instead of drifting towards the starter finger. The same actions are
+available from the `manual-testing.bat` menu as option 11.
+
+### Reader action checks
+
+`reader-actions.ps1` covers the single-finger side of the reader: the
+long-press page menu, Select all/Copy, the overflow menu, the document-info
+dialog and scrolling.
+
+```bat
+tools\open-fixture.bat sample.pdf
+
+:: Long-press over text, then inspect the page menu.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press
+
+:: Select the whole page, then copy it.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action select-all
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action copy -Prefix copied
+
+:: Overflow menu and document info.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
+
+:: Scroll and take a plain screenshot.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action scroll
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action screenshot
+```
+
+The menu actions read `uiautomator dump` and tap the visible **Select all**,
+**Copy** or **Document info** button, so they do not hard-code a pixel position.
+If a build changes the labels, `-Action list` prints every visible text and
+content description. Override the press point with `-X`/`-Y` and the overflow
+button with `-MenuX`/`-MenuY`; both are screen fractions.
+
+Screenshots and the dumped `window.xml` land in `build\reader-actions\`. Check
+that:
+
+- the long-press menu shows only **Select all** and nothing is highlighted before
+  it is tapped;
+- after Select all, every text line on the page is highlighted and only **Copy**
+  remains;
+- Copy empties the clipboard toast and dismisses the menu;
+- the info dialog scrolls and never covers more than three quarters of the
+  screen;
+- the page indicator starts dim and fades to nearly invisible after about five
+  seconds, then returns on the next scroll.
 
 ## Test-fixture generator
 
@@ -226,7 +283,6 @@ uses only the Python standard library.
 | `guide.markdown` | Same content with a suffix MuPDF does not know, to exercise the temporary `.md` alias. |
 | `config.yaml` | A small YAML file, opened through the temporary `.txt` text path. |
 | `main.c` | A small C source file, also opened as plain text. |
-| `sample.docx` | A minimal WordprocessingML document with three paragraphs. |
 | `image.png` | A 480x320 solid-colour image, one page when opened. |
 | `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |
 | `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |

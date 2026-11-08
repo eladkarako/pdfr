@@ -10,7 +10,7 @@
     <string name="save_failed">Couldn\'t save the copy.</string>
 
     <string name="empty_title">Nothing open</string>
-    <string name="empty_body">Open a PDF, EPUB, Markdown, Office document, image, comic archive or text file to start reading. PDFr also appears in other apps\' "Open with" and "Share" menus.</string>
+    <string name="empty_body">Open a PDF, EPUB, Markdown document, image, comic archive or text file to start reading. PDFr also appears in other apps\' "Open with" and "Share" menus.</string>
 
     <string name="loading">Opening…</string>
     <string name="error_title">Couldn\'t open that file</string>

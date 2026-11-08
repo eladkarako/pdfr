@@ -1,7 +1,7 @@
 # PDFr instrumented tests (device)
 
 These tests exercise the real MuPDF native library on an emulator or device.
-They generate their own PDF/TXT/Markdown/DOCX/image fixtures at runtime, so
+They generate their own PDF/TXT/Markdown/image fixtures at runtime, so
 nothing binary is committed.
 
 ```bat
@@ -23,13 +23,15 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 | File | Purpose |
 | --- | --- |
 | `TestPdfWriter.kt` | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`. |
-| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/compacts/linearizes, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), DOCX, single-page images, and fixed-layout/reflowable zoom rendering. |
+| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/compacts/linearizes, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
 
 ## What is covered
 
 - PDF info (`kind`, `format`, page count, encryption flag).
 - Page bounds and bitmap rendering.
-- Text selection and copy input for the most important feature.
+- Text selection and copy input for the most important feature. `selectAll`
+  walks native text blocks, so a page title and footer in separate blocks both
+  contribute highlight quads and copy text.
 - `Reorder`: page order and duplicates are preserved (`[2, 0, 0, 3]` becomes
   pages 3, 1, 1, 4 of the source).
 - `Rotate 180°`: only the listed pages get `/Rotate 180`, the others stay at 0.
@@ -44,7 +46,8 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
   `.txt`/`.nfo`/`.text`/`.log` extensions.
 - Markdown: reflow and text extraction for `.md`, `.markdown`, `.mdown`, `.mkd`
   and `.mkdn` (the longer suffixes go through a temporary `.md` copy).
-- DOCX: a generated OOXML package opens as reflowable HTML.
+- DOCX/XLSX/PPTX/HWPX: intentionally unsupported, so the reader must not claim
+  them in the picker or the Open with/Share filters.
 - Source/config text: `.cfg`, `.ini`, `.yaml`, `.yml`, `.json`, `.csv`, `.tsv`,
   `.c`, `.cpp`, `.js`, `.sh` and `.xml` open as plain text, and an unknown
   `.xyz` suffix falls back to text detection.
@@ -58,7 +61,8 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 The gesture itself (live resize under the fingers, anchored centroid, deferred
 reflow, two-finger pan) cannot be driven through `am instrument`, because it
 needs real multitouch. `tools\zoom-probe.ps1` records that check as a sequence
-of screenshots; see `tools\README.md`.
+of screenshots, and `tools\reader-actions.ps1` covers long-press, Select all,
+Copy and the menu/dialog checks; see `tools\README.md`.
 
 `MuPdfDocumentInstrumentedTest` dispatches every MuPDF call through
 `MuPdf.dispatcher` and every qpdf call through `Qpdf.dispatcher`, matching the
