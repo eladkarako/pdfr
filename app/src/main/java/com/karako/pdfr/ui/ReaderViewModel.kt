@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.karako.pdfr.R
+import com.karako.pdfr.data.DocumentDates
 import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.DocumentInfo
 import com.karako.pdfr.data.DocumentMetadataDraft
@@ -20,7 +21,6 @@ import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
-import com.karako.pdfr.data.DocumentDates
 import com.karako.pdfr.data.TextSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -504,13 +504,25 @@ class ReaderViewModel(
         } catch (e: DocumentPasswordRequiredException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, effectiveName, mimeType, wrongPassword = false, lastModified = lastModified)
+                lock(
+                    file,
+                    effectiveName,
+                    mimeType,
+                    wrongPassword = false,
+                    lastModified = lastModified
+                )
             }
             return false
         } catch (e: DocumentWrongPasswordException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, effectiveName, mimeType, wrongPassword = true, lastModified = lastModified)
+                lock(
+                    file,
+                    effectiveName,
+                    mimeType,
+                    wrongPassword = true,
+                    lastModified = lastModified
+                )
             }
             return false
         } catch (e: CancellationException) {
@@ -857,7 +869,8 @@ class ReaderViewModel(
                 output = withContext(
                     if (kind == RewriteKind.LINEARIZE) Qpdf.dispatcher else MuPdf.dispatcher,
                 ) {
-                    val target = DocumentStore.derivedFile(app, derivedDisplayName(ready.displayName, kind))
+                    val target =
+                        DocumentStore.derivedFile(app, derivedDisplayName(ready.displayName, kind))
                     val saved = if (kind == RewriteKind.LINEARIZE) {
                         val error = Qpdf.linearize(
                             source = ready.file,
@@ -890,8 +903,9 @@ class ReaderViewModel(
                 if (created == null) {
                     val message = when {
                         kind == RewriteKind.LINEARIZE &&
-                            failure?.contains("not available") == true ->
+                                failure?.contains("not available") == true ->
                             R.string.linearize_unavailable
+
                         else -> R.string.rewrite_failed
                     }
                     _messages.tryEmit(app.getString(message))

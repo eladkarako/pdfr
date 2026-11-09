@@ -48,7 +48,7 @@ internal fun TextSizeDialog(
                     value = value,
                     onValueChange = { value = it },
                     valueRange = TextSettings.MIN_SIZE_PT.toFloat()..
-                        TextSettings.MAX_SIZE_PT.toFloat(),
+                            TextSettings.MAX_SIZE_PT.toFloat(),
                     steps = TextSettings.MAX_SIZE_PT - TextSettings.MIN_SIZE_PT - 1,
                 )
                 Text(

@@ -35,7 +35,7 @@ object DocumentDates {
      */
     private val pdfDate = Regex(
         "^D:(\\d{4})(\\d{2})?(\\d{2})?(\\d{2})?(\\d{2})?(\\d{2})?" +
-            "(?:([+\\-Z])(\\d{2})?'?(\\d{2})?'?)?$",
+                "(?:([+\\-Z])(\\d{2})?'?(\\d{2})?'?)?$",
         RegexOption.IGNORE_CASE,
     )
 
@@ -103,6 +103,7 @@ object DocumentDates {
                     String.format(Locale.US, "GMT%s%02d:%02d", sign, hours, minutes),
                 )
             }
+
             sign.equals("Z", ignoreCase = true) -> TimeZone.getTimeZone("UTC")
             else -> timeZone
         }

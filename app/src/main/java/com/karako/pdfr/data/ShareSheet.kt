@@ -47,6 +47,11 @@ object ShareSheet {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
-        context.startActivity(Intent.createChooser(send, context.getString(R.string.share_document)))
+        context.startActivity(
+            Intent.createChooser(
+                send,
+                context.getString(R.string.share_document)
+            )
+        )
     }
 }

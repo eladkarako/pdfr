@@ -59,7 +59,8 @@ data class DocumentMetadataDraft(
             values[Document.META_INFO_CREATIONDATE] = DocumentDates.toPdfDate(it, timeZone) ?: it
         }
         modified?.let {
-            values[Document.META_INFO_MODIFICATIONDATE] = DocumentDates.toPdfDate(it, timeZone) ?: it
+            values[Document.META_INFO_MODIFICATIONDATE] =
+                DocumentDates.toPdfDate(it, timeZone) ?: it
         }
         return values
     }

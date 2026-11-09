@@ -57,9 +57,17 @@ object PageRanges {
             }
 
             val start = resolve(first, pageCount)
-                ?: return Result.Error(Reason.OUT_OF_RANGE, token = token, page = numberOrNull(first))
+                ?: return Result.Error(
+                    Reason.OUT_OF_RANGE,
+                    token = token,
+                    page = numberOrNull(first)
+                )
             val end = resolve(last, pageCount)
-                ?: return Result.Error(Reason.OUT_OF_RANGE, token = token, page = numberOrNull(last))
+                ?: return Result.Error(
+                    Reason.OUT_OF_RANGE,
+                    token = token,
+                    page = numberOrNull(last)
+                )
 
             if (start > end) return Result.Error(Reason.REVERSED, token = token)
 

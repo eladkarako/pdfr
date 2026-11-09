@@ -8,7 +8,6 @@ import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.Matrix
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
-import com.artifex.mupdf.fitz.Page
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.RectI
 import com.artifex.mupdf.fitz.StructuredText
@@ -71,7 +70,8 @@ class MuPdfDocument private constructor(
      */
     val isPlainText: Boolean = runCatching {
         DocumentFormats.isPlainTextName(file.name) ||
-            document.getMetaData(Document.META_FORMAT)?.equals("Text", ignoreCase = true) == true
+                document.getMetaData(Document.META_FORMAT)
+                    ?.equals("Text", ignoreCase = true) == true
     }.getOrDefault(false)
 
     private val pageBounds = HashMap<Int, PageBounds>()

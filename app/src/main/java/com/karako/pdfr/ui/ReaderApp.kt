@@ -70,9 +70,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,7 +106,6 @@ import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.ShareSheet
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -226,6 +225,7 @@ fun ReaderApp(
             is ReaderState.Ready,
             ReaderState.Empty,
             is ReaderState.Error -> showPasswordDialog = false
+
             is ReaderState.Loading -> Unit
         }
         if (state !is ReaderState.Ready) {
@@ -794,11 +794,13 @@ private fun pageRangeError(error: PageRanges.Result.Error, pageCount: Int): Stri
             R.string.page_error_token,
             error.token.orEmpty(),
         )
+
         PageRanges.Reason.OUT_OF_RANGE -> stringResource(
             R.string.page_error_range,
             error.page ?: 0,
             pageCount,
         )
+
         PageRanges.Reason.REVERSED -> stringResource(R.string.page_error_reversed)
         PageRanges.Reason.TOO_MANY -> stringResource(R.string.page_error_too_many)
     }
@@ -988,7 +990,7 @@ private fun DocumentReader(
                 page = primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex,
                 zoom = latestZoom,
                 active = pinchActive || listState.isScrollInProgress ||
-                    horizontalScroll.isScrollInProgress,
+                        horizontalScroll.isScrollInProgress,
                 verticalOffset = listState.firstVisibleItemScrollOffset,
                 horizontalOffset = horizontalScroll.value,
             )
@@ -1320,7 +1322,7 @@ private fun PageItem(
 
     val pageWidthPx = if (reflowable) {
         (viewportWidthPx *
-            ZoomMath.reflowPageScale(liveZoom, renderedLayoutZoom))
+                ZoomMath.reflowPageScale(liveZoom, renderedLayoutZoom))
             .roundToInt()
             .coerceAtLeast(1)
     } else {

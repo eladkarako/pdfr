@@ -5,16 +5,16 @@ cmake_minimum_required(VERSION 3.22)
 # passed in from that script so normal Gradle builds never need the sources.
 project(pdfr_qpdf LANGUAGES CXX)
 
-if(NOT QPDF_SOURCE_DIR OR NOT QPDF_BUILD_DIR OR NOT QPDF_LIB OR NOT JPEG_LIB)
+if (NOT QPDF_SOURCE_DIR OR NOT QPDF_BUILD_DIR OR NOT QPDF_LIB OR NOT JPEG_LIB)
     message(FATAL_ERROR "QPDF_SOURCE_DIR, QPDF_BUILD_DIR, QPDF_LIB and JPEG_LIB are required")
-endif()
+endif ()
 
 add_library(qpdfjni SHARED qpdf_jni.cpp)
 
 target_compile_features(qpdfjni PRIVATE cxx_std_20)
 target_include_directories(
-    qpdfjni
-    PRIVATE
+        qpdfjni
+        PRIVATE
         "${QPDF_SOURCE_DIR}/include"
         "${QPDF_BUILD_DIR}/libqpdf"
 )

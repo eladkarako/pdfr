@@ -1,10 +1,7 @@
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
-import com.android.build.api.variant.FilterConfiguration
-
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
 import java.util.Properties
-import org.gradle.api.tasks.Copy
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -24,39 +21,39 @@ fun parse_and_validate_version(version_string: String): Triple<Int, Int, Int> {
     println("[VERSION] parse_and_validate_version version_string:${version_string}")
 
     val parts = version_string.split(".").map(String::toInt)
-    
+
     require(parts.size == 3) {
         "appVersionName must have three parts (major.minor.patch), got: ${version_string}"
     }
     println("[VERSION] Parts: major=${parts[0]}, minor=${parts[1]}, patch=${parts[2]}")
-    
+
     require(parts.all { it >= 0 }) {
         "All version parts must be non-negative"
     }
     println("[VERSION] All parts are non-negative [OK]")
-    
+
     require(parts[1] in 0..99 && parts[2] in 0..99) {
         "Minor and patch must be 0–99, got: ${parts[1]}.${parts[2]}"
     }
     println("[VERSION] Minor and patch in valid range (0–99) [OK]")
-    
+
     return Triple(parts[0], parts[1], parts[2])
 }
 
 fun calculate_version_code(major: Int, minor: Int, patch: Int): Int {
     println("[VERSION] calculate_version_code major:${major}, minor:${minor}, patch:${patch}")
-    
+
     val base_version_code = major * 10_000 + minor * 100 + patch
     println("[VERSION] Base version code: ${base_version_code}")
-    
+
     val app_version_code = base_version_code * 10
     println("[VERSION] App version code (with APK type suffix): ${app_version_code}")
-    
+
     require(app_version_code in 1..2_100_000_000) {
         "Generated versionCode is outside Android's supported range: ${app_version_code}"
     }
     println("[VERSION] Version code is within valid range [OK]")
-    
+
     return base_version_code
 }
 
@@ -76,7 +73,6 @@ val app_version_code = base_version_code * 10
 println("[VERSION] ============================================\n")
 
 
-
 // ============================================================================
 // KEYSTORE CONFIGURATION
 // ============================================================================
@@ -91,10 +87,10 @@ data class KeystoreConfig(
 fun load_keystore_config(): KeystoreConfig? {
     println("[KEYSTORE] ============================================")
     println("[KEYSTORE] Loading keystore configuration...")
-    
+
     val properties = Properties()
     val properties_file = rootProject.file("keystore.properties")
-    
+
     if (properties_file.exists()) {
         println("[KEYSTORE] Found keystore.properties file: ${properties_file.absolutePath}")
         FileInputStream(properties_file).use(properties::load)
@@ -102,61 +98,61 @@ fun load_keystore_config(): KeystoreConfig? {
     } else {
         println("[KEYSTORE] keystore.properties file not found, trying environment variables")
     }
-    
+
     fun get_value(property_key: String, env_key: String): String? {
         val from_file = properties.getProperty(property_key)
-        
+
         if (from_file != null) {
             println("[KEYSTORE] Found '${property_key}' in './keystore.properties' file")
             return from_file
         }
-        
+
         val from_env = System.getenv(env_key)
         if (from_env != null) {
             println("[KEYSTORE] Found '${env_key}' in environment variables")
             return from_env
         }
-        
+
         println("[KEYSTORE] '${property_key}' / '${env_key}' not found anywhere")
         return null
     }
-    
+
     val storeFile = get_value("storeFile", "PDFR_STORE_FILE")
-    
+
     if (storeFile == null) {
         println("[KEYSTORE] Keystore file not configured. Using debug signing for release builds.")
         println("[KEYSTORE] ============================================\n")
         return null
     }
-    
+
     println("[KEYSTORE] Keystore file configured: ${storeFile}")
-    
+
     val storePassword = get_value("storePassword", "PDFR_STORE_PASSWORD")
     require(storePassword != null) {
         "storePassword not found in keystore.properties or PDFR_STORE_PASSWORD env var"
     }
     println("[KEYSTORE] Keystore password configured [OK]")
-    
+
     val keyAlias = get_value("keyAlias", "PDFR_KEY_ALIAS")
     require(keyAlias != null) {
         "keyAlias not found in keystore.properties or PDFR_KEY_ALIAS env var"
     }
     println("[KEYSTORE] Key alias configured: ${keyAlias} [OK]")
-    
+
     val keyPassword = get_value("keyPassword", "PDFR_KEY_PASSWORD")
     require(keyPassword != null) {
         "keyPassword not found in keystore.properties or PDFR_KEY_PASSWORD env var"
     }
     println("[KEYSTORE] Key password configured [OK]")
-    
+
     println("[KEYSTORE] All keystore credentials loaded successfully [OK]")
     println("[KEYSTORE] ============================================\n")
 
     return KeystoreConfig(
-        storeFile     = storeFile,
+        storeFile = storeFile,
         storePassword = storePassword,
-        keyAlias      = keyAlias,
-        keyPassword   = keyPassword
+        keyAlias = keyAlias,
+        keyPassword = keyPassword
     )
 }
 
@@ -190,7 +186,7 @@ android {
         abi {
             println("[ANDROID] ABI splits enabled: armeabi-v7a, arm64-v8a, x86, x86_64")
             println("[ANDROID] Universal APK enabled for all architectures")
-            
+
             isEnable = true
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
@@ -201,7 +197,7 @@ android {
     signingConfigs {
         if (keystore_config != null) {
             println("[SIGNING] Creating release signing config with keystore credentials")
-            
+
             create("release") {
                 storeFile = rootProject.file(keystore_config.storeFile)
                 storePassword = keystore_config.storePassword
@@ -249,10 +245,10 @@ android {
     buildTypes {
         release {
             println("[BUILD] Configuring release build type...")
-            
+
             isMinifyEnabled = true
             println("[BUILD] Minification enabled")
-            
+
             isShrinkResources = false
             println("[BUILD] Resource shrinking disabled (ProGuard handles minification)")
 
@@ -385,24 +381,24 @@ println("[ABI] ============================================\n")
 println("[DEPS] Adding dependencies...")
 
 dependencies {
-  implementation("androidx.activity:activity-compose:1.9.3")                  // Activity for Compose
-  implementation("androidx.compose.material3:material3")                      // Material Design 3 UI
-  implementation("androidx.compose.ui:ui")                                    // Jetpack Compose UI framework
-  implementation("androidx.core:core-ktx:1.15.0")                             // AndroidX core libraries + Kotlin essentials
-  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")        // Lifecycle support
-  implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")          // Lifecycle support
-  implementation("com.artifex.mupdf:fitz:1.28.5")                             // MuPDF engine for PDF, EPUB, XPS, CBZ and text selection
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // Kotlin Coroutines for async work.
-  implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
+    implementation("androidx.activity:activity-compose:1.9.3")                  // Activity for Compose
+    implementation("androidx.compose.material3:material3")                      // Material Design 3 UI
+    implementation("androidx.compose.ui:ui")                                    // Jetpack Compose UI framework
+    implementation("androidx.core:core-ktx:1.15.0")                             // AndroidX core libraries + Kotlin essentials
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")        // Lifecycle support
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")          // Lifecycle support
+    implementation("com.artifex.mupdf:fitz:1.28.5")                             // MuPDF engine for PDF, EPUB, XPS, CBZ and text selection
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // Kotlin Coroutines for async work.
+    implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
 
-  // Pure JVM tests for parsing and small data classes.
-  testImplementation("junit:junit:4.13.2")
+    // Pure JVM tests for parsing and small data classes.
+    testImplementation("junit:junit:4.13.2")
 
-  // On-device tests use the real MuPDF native library and Android Bitmap.
-  androidTestImplementation("androidx.test:runner:1.6.2")
-  androidTestImplementation("androidx.test:rules:1.6.1")
-  androidTestImplementation("androidx.test.ext:junit:1.2.1")
-  androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    // On-device tests use the real MuPDF native library and Android Bitmap.
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 
 println("[DEPS] Dependencies configured [OK]")

@@ -50,7 +50,7 @@ object TestPdfWriter {
             obj(
                 page,
                 "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] " +
-                    "/Resources << /Font << /F1 3 0 R >> >> /Contents $content 0 R >>",
+                        "/Resources << /Font << /F1 3 0 R >> >> /Contents $content 0 R >>",
             )
 
             offsets[content] = out.size()

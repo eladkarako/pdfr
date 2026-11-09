@@ -35,7 +35,7 @@ data class DocumentInfo(
     /** True for PDF documents; the page-rewrite actions are PDF-only. */
     val isPdf: Boolean
         get() = kind.equals("PDF", ignoreCase = true) ||
-            format?.trim()?.uppercase()?.startsWith("PDF") == true
+                format?.trim()?.uppercase()?.startsWith("PDF") == true
 }
 
 /** The document is encrypted and no password has been supplied yet. */

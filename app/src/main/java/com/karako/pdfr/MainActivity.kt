@@ -63,7 +63,12 @@ class MainActivity : ComponentActivity() {
 
     private fun Intent.documentUri(): Uri? = when (action) {
         Intent.ACTION_VIEW -> data
-        Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)
+        Intent.ACTION_SEND -> IntentCompat.getParcelableExtra(
+            this,
+            Intent.EXTRA_STREAM,
+            Uri::class.java
+        )
+
         else -> null
     }
 }

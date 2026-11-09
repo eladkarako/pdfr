@@ -17,32 +17,34 @@
 
 namespace {
 
-std::string fromJava(JNIEnv* env, jstring value) {
-    if (value == nullptr) {
-        return {};
+    std::string fromJava(JNIEnv *env, jstring value) {
+        if (value == nullptr) {
+            return {};
+        }
+        const char *chars = env->GetStringUTFChars(value, nullptr);
+        if (chars == nullptr) {
+            return {};
+        }
+        std::string result(chars);
+        env->ReleaseStringUTFChars(value, chars);
+        return result;
     }
-    const char* chars = env->GetStringUTFChars(value, nullptr);
-    if (chars == nullptr) {
-        return {};
-    }
-    std::string result(chars);
-    env->ReleaseStringUTFChars(value, chars);
-    return result;
-}
 
-jstring failure(JNIEnv* env, const std::string& message) {
-    return env->NewStringUTF(message.empty() ? "qpdf failed" : message.c_str());
-}
+    jstring failure(JNIEnv *env, const std::string &message) {
+        return env->NewStringUTF(message.empty() ? "qpdf failed" : message.c_str());
+    }
 
 }  // namespace
 
-extern "C" JNIEXPORT jstring JNICALL
+extern "C" JNIEXPORT jstring
+
+JNICALL
 Java_com_karako_pdfr_data_Qpdf_nativeLinearize(
-    JNIEnv* env,
-    jobject /* thiz */,
-    jstring inputPath,
-    jstring outputPath,
-    jstring password) {
+        JNIEnv *env,
+        jobject /* thiz */,
+        jstring inputPath,
+        jstring outputPath,
+        jstring password) {
     const std::string input = fromJava(env, inputPath);
     const std::string output = fromJava(env, outputPath);
     const std::string secret = fromJava(env, password);
@@ -62,7 +64,7 @@ Java_com_karako_pdfr_data_Qpdf_nativeLinearize(
         writer.write();
 
         return nullptr;
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         return failure(env, e.what());
     } catch (...) {
         return failure(env, "unknown qpdf error");

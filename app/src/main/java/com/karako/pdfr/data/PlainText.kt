@@ -26,14 +26,19 @@ object PlainText {
         val (charset, offset) = when {
             startsWith(bytes, 0xFF, 0xFE, 0x00, 0x00) ->
                 Charsets.UTF_32LE to 4
+
             startsWith(bytes, 0x00, 0x00, 0xFE, 0xFF) ->
                 Charsets.UTF_32BE to 4
+
             startsWith(bytes, 0xEF, 0xBB, 0xBF) ->
                 Charsets.UTF_8 to 3
+
             startsWith(bytes, 0xFF, 0xFE) ->
                 Charsets.UTF_16LE to 2
+
             startsWith(bytes, 0xFE, 0xFF) ->
                 Charsets.UTF_16BE to 2
+
             else -> Charsets.UTF_8 to 0
         }
 

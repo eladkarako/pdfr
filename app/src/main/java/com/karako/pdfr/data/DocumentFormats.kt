@@ -314,7 +314,7 @@ object DocumentFormats {
         }
         if (read >= 2 &&
             ((sample[0] == 0xFF.toByte() && sample[1] == 0xFE.toByte()) ||
-                (sample[0] == 0xFE.toByte() && sample[1] == 0xFF.toByte()))
+                    (sample[0] == 0xFE.toByte() && sample[1] == 0xFF.toByte()))
         ) {
             return true
         }
@@ -352,12 +352,12 @@ object DocumentFormats {
             return values.indices.all { (bytes[it].toInt() and 0xFF) == values[it] }
         }
         return startsWith(0x25, 0x50, 0x44, 0x46) || // %PDF
-            startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, EPUB, CBZ
-            startsWith(0x89, 0x50, 0x4E, 0x47) || // PNG
-            startsWith(0xFF, 0xD8, 0xFF) || // JPEG
-            startsWith(0x47, 0x49, 0x46, 0x38) || // GIF8
-            startsWith(0x7F, 0x45, 0x4C, 0x46) || // ELF
-            startsWith(0x1F, 0x8B) || // gzip
-            startsWith(0x42, 0x4D) // BMP
+                startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, EPUB, CBZ
+                startsWith(0x89, 0x50, 0x4E, 0x47) || // PNG
+                startsWith(0xFF, 0xD8, 0xFF) || // JPEG
+                startsWith(0x47, 0x49, 0x46, 0x38) || // GIF8
+                startsWith(0x7F, 0x45, 0x4C, 0x46) || // ELF
+                startsWith(0x1F, 0x8B) || // gzip
+                startsWith(0x42, 0x4D) // BMP
     }
 }

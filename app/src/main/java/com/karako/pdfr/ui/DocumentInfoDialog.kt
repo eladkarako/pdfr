@@ -71,8 +71,8 @@ internal fun DocumentInfoDialog(
 ) {
     val context = LocalContext.current
     val maxHeight = (
-        LocalConfiguration.current.screenHeightDp.dp * INFO_DIALOG_MAX_HEIGHT_FRACTION
-        ).coerceAtLeast(260.dp)
+            LocalConfiguration.current.screenHeightDp.dp * INFO_DIALOG_MAX_HEIGHT_FRACTION
+            ).coerceAtLeast(260.dp)
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(

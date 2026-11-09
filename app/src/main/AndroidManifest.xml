@@ -12,11 +12,11 @@
         tools:node="remove" />
 
     <application
-        android:networkSecurityConfig="@xml/network_security_config"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:layoutDirection="ltr"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="false"
         android:theme="@style/Theme.PDFr">
 
@@ -34,64 +34,178 @@
             <!-- "Open with" a document from a content provider. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="content" android:mimeType="application/pdf" />
-                <data android:scheme="content" android:mimeType="application/epub+zip" />
-                <data android:scheme="content" android:mimeType="application/vnd.ms-xpsdocument" />
-                <data android:scheme="content" android:mimeType="application/oxps" />
-                <data android:scheme="content" android:mimeType="application/xps" />
-                <data android:scheme="content" android:mimeType="application/vnd.comicbook+zip" />
-                <data android:scheme="content" android:mimeType="application/x-cbz" />
-                <data android:scheme="content" android:mimeType="application/x-cbt" />
-                <data android:scheme="content" android:mimeType="application/x-fictionbook+xml" />
-                <data android:scheme="content" android:mimeType="application/x-fictionbook" />
-                <data android:scheme="content" android:mimeType="application/x-mobipocket-ebook" />
-                <data android:scheme="content" android:mimeType="text/plain" />
-                <data android:scheme="content" android:mimeType="text/*" />
-                <data android:scheme="content" android:mimeType="text/html" />
-                <data android:scheme="content" android:mimeType="application/xhtml+xml" />
-                <data android:scheme="content" android:mimeType="text/markdown" />
-                <data android:scheme="content" android:mimeType="text/x-markdown" />
-                <data android:scheme="content" android:mimeType="application/json" />
-                <data android:scheme="content" android:mimeType="application/xml" />
-                <data android:scheme="content" android:mimeType="application/x-sh" />
-                <data android:scheme="content" android:mimeType="application/javascript" />
-                <data android:scheme="content" android:mimeType="application/x-javascript" />
-                <data android:scheme="content" android:mimeType="application/ecmascript" />
-                <data android:scheme="content" android:mimeType="application/x-yaml" />
-                <data android:scheme="content" android:mimeType="application/yaml" />
-                <data android:scheme="content" android:mimeType="application/toml" />
-                <data android:scheme="content" android:mimeType="application/sql" />
-                <data android:scheme="content" android:mimeType="application/x-ndjson" />
-                <data android:scheme="content" android:mimeType="application/jsonl" />
-                <data android:scheme="content" android:mimeType="application/x-httpd-php" />
-                <data android:scheme="content" android:mimeType="application/x-perl" />
-                <data android:scheme="content" android:mimeType="application/x-python" />
-                <data android:scheme="content" android:mimeType="application/x-ruby" />
-                <data android:scheme="content" android:mimeType="application/x-tex" />
-                <data android:scheme="content" android:mimeType="application/x-properties" />
-                <data android:scheme="content" android:mimeType="application/csv" />
-                <data android:scheme="content" android:mimeType="application/tsv" />
-                <data android:scheme="content" android:mimeType="image/svg+xml" />
-                <data android:scheme="content" android:mimeType="image/bmp" />
-                <data android:scheme="content" android:mimeType="image/gif" />
-                <data android:scheme="content" android:mimeType="image/jpeg" />
-                <data android:scheme="content" android:mimeType="image/png" />
-                <data android:scheme="content" android:mimeType="image/tiff" />
-                <data android:scheme="content" android:mimeType="image/x-tiff" />
-                <data android:scheme="content" android:mimeType="image/jp2" />
-                <data android:scheme="content" android:mimeType="image/jpx" />
-                <data android:scheme="content" android:mimeType="image/jxr" />
-                <data android:scheme="content" android:mimeType="image/vnd.ms-photo" />
-                <data android:scheme="content" android:mimeType="image/vnd.adobe.photoshop" />
-                <data android:scheme="content" android:mimeType="image/x-jbig2" />
-                <data android:scheme="content" android:mimeType="image/x-portable-anymap" />
-                <data android:scheme="content" android:mimeType="image/x-portable-arbitrarymap" />
-                <data android:scheme="content" android:mimeType="image/x-portable-bitmap" />
-                <data android:scheme="content" android:mimeType="image/x-portable-greymap" />
-                <data android:scheme="content" android:mimeType="image/x-portable-pixmap" />
-                <data android:scheme="content" android:mimeType="image/x-portable-floatmap" />
+
+                <data
+                    android:mimeType="application/pdf"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/epub+zip"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/vnd.ms-xpsdocument"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/oxps"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/xps"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/vnd.comicbook+zip"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-cbz"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-cbt"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-fictionbook+xml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-fictionbook"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-mobipocket-ebook"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="text/plain"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="text/*"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="text/html"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/xhtml+xml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="text/markdown"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="text/x-markdown"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/json"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/xml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-sh"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/javascript"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-javascript"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/ecmascript"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-yaml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/yaml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/toml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/sql"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-ndjson"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/jsonl"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-httpd-php"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-perl"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-python"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-ruby"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-tex"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/x-properties"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/csv"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/tsv"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/svg+xml"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/bmp"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/gif"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/jpeg"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/png"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/tiff"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-tiff"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/jp2"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/jpx"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/jxr"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/vnd.ms-photo"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/vnd.adobe.photoshop"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-jbig2"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-anymap"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-arbitrarymap"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-bitmap"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-greymap"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-pixmap"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="image/x-portable-floatmap"
+                    android:scheme="content" />
             </intent-filter>
 
             <!-- file:// is intentionally unsupported: under scoped storage an
@@ -102,6 +216,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <data android:mimeType="text/*" />
                 <data android:mimeType="application/json" />
                 <data android:mimeType="application/xml" />

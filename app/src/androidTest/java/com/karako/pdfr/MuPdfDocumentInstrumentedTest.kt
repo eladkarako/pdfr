@@ -132,7 +132,7 @@ class MuPdfDocumentInstrumentedTest {
             writeText(
                 (1..120).joinToString("\n\n") {
                     "Paragraph $it: the quick brown fox jumps over the lazy dog " +
-                        "while a second sentence makes the line wrap more than once."
+                            "while a second sentence makes the line wrap more than once."
                 },
             )
         }
