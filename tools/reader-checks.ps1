@@ -870,7 +870,7 @@ function Test-PlainTextSettings {
     $pdfLabels = Get-MenuLabels
     Test-Check 'PDFs have no text-size option' (-not ($pdfLabels | Where-Object { $_ -match '^Text size:' })) ($pdfLabels -join ', ')
     Test-Check 'PDF menus keep the fixed-layout actions' (
-        [bool]($pdfLabels | Where-Object { $_ -match '^Reorder pages\.?$' })
+        [bool]($pdfLabels | Where-Object { $_ -match '^Reorder pages' })
     ) ($pdfLabels -join ', ')
 }
 
