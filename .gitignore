@@ -26,3 +26,4 @@ captures/
 /__build.log
 /__clean_hard.log
 /__verify.log
+/gradle/gradle-daemon-jvm.properties
