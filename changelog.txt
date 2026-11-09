@@ -1,3 +1,6 @@
+26.11.9
+* to work around the lazy text container, that only selects all viewport lines, I'll just skip having select all since it is just a midway to copy the selection, instead I'll have a direct copy all that ignores the selection, side by side with manual selection and copy. entry is in touch menu as well as in the menu (tests and generator added).
+
 26.11.7
 + treats source and configuration files as plain text: JSON, YAML, TOML, CSV/TSV, C/C++, Java, JS/TS, shell, XML and similar suffixes are opened through a temporary `.txt` copy; an unknown suffix is detected from its bytes when MuPDF cannot open it.
 + long-press now opens a page menu instead of selecting a word: choose **Select all** to highlight every text block on the page, then **Copy**; tapping elsewhere dismisses it. The old drag handles and range adjustment were removed.

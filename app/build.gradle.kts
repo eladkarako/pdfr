@@ -1,3 +1,11 @@
+@file:Suppress(
+    "FunctionName",
+    "LocalVariableName",
+    "PropertyName",
+    "ParameterName",
+    "RedundantCurlyBracesInStringTemplate"
+)
+
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
@@ -165,12 +173,12 @@ val keystore_config = load_keystore_config()
 
 android {
     namespace = "com.karako.pdfr"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.karako.pdfr"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 37
         versionCode = app_version_code
         versionName = app_version_name
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -249,6 +257,7 @@ android {
             isMinifyEnabled = true
             println("[BUILD] Minification enabled")
 
+            //noinspection NotShrinkingResources
             isShrinkResources = false
             println("[BUILD] Resource shrinking disabled (ProGuard handles minification)")
 
@@ -279,13 +288,6 @@ android {
         println("[COMPILE] Java compatibility set to VERSION_17")
     }
 
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-        println("[COMPILE] Kotlin JVM target set to JVM_17")
-    }
-
     buildFeatures {
         compose = true
         println("[BUILD] Jetpack Compose enabled")
@@ -312,6 +314,13 @@ android {
         }
     }
 
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+    println("[COMPILE] Kotlin JVM target set to JVM_17")
 }
 
 
@@ -381,24 +390,24 @@ println("[ABI] ============================================\n")
 println("[DEPS] Adding dependencies...")
 
 dependencies {
-    implementation("androidx.activity:activity-compose:1.9.3")                  // Activity for Compose
+    implementation("androidx.activity:activity-compose:1.13.0")                  // Activity for Compose
     implementation("androidx.compose.material3:material3")                      // Material Design 3 UI
     implementation("androidx.compose.ui:ui")                                    // Jetpack Compose UI framework
-    implementation("androidx.core:core-ktx:1.15.0")                             // AndroidX core libraries + Kotlin essentials
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")        // Lifecycle support
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7")          // Lifecycle support
+    implementation("androidx.core:core-ktx:1.19.1")                             // AndroidX core libraries + Kotlin essentials
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")        // Lifecycle support
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")          // Lifecycle support
     implementation("com.artifex.mupdf:fitz:1.28.5")                             // MuPDF engine for PDF, EPUB, XPS, CBZ and text selection
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")   // Kotlin Coroutines for async work.
-    implementation(platform("androidx.compose:compose-bom:2024.12.01"))         // Jetpack Compose framework
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")   // Kotlin Coroutines for async work.
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))         // Jetpack Compose framework
 
     // Pure JVM tests for parsing and small data classes.
     testImplementation("junit:junit:4.13.2")
 
     // On-device tests use the real MuPDF native library and Android Bitmap.
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
 }
 
 println("[DEPS] Dependencies configured [OK]")

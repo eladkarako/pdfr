@@ -77,9 +77,14 @@ intact wherever the target provider allows its timestamp to be updated.
   modification time.
 - ✂️ **Text selection and copying** - long-press a PDF page to open the page
   menu, then choose **Select all** to highlight every text block on that page
-  and expose **Copy**. Plain text selects natively across paragraphs with the
-  system toolbar; line numbers are never included. There are no drag handles:
+  and expose **Copy**. Plain text selects natively across paragraphs and shows
+  **Copy** and **Copy all** in its touch menu: Copy takes the current
+  selection, while Copy all takes the whole document, including lines outside
+  the viewport; line numbers are never included. There are no drag handles:
   PDF selection is intentionally page-wide for now.
+- 📋 **Copy all** is also the first plain-text overflow entry, above a divider:
+  it is the only action there, while the entries below it only change how the
+  text is shown.
 - 🔍 **Zoom** from 100% to 600% for fixed-layout documents with a two-finger
   pinch (any intermediate value) or a smooth double-tap glide (2x, 4x, 6x, back
   to 1x). The content resizes and pans under the fingers around the midpoint

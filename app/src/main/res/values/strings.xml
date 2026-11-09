@@ -74,8 +74,10 @@
     <string name="line_numbers_off">Line numbers: off</string>
 
     <string name="copy">Copy</string>
+    <string name="copy_all">Copy all</string>
     <string name="select_all">Select all</string>
     <string name="copied">Copied to clipboard</string>
+    <string name="copied_all">Copied all text to clipboard</string>
 
     <string name="password_title">Password required</string>
     <string name="password_body">“%1$s” is protected. Enter its password to open it.</string>

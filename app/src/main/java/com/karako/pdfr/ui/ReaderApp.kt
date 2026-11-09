@@ -49,6 +49,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +103,7 @@ import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PageRanges
+import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.ShareSheet
 import kotlinx.coroutines.Job
@@ -342,6 +344,29 @@ fun ReaderApp(
                                 ),
                             ) {
                                 val ready = state as? ReaderState.Ready
+                                val plainText = ready?.plainText
+                                // Copy all is the only action here; everything
+                                // below changes how the document is shown, so
+                                // the divider keeps the two groups apart.
+                                if (plainText != null) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.copy_all)) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            // Copy the decoded document, not a
+                                            // selection: the lazy list only
+                                            // composes the lines near the
+                                            // viewport, so Select all would
+                                            // miss everything above or below.
+                                            copyToClipboard(
+                                                context,
+                                                PlainText.copyText(plainText),
+                                                R.string.copied_all,
+                                            )
+                                        },
+                                    )
+                                    HorizontalDivider()
+                                }
                                 if (ready != null) {
                                     if (ready.info.isPdf) {
                                         DropdownMenuItem(
@@ -1268,7 +1293,7 @@ private fun DocumentReader(
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
                 onCopy = {
-                    copySelection(context, selection.text)
+                    copyToClipboard(context, selection.text)
                     viewModel.clearSelection()
                 },
                 onSelectAll = { viewModel.selectAll(selection.page) },
@@ -1474,11 +1499,15 @@ private fun SelectionBar(
     }
 }
 
-internal fun copySelection(context: Context, text: String) {
+internal fun copyToClipboard(
+    context: Context,
+    text: String,
+    messageRes: Int = R.string.copied,
+) {
     if (text.isBlank()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), text))
-    Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, messageRes, Toast.LENGTH_SHORT).show()
 }
 
 /**

@@ -43,7 +43,7 @@ tools\manual-testing.bat
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
 | `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
 | `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
-| `reader-checks.bat [-Section ...]` | Automated on-device regression checks: disabled toolbar with no document, plain-text defaults and toggles, native selection and Select all, the editable info dialog, and pinch behaviour. Reads Compose through `uiautomator`, compares screenshots for the pixel-only checks, writes `build\reader-checks\results.txt`, and exits non-zero on any failure. Sections: `empty`, `text`, `selection`, `metadata`, `gestures` (default `all`). |
+| `reader-checks.bat [-Section ...]` | Automated on-device regression checks: disabled toolbar with no document, plain-text defaults and toggles, native selection plus the Copy/Copy all touch menu, the editable info dialog, and pinch behaviour. Copy all is checked through the clipboard against `long.txt`, which is taller than the viewport. Reads Compose through `uiautomator`, compares screenshots for the pixel-only checks, writes `build\reader-checks\results.txt`, and exits non-zero on any failure. Sections: `empty`, `text`, `selection`, `metadata`, `gestures` (default `all`). |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
 
@@ -92,10 +92,12 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
    rotate, linearize or compact it; the replacement opens without a password.
 10. **TXT reading** - open `notes.txt`, `README.nfo` or `book.text`. The custom
     plain-text view shows one continuous page, line numbers and wrapped lines;
-    the overflow menu offers single page, line wrap, alignment, line numbers,
-    text size and monospace. Long-press selects text across paragraphs with the
-    system selection toolbar, so **Select all** and **Copy** work for the whole
-    document. Text size is 5-40 pt and starts at 12 pt.
+    the overflow menu starts with **Copy all**, then a divider, then the
+    settings: single page, line wrap, alignment, line numbers, text size and
+    monospace. Long-press selects text across paragraphs and shows a touch menu
+    with **Copy** (the selection, greyed out when empty) and **Copy all** (the
+    whole document, whatever is selected); there is no **Select all**. Text
+    size is 5-40 pt and starts at 12 pt.
 11. **Plain-text toggles** - turn single page off to page the text vertically;
     turn line wrap off to pan long lines horizontally; turn align right on to
     move both the text and the line-number gutter to the right side; turn line
@@ -255,8 +257,9 @@ that:
 - after Select all, every text line on the page is highlighted and only **Copy**
   remains;
 - Copy empties the clipboard toast and dismisses the menu;
-- on plain text the native selection toolbar can select across paragraphs and
-  the line numbers are never copied;
+- on plain text the touch menu offers only Copy and Copy all, the line numbers
+  are never copied, and Copy all copies the whole document even when the
+  selection is a few words;
 - the metadata editor keeps its draft when dismissed and shows Apply/Cancel at
   the top, and Apply reloads with the edited name;
 - the text-size dialog stays inside 5-40 pt and applies to EPUB/Markdown but not

@@ -538,6 +538,16 @@ how MuPDF turns plain text into reflowable HTML pages.
 `;
   fs.writeFileSync(notes, notesBody, 'utf8');
 
+  // Much taller than one viewport, with numbered markers every five
+  // characters. The reader checks copy this document and paste it into a
+  // 200-character field, so finding L030 there proves the clipboard contains
+  // lines far beyond the ones the lazy list had composed.
+  fs.writeFileSync(
+    path.join(out, 'long.txt'),
+    Array.from({ length: 400 }, (_, i) => `L${String(i + 1).padStart(3, '0')}`).join('\n') + '\n',
+    'utf8',
+  );
+
   // .nfo and .text are common in scene/readme archives. They must take the
   // same plain-text path as .txt.
   fs.writeFileSync(

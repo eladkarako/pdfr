@@ -1,5 +1,6 @@
 package com.karako.pdfr.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,18 +26,30 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalTextToolbar
+import androidx.compose.ui.platform.TextToolbar
+import androidx.compose.ui.platform.TextToolbarStatus
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -45,14 +59,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntRect
 import androidx.compose.ui.unit.sp
 import com.karako.pdfr.R
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.TextPage
 import com.karako.pdfr.data.TextPagination
+import kotlin.math.roundToInt
 
 /**
  * The custom plain-text reader.
@@ -63,10 +82,14 @@ import com.karako.pdfr.data.TextPagination
  * are deliberately absent: text size and wrapping are explicit menu choices
  * instead, so the layout never has to repaginate under a gesture.
  *
- * The text sits inside a single [SelectionContainer], so the system selection
- * toolbar can select across paragraphs rather than only within one row. Line
- * numbers are excluded with [DisableSelection] and never end up on the
- * clipboard.
+ * The text sits inside a single [SelectionContainer], so selection can span
+ * paragraphs rather than only one row. Line numbers are excluded with
+ * [DisableSelection] and never end up on the clipboard. Manual selection is
+ * only meant for a few lines: the lazy list composes just the rows near the
+ * viewport, so a custom [TextToolbar] offers "Copy all" next to Copy. It
+ * copies the full decoded document directly, whatever the current selection
+ * is, and the overflow menu offers the same action. There is deliberately no
+ * Select all: selecting everything only existed to then copy it.
  */
 @Composable
 internal fun PlainTextReader(
@@ -101,8 +124,24 @@ internal fun PlainTextReader(
     val direction = if (alignRight) LayoutDirection.Rtl else LayoutDirection.Ltr
     val alignment = if (alignRight) TextAlign.Right else TextAlign.Left
     val padding = 10.dp
+    val context = LocalContext.current
+    val selectionToolbar = remember { PlainTextTextToolbar() }
+    val copyAll = {
+        // Copies the decoded document, never the selection: the lazy list only
+        // composes the rows near the viewport.
+        copyToClipboard(context, PlainText.copyText(text), R.string.copied_all)
+    }
+    // The toolbar is drawn inside this window rather than in a Popup. A
+    // focusable popup would make the selection manager re-show the toolbar as
+    // soon as it closes and the reader regains focus.
+    var readerBounds by remember { mutableStateOf(IntRect.Zero) }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize().ignoreMultiTouch()) {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .ignoreMultiTouch()
+            .onGloballyPositioned { readerBounds = it.boundsInRoot().roundToIntRect() },
+    ) {
         val widthPx = with(density) { maxWidth.toPx() }.toInt()
         val heightPx = with(density) { maxHeight.toPx() }.toInt()
         val paddingPx = with(density) { padding.toPx() }.toInt()
@@ -156,45 +195,53 @@ internal fun PlainTextReader(
             }
         }
 
-        CompositionLocalProvider(LocalLayoutDirection provides direction) {
-            if (singlePage) {
-                SelectionContainer {
-                    if (lineWrap) {
-                        ContinuousWrappedLines(
-                            lines = lines,
-                            style = lineStyle,
-                            numberStyle = numberStyle,
-                            alignment = alignment,
-                            gutterWidth = gutterWidth,
-                            showLineNumbers = lineNumbers,
-                            padding = padding,
-                        )
-                    } else {
-                        ContinuousUnwrappedLines(
-                            lines = lines,
-                            style = lineStyle,
-                            numberStyle = numberStyle,
-                            alignment = alignment,
-                            gutterWidth = gutterWidth,
-                            showLineNumbers = lineNumbers,
-                            padding = padding,
-                        )
+        CompositionLocalProvider(LocalTextToolbar provides selectionToolbar) {
+            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                if (singlePage) {
+                    SelectionContainer {
+                        if (lineWrap) {
+                            ContinuousWrappedLines(
+                                lines = lines,
+                                style = lineStyle,
+                                numberStyle = numberStyle,
+                                alignment = alignment,
+                                gutterWidth = gutterWidth,
+                                showLineNumbers = lineNumbers,
+                                padding = padding,
+                            )
+                        } else {
+                            ContinuousUnwrappedLines(
+                                lines = lines,
+                                style = lineStyle,
+                                numberStyle = numberStyle,
+                                alignment = alignment,
+                                gutterWidth = gutterWidth,
+                                showLineNumbers = lineNumbers,
+                                padding = padding,
+                            )
+                        }
                     }
+                } else {
+                    PagedLines(
+                        pages = pages,
+                        lines = lines,
+                        style = lineStyle,
+                        numberStyle = numberStyle,
+                        alignment = alignment,
+                        gutterWidth = gutterWidth,
+                        showLineNumbers = lineNumbers,
+                        wrap = lineWrap,
+                        padding = padding,
+                    )
                 }
-            } else {
-                PagedLines(
-                    pages = pages,
-                    lines = lines,
-                    style = lineStyle,
-                    numberStyle = numberStyle,
-                    alignment = alignment,
-                    gutterWidth = gutterWidth,
-                    showLineNumbers = lineNumbers,
-                    wrap = lineWrap,
-                    padding = padding,
-                )
             }
         }
+
+        PlainTextSelectionToolbar(
+            toolbar = selectionToolbar,
+            readerBounds = readerBounds,
+            onCopyAll = copyAll,
+        )
     }
 }
 
@@ -430,6 +477,137 @@ private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
             style = MaterialTheme.typography.labelLarge,
         )
     }
+}
+
+private val SelectionToolbarMargin = 8.dp
+
+/**
+ * The plain-text selection toolbar.
+ *
+ * Compose's default toolbar cannot add a custom action, and "Copy all" has to
+ * work whatever is currently selected. This replacement keeps Copy and adds
+ * Copy all. It deliberately drops Select all: selecting the whole document
+ * only existed to then copy it. The reader is read-only, so paste and cut are
+ * absent too.
+ */
+private class PlainTextTextToolbar : TextToolbar {
+
+    var menu by mutableStateOf<Menu?>(null)
+        private set
+
+    override val status: TextToolbarStatus
+        get() = if (menu != null) TextToolbarStatus.Shown else TextToolbarStatus.Hidden
+
+    override fun showMenu(
+        rect: Rect,
+        onCopyRequested: (() -> Unit)?,
+        onPasteRequested: (() -> Unit)?,
+        onCutRequested: (() -> Unit)?,
+        onSelectAllRequested: (() -> Unit)?,
+    ) {
+        // Only Copy is needed; the other callbacks do not apply to read-only
+        // text. In particular Select all is intentionally not offered.
+        menu = Menu(rect = rect, onCopy = onCopyRequested)
+    }
+
+    override fun hide() {
+        menu = null
+    }
+
+    data class Menu(
+        val rect: Rect,
+        val onCopy: (() -> Unit)?,
+    )
+}
+
+@Composable
+private fun PlainTextSelectionToolbar(
+    toolbar: PlainTextTextToolbar,
+    readerBounds: IntRect,
+    onCopyAll: () -> Unit,
+) {
+    val menu = toolbar.menu ?: return
+    val marginPx = with(LocalDensity.current) { SelectionToolbarMargin.roundToPx() }
+    var toolbarSize by remember { mutableStateOf(IntSize.Zero) }
+    val offset = remember(menu.rect, readerBounds, marginPx, toolbarSize) {
+        selectionToolbarOffset(menu.rect, readerBounds, marginPx, toolbarSize)
+    }
+
+    // BACK hides the menu before it can leave the reader. The selection
+    // manager itself never consumes BACK.
+    BackHandler { toolbar.hide() }
+
+    // The reader may render the text right-to-left; the action order stays
+    // left-to-right like the rest of the app's chrome.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Surface(
+            modifier = Modifier
+                .offset { offset }
+                .onSizeChanged { toolbarSize = it },
+            shape = RoundedCornerShape(10.dp),
+            tonalElevation = 3.dp,
+            shadowElevation = 8.dp,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Copy all never depends on the selection. Copy is greyed out
+                // if the selection is empty.
+                TextButton(
+                    onClick = {
+                        menu.onCopy?.invoke()
+                        toolbar.hide()
+                    },
+                    enabled = menu.onCopy != null,
+                ) {
+                    Text(stringResource(R.string.copy))
+                }
+                TextButton(onClick = {
+                    onCopyAll()
+                    toolbar.hide()
+                }) {
+                    Text(stringResource(R.string.copy_all))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Places the toolbar above the selection, below it when there is no room.
+ * The selection rect is in root coordinates, so the reader's own bounds are
+ * subtracted to get a position inside the reader.
+ */
+private fun selectionToolbarOffset(
+    anchor: Rect,
+    readerBounds: IntRect,
+    marginPx: Int,
+    toolbarSize: IntSize,
+): IntOffset {
+    val width = toolbarSize.width
+    val height = toolbarSize.height
+    if (width <= 0 || height <= 0) {
+        return IntOffset(readerBounds.left, readerBounds.top)
+    }
+
+    val localLeft = anchor.left - readerBounds.left
+    val localTop = anchor.top - readerBounds.top
+    val localRight = anchor.right - readerBounds.left
+    val localBottom = anchor.bottom - readerBounds.top
+
+    val maxX = (readerBounds.width - width - marginPx).coerceAtLeast(marginPx)
+    val x = ((localLeft + localRight) / 2f - width / 2f)
+        .roundToInt()
+        .coerceIn(marginPx, maxX)
+
+    val above = localTop.roundToInt() - height - marginPx
+    val below = localBottom.roundToInt() + marginPx
+    val maxY = (readerBounds.height - height - marginPx).coerceAtLeast(marginPx)
+    val y = if (above >= marginPx) {
+        above
+    } else {
+        below.coerceIn(marginPx, maxY)
+    }
+
+    return IntOffset(x, y)
 }
 
 /** 1 pt is 1/72 inch; Android's scaled pixel is 1/160 inch at font scale 1. */

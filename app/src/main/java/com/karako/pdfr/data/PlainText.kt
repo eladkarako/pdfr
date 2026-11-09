@@ -64,6 +64,17 @@ object PlainText {
         }
     }
 
+    /**
+     * The text placed on the clipboard by the reader's "Copy all" action.
+     *
+     * This works from the whole decoded document rather than from a selection.
+     * The Compose list only composes the lines near the viewport, so selecting
+     * all there would miss everything above and below it. The result matches
+     * the numbered lines: a single trailing newline is dropped, while real
+     * blank lines inside the document are preserved.
+     */
+    fun copyText(text: String): String = lines(text).joinToString("\n")
+
     /** The number of digits needed by the largest line number, at least one. */
     fun lineNumberDigits(lineCount: Int): Int =
         lineCount.coerceAtLeast(1).toString().length.coerceAtLeast(1)

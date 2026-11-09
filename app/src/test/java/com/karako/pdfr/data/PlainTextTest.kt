@@ -53,6 +53,27 @@ class PlainTextTest {
     }
 
     @Test
+    fun copyTextDropsOnlyThePhantomTrailingLine() {
+        assertEquals("", PlainText.copyText(""))
+        assertEquals("a", PlainText.copyText("a\n"))
+        assertEquals("a\nb", PlainText.copyText("a\nb\n"))
+        assertEquals("a\n\nb", PlainText.copyText("a\n\nb"))
+        assertEquals("\na", PlainText.copyText("\na"))
+        assertEquals("a\n", PlainText.copyText("a\n\n"))
+    }
+
+    @Test
+    fun copyTextKeepsTheWholeDocumentEvenWhenItIsLong() {
+        val lines = (1..500).map { "L%03d".format(it) }
+        val text = lines.joinToString("\n") + "\n"
+        val copied = PlainText.copyText(text)
+
+        assertEquals(500, copied.lines().size)
+        assertEquals("L001", copied.lines().first())
+        assertEquals("L500", copied.lines().last())
+    }
+
+    @Test
     fun countsLineNumberDigits() {
         assertEquals(1, PlainText.lineNumberDigits(0))
         assertEquals(1, PlainText.lineNumberDigits(1))

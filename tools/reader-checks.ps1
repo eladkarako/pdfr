@@ -13,8 +13,8 @@
       button are disabled, look faded, and do nothing when tapped;
     * plain text defaults and every text option: single page, line wrapping,
       right alignment, line numbers (left in LTR, right in RTL) and text size;
-    * native SelectionContainer selection, including Select all, with the line
-      number gutter left unhighlighted;
+    * native SelectionContainer selection and the Copy/Copy all touch menu,
+      including a full-document copy that reaches lines outside the viewport;
     * the editable info dialog: ISO dates, existing fields only, draft
       draft/reopen/Cancel/Apply behaviour, and edited names in Share/Save as;
     * pinch gestures: ignored by reflowable text, still zooming a fixed-layout
@@ -103,14 +103,6 @@ public class PdfrSelectionStats {
     public int MaxY;
 }
 
-public class PdfrBubbleStats {
-    public int Count;
-    public int MinX;
-    public int MinY;
-    public int MaxX;
-    public int MaxY;
-}
-
 public class PdfrDiffStats {
     public bool Comparable;
     public double Mean;
@@ -185,45 +177,6 @@ public class PdfrImage {
                     if ((red + green + blue) / 3 < 120) {
                         stats.Dark++;
                     }
-                    if (x < stats.MinX) { stats.MinX = x; }
-                    if (x > stats.MaxX) { stats.MaxX = x; }
-                    if (y < stats.MinY) { stats.MinY = y; }
-                    if (y > stats.MaxY) { stats.MaxY = y; }
-                }
-            }
-        }
-
-        if (stats.Count == 0) {
-            stats.MinX = 0;
-            stats.MinY = 0;
-        }
-        return stats;
-    }
-
-    // The floating selection toolbar is a light grey rounded bubble. Finding
-    // it lets the script tap Select all without depending on a hard-coded
-    // position that changes with the selection.
-    public PdfrBubbleStats MeasureToolbarBubble() {
-        PdfrBubbleStats stats = new PdfrBubbleStats();
-        stats.MinX = int.MaxValue;
-        stats.MinY = int.MaxValue;
-
-        int left = (int)(Width * 0.15);
-        int right = (int)(Width * 0.85);
-        int top = (int)(Height * 0.18);
-        int bottom = (int)(Height * 0.45);
-        for (int y = top; y < bottom; y += 2) {
-            int row = y * _stride;
-            for (int x = left; x < right; x += 2) {
-                int offset = row + x * 4;
-                int blue = _bytes[offset];
-                int green = _bytes[offset + 1];
-                int red = _bytes[offset + 2];
-
-                if (Math.Abs(red - 226) <= 5 &&
-                    Math.Abs(green - 226) <= 5 &&
-                    Math.Abs(blue - 233) <= 5) {
-                    stats.Count++;
                     if (x < stats.MinX) { stats.MinX = x; }
                     if (x > stats.MaxX) { stats.MaxX = x; }
                     if (y < stats.MinY) { stats.MinY = y; }
@@ -472,18 +425,21 @@ function Get-ActionNode([string]$Description) {
     } | Select-Object -First 1
 }
 
-function Test-ActionEnabled([string]$Description) {
-    $node = Get-ActionNode $Description
-    if (-not $node) { return $null }
+function Test-NodeEnabled($Node) {
+    if (-not $Node) { return $null }
 
-    $parent = $node.ParentNode
+    $parent = $Node.ParentNode
     while ($parent -and $parent.Name -eq 'node') {
         if ($parent.clickable -eq 'true') {
             return $parent.enabled -eq 'true'
         }
         $parent = $parent.ParentNode
     }
-    return $node.enabled -eq 'true'
+    return $Node.enabled -eq 'true'
+}
+
+function Test-ActionEnabled([string]$Description) {
+    return Test-NodeEnabled (Get-ActionNode $Description)
 }
 
 function Get-ActionRect([string]$Description) {
@@ -507,7 +463,7 @@ function Test-PackageVisible([string]$Package) {
     } | Select-Object -First 1)
 }
 
-$menuPattern = '^(Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact)'
+$menuPattern = '^(Copy all|Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact)'
 
 function Test-MenuOpen {
     try {
@@ -633,7 +589,9 @@ function Set-EditText($Node, [string]$Value) {
     Invoke-Adb shell input keyevent KEYCODE_MOVE_END | Out-Null
     $deletes = ('67 ' * 80).Trim()
     Invoke-Adb shell "input keyevent $deletes" | Out-Null
-    Invoke-Adb shell "input text $Value" | Out-Null
+    if ($Value) {
+        Invoke-Adb shell "input text $Value" | Out-Null
+    }
     Start-Sleep -Milliseconds 500
 }
 
@@ -878,7 +836,9 @@ function Test-Selection {
     Open-Doc 'notes.txt'
     Wait-ForPattern '^PDFr plain text fixture$' 12000 | Out-Null
 
-    $before = Save-Shot 'selection-before'
+    $numbersBefore = Get-NumericNodes (Get-UiXml)
+    Test-Check 'line numbers are shown before selecting' ($numbersBefore.Count -ge 8) "found $($numbersBefore.Count)"
+
     Invoke-Adb shell input motionevent DOWN 540 900 | Out-Null
     Start-Sleep -Milliseconds 900
     Invoke-Adb shell input motionevent MOVE 660 900 | Out-Null
@@ -889,49 +849,126 @@ function Test-Selection {
     $partial = Save-Shot 'selection-partial'
     $partialImage = New-Object PdfrImage -ArgumentList $partial
     $partialStats = $partialImage.MeasureSelection([int]($ScreenWidth * 0.13))
-    $bubble = $partialImage.MeasureToolbarBubble()
 
     Test-Check 'long-press selects text natively' ($partialStats.Count -ge 1000) "selection pixels: $($partialStats.Count)"
     Test-Check 'selection handles are visible' ($partialStats.Dark -ge 100) "dark blue pixels: $($partialStats.Dark)"
-    Test-Check 'the floating selection toolbar appears' ($bubble.Count -ge 1000) "toolbar pixels: $($bubble.Count)"
     Test-Check 'the selection is not the whole document yet' ($partialStats.Count -lt 50000) "selection pixels: $($partialStats.Count)"
 
-    $selectionNumbers = Get-NumericNodes (Get-UiXml)
-    Test-Check 'line numbers remain while text is selected' ($selectionNumbers.Count -ge 8) "found $($selectionNumbers.Count)"
+    # The custom toolbar lives in the reader window, so uiautomator exposes its
+    # buttons. It has Copy and Copy all, but deliberately no Select all.
+    $touchMenu = Get-UiXml
+    Test-Check 'the touch menu shows Copy' ([bool](Find-Node '^Copy$' -Xml $touchMenu))
+    Test-Check 'the touch menu shows Copy all' ([bool](Find-Node '^Copy all$' -Xml $touchMenu))
+    Test-Check 'the touch menu has no Select all' (
+        -not (Find-Node '^Select all$' -Xml $touchMenu)
+    )
+    Test-Check 'Copy is enabled while text is selected' (
+        (Test-NodeEnabled (Find-Node '^Copy$' -Xml $touchMenu)) -eq $true
+    )
 
-    if ($bubble.Count -ge 1000) {
-        # The right-hand action in the bubble is Select all.
-        $selectAllX = [int]($bubble.MinX + ($bubble.MaxX - $bubble.MinX) * 0.75)
-        $selectAllY = [int](($bubble.MinY + $bubble.MaxY) / 2)
-        Invoke-Adb shell input tap $selectAllX $selectAllY | Out-Null
-    } else {
-        Invoke-Adb shell input tap ([int]($ScreenWidth * 0.61)) ([int]($ScreenHeight * 0.34)) | Out-Null
+    # Copy keeps the manual-selection flow: it puts the selected text, not the
+    # whole document, on the clipboard.
+    Tap-Pattern '^Copy$'
+    Start-Sleep -Seconds 4
+
+    $dialog = Open-InfoDialog
+    $edits = Get-EditNodes $dialog
+    if ($edits.Count -ge 1) {
+        Set-EditText $edits[0] ''
+        Invoke-Adb shell input keycombination 113 50 | Out-Null
+        Start-Sleep -Milliseconds 900
+        $selected = (Get-EditNodes (Get-UiXml))[0].text
+        Test-Check 'touch-menu Copy copies the selection' (
+            $selected.Length -gt 0 -and $selected -notmatch '^PDFr plain text fixture'
+        ) ('copied {0} characters' -f $selected.Length)
+        Close-InfoDialog 'Cancel'
     }
+
+    # Copy cleared the selection, so select again before testing Copy all.
+    Invoke-Adb shell input motionevent DOWN 540 900 | Out-Null
+    Start-Sleep -Milliseconds 900
+    Invoke-Adb shell input motionevent MOVE 660 900 | Out-Null
+    Start-Sleep -Milliseconds 300
+    Invoke-Adb shell input motionevent UP 660 900 | Out-Null
     Start-Sleep -Milliseconds 900
 
-    $all = Save-Shot 'selection-all'
-    $allImage = New-Object PdfrImage -ArgumentList $all
-    $allStats = $allImage.MeasureSelection([int]($ScreenWidth * 0.13))
+    # Copy all ignores the partial selection and starts at the first line.
+    Tap-Pattern '^Copy all$'
+    Start-Sleep -Seconds 4
 
-    Test-Check 'Select all selects the document' ($allStats.Count -ge 50000) "selection pixels: $($allStats.Count)"
-    $gutterRatio = if ($allStats.Count -gt 0) { $allStats.Gutter / [double]$allStats.Count } else { 1.0 }
-    Test-Check 'line numbers are excluded from Select all' ($gutterRatio -lt 0.08) ('gutter share {0:P1}' -f $gutterRatio)
-    Test-Check 'line numbers stay visible after Select all' ((Get-NumericNodes (Get-UiXml)).Count -ge 8)
-
-    # A plain-text selection lives inside Compose's SelectionContainer, which
-    # does not consume BACK. A quick tap clears it without leaving the reader;
-    # BACK here would exit to the launcher.
-    if ($allStats.Count -ge 1000) {
-        Invoke-Adb shell input tap ([int]($ScreenWidth * 0.5)) ([int]($ScreenHeight * 0.70)) | Out-Null
-        Start-Sleep -Milliseconds 700
-        $cleared = Save-Shot 'selection-cleared'
-        $clearedImage = New-Object PdfrImage -ArgumentList $cleared
-        $clearedStats = $clearedImage.MeasureSelection([int]($ScreenWidth * 0.13))
-        Test-Check 'tapping clears the selection' ($clearedStats.Count -lt 1000) "selection pixels: $($clearedStats.Count)"
+    $dialog = Open-InfoDialog
+    $edits = Get-EditNodes $dialog
+    if ($edits.Count -ge 1) {
+        Set-EditText $edits[0] ''
+        Invoke-Adb shell input keycombination 113 50 | Out-Null
+        Start-Sleep -Milliseconds 900
+        $pasted = (Get-EditNodes (Get-UiXml))[0].text
+        Test-Check 'touch-menu Copy all starts at the first line' (
+            $pasted -match '^PDFr plain text fixture'
+        ) $(if ($pasted) { $pasted.Substring(0, [Math]::Min(40, $pasted.Length)) } else { 'empty' })
+        Test-Check 'touch-menu Copy all ignores the selection' (
+            $pasted -match 'quick brown fox'
+        ) ('pasted {0} characters' -f $pasted.Length)
+        Close-InfoDialog 'Cancel'
     }
+
+    Invoke-Adb shell input tap ([int]($ScreenWidth * 0.5)) ([int]($ScreenHeight * 0.72)) | Out-Null
+    Start-Sleep -Milliseconds 700
+    $cleared = Save-Shot 'selection-cleared'
+    $clearedImage = New-Object PdfrImage -ArgumentList $cleared
+    $clearedStats = $clearedImage.MeasureSelection([int]($ScreenWidth * 0.13))
+    Test-Check 'tapping clears the selection' ($clearedStats.Count -lt 1000) "selection pixels: $($clearedStats.Count)"
     Test-Check 'the reader survives clearing the selection' (
         [bool](Find-Node '^PDFr plain text fixture$')
     )
+
+    # "Copy all" must take the whole document from the model. The lazy list
+    # only composes the rows near the viewport. A 40 pt text size keeps the
+    # viewport to a handful of lines, while the pasted clipboard text still
+    # reaches L030.
+    Open-Doc 'long.txt'
+    Wait-ForPattern '^L001$' 12000 | Out-Null
+    Set-TextSize 40 | Out-Null
+    Close-InfoDialog 'Apply'
+
+    $labels = Get-MenuLabels
+    Test-Check 'the overflow menu offers Copy all' ($labels -contains 'Copy all') ($labels -join ', ')
+    Test-Check 'Copy all is the first overflow entry' (
+        $labels.Count -gt 0 -and $labels[0] -eq 'Copy all'
+    ) ($labels -join ', ')
+
+    Open-Overflow
+    Tap-Pattern '^Copy all$'
+    # Android shows its own clipboard preview (and the toast) for a few
+    # seconds. Both are blue-tinted, so wait for them to fade before measuring
+    # whether the reader itself drew a selection.
+    Start-Sleep -Seconds 4
+    $copyShot = Save-Shot 'copy-all'
+    $copyImage = New-Object PdfrImage -ArgumentList $copyShot
+    $copyStats = $copyImage.MeasureSelection([int]($ScreenWidth * 0.13))
+    Test-Check 'Copy all from the overflow menu draws no selection' (
+        $copyStats.Count -lt 500
+    ) "selection pixels: $($copyStats.Count)"
+    Test-Check 'Copy all closes the menu' (-not (Test-MenuOpen))
+
+    # Paste into the filename field to inspect the clipboard. That field keeps
+    # 200 characters, which is about 40 five-character lines: far past what the
+    # 40 pt viewport composed.
+    $dialog = Open-InfoDialog
+    $edits = Get-EditNodes $dialog
+    if ($edits.Count -ge 1) {
+        Set-EditText $edits[0] ''
+        Invoke-Adb shell input keycombination 113 50 | Out-Null
+        Start-Sleep -Milliseconds 900
+        $pasted = (Get-EditNodes (Get-UiXml))[0].text
+        Test-Check 'Copy all starts at the first line' (
+            $pasted -match '^L001'
+        ) $(if ($pasted) { $pasted.Substring(0, [Math]::Min(40, $pasted.Length)) } else { 'empty' })
+        Test-Check 'Copy all includes lines beyond the viewport' (
+            $pasted -match 'L030'
+        ) ('pasted {0} characters' -f $pasted.Length)
+        Close-InfoDialog 'Cancel'
+    }
 }
 
 function Test-Metadata {
