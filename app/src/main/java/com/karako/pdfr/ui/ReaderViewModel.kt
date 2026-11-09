@@ -8,15 +8,20 @@ import androidx.lifecycle.viewModelScope
 import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.DocumentInfo
+import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.DocumentPasswordRequiredException
 import com.karako.pdfr.data.DocumentStore
 import com.karako.pdfr.data.DocumentWrongPasswordException
+import com.karako.pdfr.data.MetadataSidecar
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
 import com.karako.pdfr.data.PageBounds
+import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
+import com.karako.pdfr.data.DocumentDates
+import com.karako.pdfr.data.TextSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -47,6 +52,13 @@ sealed interface ReaderState {
         val lastModified: Long? = null,
         val monospace: Boolean = false,
         val monospaceAvailable: Boolean = false,
+        /** Decoded text for the custom plain-text reader; null for other formats. */
+        val plainText: String? = null,
+        val textSizePt: Int = 12,
+        val singlePage: Boolean = true,
+        val lineWrap: Boolean = true,
+        val alignRight: Boolean = false,
+        val lineNumbers: Boolean = true,
         val layoutVersion: Int = 0,
         val anchorPage: Int = 0,
         /**
@@ -93,6 +105,14 @@ class ReaderViewModel(
     private val _selection = MutableStateFlow<SelectionState?>(null)
     val selection: StateFlow<SelectionState?> = _selection.asStateFlow()
 
+    /**
+     * Edits made in the info dialog. Kept here rather than in the dialog so
+     * dismissing and reopening shows the same draft. Apply writes it to the
+     * cache file; Cancel discards it.
+     */
+    private val _infoDraft = MutableStateFlow<DocumentMetadataDraft?>(null)
+    val infoDraft: StateFlow<DocumentMetadataDraft?> = _infoDraft.asStateFlow()
+
     /** True while a PDF is being rewritten and replaced. */
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
@@ -115,6 +135,14 @@ class ReaderViewModel(
     /** Kept in memory only, so an encrypted PDF can be rewritten. */
     private var password: String? = null
     private var monospace = false
+
+    // Text options are global: they stay in effect when the next document is
+    // opened, and survive rotation/process death through SavedStateHandle.
+    private var textSizePt = TextSettings.sizePtOrDefault(savedState.get(KEY_TEXT_SIZE))
+    private var singlePage = savedState.get<Boolean>(KEY_SINGLE_PAGE) ?: true
+    private var lineWrap = savedState.get<Boolean>(KEY_LINE_WRAP) ?: true
+    private var alignRight = savedState.get<Boolean>(KEY_ALIGN_RIGHT) ?: false
+    private var lineNumbers = savedState.get<Boolean>(KEY_LINE_NUMBERS) ?: true
 
     private data class Viewport(
         val widthPx: Int,
@@ -161,6 +189,7 @@ class ReaderViewModel(
         }
 
         _selection.value = null
+        _infoDraft.value = null
         password = null
         // Plain text is monospace by default; non-text documents reset this in
         // load(). Starting true makes the text override visible immediately.
@@ -240,7 +269,9 @@ class ReaderViewModel(
 
         val doc = document ?: return
         if (doc.isReflowable) {
-            scheduleReflow(doc, next)
+            // Plain text uses the custom Compose reader; re-laying it out in
+            // MuPDF would only waste time and change pages nobody displays.
+            if (!doc.isPlainText) scheduleReflow(doc, next)
         } else if (previous != null && previous.zoom != next.zoom) {
             // Pinch zoom changes the target width many times per second. Wait
             // for the gesture to settle before dropping the old bitmaps.
@@ -363,7 +394,25 @@ class ReaderViewModel(
         lastModified: Long? = null,
     ): Boolean {
         val version = ++generation
-        lastModified?.takeIf { it > 0L }?.let { file.setLastModified(it) }
+
+        // Non-PDF metadata lives in a sidecar beside the cache file. Read it
+        // before opening so an edited display name and timestamp are used by
+        // the reader, Save as and Share alike.
+        val sidecar = withContext(Dispatchers.IO) { MetadataSidecar.read(file) }
+        val effectiveName = sidecar
+            ?.get(DocumentMetadataDraft.KEY_DISPLAY_NAME)
+            ?.takeIf { it.isNotBlank() }
+            ?: displayName
+        val sidecarModified = if (
+            sidecar?.containsKey(DocumentMetadataDraft.KEY_FILE_MODIFIED) == true
+        ) {
+            DocumentDates.parseIso(sidecar[DocumentMetadataDraft.KEY_FILE_MODIFIED])
+        } else {
+            null
+        }
+        val effectiveModified = sidecarModified ?: lastModified
+        effectiveModified?.takeIf { it > 0L }?.let { file.setLastModified(it) }
+
         // The reader resets its zoom when the document changes, so the first
         // layout must be built for 100% as well, not for the previous file's
         // pinch level.
@@ -374,8 +423,8 @@ class ReaderViewModel(
         _selection.value = null
 
         try {
-            val (opened, info) = withContext(MuPdf.dispatcher) {
-                val doc = MuPdfDocument.open(file, displayName, password, mimeType)
+            val (opened, info, plainText) = withContext(MuPdf.dispatcher) {
+                val doc = MuPdfDocument.open(file, effectiveName, password, mimeType)
                 try {
                     var appliedLayout: LayoutSpec? = null
                     if (doc.isReflowable) {
@@ -385,14 +434,15 @@ class ReaderViewModel(
                             appliedLayout = spec
                         }
                     }
-                    val documentInfo = doc.info()
+                    val documentInfo = DocumentMetadataDraft.applySidecar(doc.info(), sidecar)
                     if (documentInfo.pageCount <= 0) {
                         throw IOException(
                             getApplication<Application>().getString(R.string.error_no_pages),
                         )
                     }
                     lastLayout = appliedLayout
-                    doc to documentInfo
+                    val text = if (doc.isPlainText) PlainText.read(file) else null
+                    Triple(doc, documentInfo, text)
                 } catch (t: Throwable) {
                     runCatching { doc.close() }
                     throw t
@@ -415,25 +465,37 @@ class ReaderViewModel(
             monospace = opened.isPlainText && monospace
 
             savedState[KEY_PATH] = file.absolutePath
-            savedState[KEY_NAME] = displayName
+            savedState[KEY_NAME] = effectiveName
             savedState[KEY_MIME] = mimeType
             savedState[KEY_PAGE] = page
             savedState[KEY_MONO] = monospace
-            savedState[KEY_MTIME] = lastModified
+            savedState[KEY_MTIME] = effectiveModified
+            savedState[KEY_TEXT_SIZE] = textSizePt
+            savedState[KEY_SINGLE_PAGE] = singlePage
+            savedState[KEY_LINE_WRAP] = lineWrap
+            savedState[KEY_ALIGN_RIGHT] = alignRight
+            savedState[KEY_LINE_NUMBERS] = lineNumbers
 
             _state.value = ReaderState.Ready(
                 file = file,
-                displayName = displayName,
+                displayName = effectiveName,
                 mimeType = mimeType,
-                info = info,
+                info = info.copy(fileName = effectiveName),
                 pageCount = pageCount,
                 reflowable = opened.isReflowable,
-                lastModified = lastModified,
+                lastModified = effectiveModified,
                 monospace = monospace,
                 monospaceAvailable = opened.isPlainText,
+                plainText = plainText,
+                textSizePt = textSizePt,
+                singlePage = singlePage,
+                lineWrap = lineWrap,
+                alignRight = alignRight,
+                lineNumbers = lineNumbers,
                 anchorPage = page,
                 layoutZoom = ZoomMath.clamp((viewport ?: defaultViewport()).zoom),
             )
+            _infoDraft.value = null
 
             if (previous != null && previous !== opened) {
                 MuPdf.execute { previous.close() }
@@ -442,13 +504,13 @@ class ReaderViewModel(
         } catch (e: DocumentPasswordRequiredException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, displayName, mimeType, wrongPassword = false, lastModified = lastModified)
+                lock(file, effectiveName, mimeType, wrongPassword = false, lastModified = lastModified)
             }
             return false
         } catch (e: DocumentWrongPasswordException) {
             if (!preservePrevious) {
                 discardPreviousDocument()
-                lock(file, displayName, mimeType, wrongPassword = true, lastModified = lastModified)
+                lock(file, effectiveName, mimeType, wrongPassword = true, lastModified = lastModified)
             }
             return false
         } catch (e: CancellationException) {
@@ -495,7 +557,10 @@ class ReaderViewModel(
                 LayoutResult(
                     page = page,
                     pageCount = doc.countPages(),
-                    info = doc.info(),
+                    info = DocumentMetadataDraft.applySidecar(
+                        doc.info(),
+                        MetadataSidecar.read(doc.file),
+                    ),
                 )
             } ?: return@launch
 
@@ -525,8 +590,58 @@ class ReaderViewModel(
         savedState[KEY_MONO] = enabled
         _state.value = ready.copy(monospace = enabled)
 
+        // The custom plain-text view re-renders from the new state. Only fall
+        // back to a MuPDF reflow if the text could not be decoded.
+        if (ready.plainText != null) return
         val doc = document ?: return
         scheduleReflow(doc, viewport ?: defaultViewport(), force = true)
+    }
+
+    /** Sets the reflowable text size. Plain text uses it directly. */
+    fun setTextSizePt(points: Int) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        val value = TextSettings.clampSizePt(points)
+        if (value == textSizePt) return
+
+        textSizePt = value
+        savedState[KEY_TEXT_SIZE] = value
+        _state.value = ready.copy(textSizePt = value)
+
+        if (!ready.reflowable || ready.plainText != null) return
+        val doc = document ?: return
+        scheduleReflow(doc, viewport ?: defaultViewport(), force = true)
+    }
+
+    fun setSinglePage(enabled: Boolean) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (ready.singlePage == enabled) return
+        singlePage = enabled
+        savedState[KEY_SINGLE_PAGE] = enabled
+        _state.value = ready.copy(singlePage = enabled)
+    }
+
+    fun setLineWrap(enabled: Boolean) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (ready.lineWrap == enabled) return
+        lineWrap = enabled
+        savedState[KEY_LINE_WRAP] = enabled
+        _state.value = ready.copy(lineWrap = enabled)
+    }
+
+    fun setAlignRight(enabled: Boolean) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (ready.alignRight == enabled) return
+        alignRight = enabled
+        savedState[KEY_ALIGN_RIGHT] = enabled
+        _state.value = ready.copy(alignRight = enabled)
+    }
+
+    fun setLineNumbers(enabled: Boolean) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (ready.lineNumbers == enabled) return
+        lineNumbers = enabled
+        savedState[KEY_LINE_NUMBERS] = enabled
+        _state.value = ready.copy(lineNumbers = enabled)
     }
 
     /**
@@ -570,6 +685,122 @@ class ReaderViewModel(
         if (!ready.info.isPdf) return
 
         rewrite(ready, pages = null, rotate = null, kind = RewriteKind.COMPACT)
+    }
+
+    /**
+     * Starts (or resumes) an info edit. The draft is kept in the ViewModel so
+     * closing and reopening the dialog does not lose unsaved field changes.
+     */
+    fun beginInfoEdit() {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (_infoDraft.value == null) {
+            _infoDraft.value = DocumentMetadataDraft.from(ready.info, ready.lastModified)
+        }
+    }
+
+    fun updateInfoDraft(draft: DocumentMetadataDraft) {
+        _infoDraft.value = draft
+    }
+
+    fun cancelInfoEdit() {
+        _infoDraft.value = null
+    }
+
+    /**
+     * Writes the dialog's draft to the cached document and reloads it.
+     *
+     * PDFs get their Info dictionary rewritten by MuPDF (and are saved without
+     * encryption, even if the source was encrypted). Other formats store the
+     * values in a sidecar beside the cache file, because MuPDF cannot rewrite
+     * EPUB, images or plain text in place. Either way the display name and
+     * timestamp become the ones Save as and Share use.
+     */
+    fun applyInfoEdit() {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        val draft = _infoDraft.value ?: return
+        if (!draft.isValid || _busy.value) return
+
+        val app = getApplication<Application>()
+        val targetName = DocumentStore.safeFileName(draft.displayName)
+        val modified = draft.fileModifiedMillis() ?: ready.lastModified
+        // The edited extension is display-only. Sharing and Save as keep the
+        // MIME type of the bytes that are actually in the cache file.
+        val mime = ready.mimeType
+
+        _busy.value = true
+        clearSelection()
+
+        viewModelScope.launch {
+            var output: File? = null
+            try {
+                if (ready.info.isPdf) {
+                    val target = withContext(Dispatchers.IO) {
+                        DocumentStore.derivedFile(app, "metadata.pdf")
+                    }
+                    output = target
+                    val saved = withContext(MuPdf.dispatcher) {
+                        MuPdfDocument.savePdfCopy(
+                            source = ready.file,
+                            password = password,
+                            destination = target,
+                            pageIndices = null,
+                            options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                            metadata = draft.pdfMetadata(),
+                        )
+                    }
+                    if (!saved) {
+                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        return@launch
+                    }
+
+                    modified?.takeIf { it > 0L }?.let { target.setLastModified(it) }
+                    val replaced = load(
+                        file = target,
+                        displayName = targetName,
+                        mimeType = mime,
+                        password = password,
+                        startPage = currentPage,
+                        preservePrevious = true,
+                        lastModified = modified,
+                    )
+                    if (!replaced) {
+                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        return@launch
+                    }
+
+                    output = null // the reader now owns the rewritten file
+                    MuPdf.execute { DocumentStore.discard(ready.file) }
+                } else {
+                    withContext(Dispatchers.IO) {
+                        MetadataSidecar.write(ready.file, draft.sidecarValues())
+                        modified?.takeIf { it > 0L }?.let { ready.file.setLastModified(it) }
+                    }
+                    val replaced = load(
+                        file = ready.file,
+                        displayName = targetName,
+                        mimeType = mime,
+                        password = password,
+                        startPage = currentPage,
+                        preservePrevious = true,
+                        lastModified = modified,
+                    )
+                    if (!replaced) {
+                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        return@launch
+                    }
+                }
+
+                _infoDraft.value = null
+                _messages.tryEmit(app.getString(R.string.metadata_applied))
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _messages.tryEmit(app.getString(R.string.metadata_failed))
+            } finally {
+                output?.delete()
+                _busy.value = false
+            }
+        }
     }
 
     /**
@@ -717,7 +948,7 @@ class ReaderViewModel(
         return LayoutSpec(
             widthPt = (viewport.widthPx * pointsPerPixel / zoom).coerceAtLeast(32f),
             heightPt = (viewport.heightPx * pointsPerPixel / zoom).coerceAtLeast(32f),
-            em = TEXT_EM,
+            em = textSizePt.toFloat(),
         )
     }
 
@@ -774,15 +1005,19 @@ class ReaderViewModel(
         super.onCleared()
     }
 
-    private companion object {
+    internal companion object {
         const val KEY_PATH = "document_path"
         const val KEY_NAME = "document_name"
         const val KEY_MIME = "document_mime"
         const val KEY_PAGE = "document_page"
         const val KEY_MONO = "document_monospace"
         const val KEY_MTIME = "document_modified"
+        const val KEY_TEXT_SIZE = "reader_text_size_pt"
+        const val KEY_SINGLE_PAGE = "reader_single_page"
+        const val KEY_LINE_WRAP = "reader_line_wrap"
+        const val KEY_ALIGN_RIGHT = "reader_align_right"
+        const val KEY_LINE_NUMBERS = "reader_line_numbers"
 
-        const val TEXT_EM = 11f
         const val REFLOW_DEBOUNCE_MS = 80L
         const val BITMAP_EVICT_DEBOUNCE_MS = 240L
     }

@@ -20,6 +20,12 @@ data class DocumentInfo(
     val producer: String? = null,
     val created: String? = null,
     val modified: String? = null,
+    /**
+     * Timestamp of the cached file in milliseconds, initially copied from the
+     * original document. Editable in the info dialog and used by Save as and
+     * Share.
+     */
+    val fileModified: Long? = null,
 ) {
     val hasMetadata: Boolean
         get() = listOf(

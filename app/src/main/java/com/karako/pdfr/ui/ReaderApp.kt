@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.text.format.Formatter
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -101,7 +100,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentFormats
-import com.karako.pdfr.data.DocumentInfo
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.RenderedPage
@@ -134,18 +132,17 @@ private const val PINCH_START_DISTANCE = 8f
 
 // The page badge starts slightly transparent and quietly disappears while the
 // reader is idle. Any scroll, zoom or pan restores it immediately.
-private const val PAGE_BADGE_START_ALPHA = 0.78f
-private const val PAGE_BADGE_END_ALPHA = 0.05f
-private const val PAGE_BADGE_FADE_MS = 5000
+internal const val PAGE_BADGE_START_ALPHA = 0.78f
+internal const val PAGE_BADGE_END_ALPHA = 0.05f
+internal const val PAGE_BADGE_FADE_MS = 5000
 
 // Menus and dialogs never cover more than this share of the screen.
 private const val DIALOG_MAX_HEIGHT_FRACTION = 0.75f
-private const val DIALOG_CHROME_DP = 160f
 
 // A fixed blue, rather than a theme colour: reader pages are always white, so
 // this stays visible even when the app's primary colour is very dark.
-private val SELECTION_FILL = Color(0x992196F3)
-private val SELECTION_OUTLINE = Color(0xE60D47A1)
+internal val SELECTION_FILL = Color(0x992196F3)
+internal val SELECTION_OUTLINE = Color(0xE60D47A1)
 
 /**
  * A pinch session as seen from the reader's layout.
@@ -211,9 +208,11 @@ fun ReaderApp(
     var showRotateDialog by rememberSaveable { mutableStateOf(false) }
     var showLinearizeDialog by rememberSaveable { mutableStateOf(false) }
     var showCompactDialog by rememberSaveable { mutableStateOf(false) }
+    var showTextSizeDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
+    val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
@@ -235,6 +234,8 @@ fun ReaderApp(
             showRotateDialog = false
             showLinearizeDialog = false
             showCompactDialog = false
+            showTextSizeDialog = false
+            viewModel.cancelInfoEdit()
         }
     }
 
@@ -249,79 +250,100 @@ fun ReaderApp(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            if (state is ReaderState.Ready) {
-                TopAppBar(
-                    title = {
-                        // Share on the left; info, open and save together in
-                        // the middle; menu on the right. The app is forced to
-                        // LTR so this order never flips in an RTL locale.
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
+            // The toolbar is always visible. Outside Ready every document
+            // action is disabled, so the buttons still communicate where they
+            // are without pretending there is a file to act on.
+            TopAppBar(
+                title = {
+                    // Share on the left; info, open and save together in
+                    // the middle; menu on the right. The app is forced to
+                    // LTR so this order never flips in an RTL locale.
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(
+                            onClick = {
+                                val ready = state as? ReaderState.Ready ?: return@IconButton
+                                ShareSheet.shareDocument(
+                                    context = context,
+                                    file = ready.file,
+                                    mimeType = ready.mimeType,
+                                    displayName = ready.displayName,
+                                    lastModified = ready.lastModified,
+                                )
+                            },
+                            enabled = state is ReaderState.Ready && !busy,
                         ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_share),
+                                contentDescription = stringResource(R.string.share_document),
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
                                 onClick = {
-                                    ShareSheet.shareDocument(context, state.file, state.mimeType)
+                                    if (state is ReaderState.Ready) {
+                                        viewModel.beginInfoEdit()
+                                        showInfo = true
+                                    }
                                 },
+                                enabled = state is ReaderState.Ready && !busy,
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_share),
-                                    contentDescription = stringResource(R.string.share_document),
+                                    painter = painterResource(R.drawable.ic_info),
+                                    contentDescription = stringResource(R.string.document_info),
                                 )
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { showInfo = true }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_info),
-                                        contentDescription = stringResource(R.string.document_info),
-                                    )
-                                }
-                                IconButton(
-                                    onClick = openPicker,
-                                    enabled = !busy,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_folder_open),
-                                        contentDescription = stringResource(R.string.open_another),
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                            addCategory(Intent.CATEGORY_OPENABLE)
-                                            type = DocumentFormats.mimeTypeForName(state.displayName)
-                                                ?: state.mimeType
-                                            putExtra(Intent.EXTRA_TITLE, state.displayName)
-                                        }
-                                        savePicker.launch(intent)
-                                    },
-                                    enabled = !busy,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_save),
-                                        contentDescription = stringResource(R.string.save_as),
-                                    )
-                                }
+                            IconButton(
+                                onClick = openPicker,
+                                enabled = !busy,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_folder_open),
+                                    contentDescription = stringResource(R.string.open_another),
+                                )
                             }
-                            Box {
-                                IconButton(
-                                    onClick = { showOverflowMenu = true },
-                                    enabled = !busy,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_more_vert),
-                                        contentDescription = stringResource(R.string.more_options),
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = showOverflowMenu,
-                                    onDismissRequest = { showOverflowMenu = false },
-                                    modifier = Modifier.heightIn(
-                                        max = screenHeightDp * DIALOG_MAX_HEIGHT_FRACTION,
-                                    ),
-                                ) {
-                                    if (state.info.isPdf) {
+                            IconButton(
+                                onClick = {
+                                    val ready = state as? ReaderState.Ready ?: return@IconButton
+                                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                        addCategory(Intent.CATEGORY_OPENABLE)
+                                        type = DocumentFormats.mimeTypeForName(ready.displayName)
+                                            ?: ready.mimeType
+                                        putExtra(Intent.EXTRA_TITLE, ready.displayName)
+                                    }
+                                    savePicker.launch(intent)
+                                },
+                                enabled = state is ReaderState.Ready && !busy,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_save),
+                                    contentDescription = stringResource(R.string.save_as),
+                                )
+                            }
+                        }
+                        Box {
+                            IconButton(
+                                onClick = { showOverflowMenu = true },
+                                enabled = state is ReaderState.Ready && !busy,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_more_vert),
+                                    contentDescription = stringResource(R.string.more_options),
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false },
+                                modifier = Modifier.heightIn(
+                                    max = screenHeightDp * DIALOG_MAX_HEIGHT_FRACTION,
+                                ),
+                            ) {
+                                val ready = state as? ReaderState.Ready
+                                if (ready != null) {
+                                    if (ready.info.isPdf) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.reorder_pages)) },
                                             onClick = {
@@ -351,12 +373,98 @@ fun ReaderApp(
                                             },
                                         )
                                     }
-                                    if (state.monospaceAvailable) {
+                                    if (ready.reflowable) {
                                         DropdownMenuItem(
                                             text = {
                                                 Text(
                                                     stringResource(
-                                                        if (state.monospace) {
+                                                        R.string.text_size_menu,
+                                                        ready.textSizePt,
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showTextSizeDialog = true
+                                            },
+                                        )
+                                    }
+                                    if (ready.plainText != null) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (ready.singlePage) {
+                                                            R.string.single_page_on
+                                                        } else {
+                                                            R.string.single_page_off
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                viewModel.setSinglePage(!ready.singlePage)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (ready.lineWrap) {
+                                                            R.string.line_wrap_on
+                                                        } else {
+                                                            R.string.line_wrap_off
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                viewModel.setLineWrap(!ready.lineWrap)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (ready.alignRight) {
+                                                            R.string.align_right_on
+                                                        } else {
+                                                            R.string.align_right_off
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                viewModel.setAlignRight(!ready.alignRight)
+                                            },
+                                        )
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (ready.lineNumbers) {
+                                                            R.string.line_numbers_on
+                                                        } else {
+                                                            R.string.line_numbers_off
+                                                        },
+                                                    ),
+                                                )
+                                            },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                viewModel.setLineNumbers(!ready.lineNumbers)
+                                            },
+                                        )
+                                    }
+                                    if (ready.monospaceAvailable) {
+                                        DropdownMenuItem(
+                                            text = {
+                                                Text(
+                                                    stringResource(
+                                                        if (ready.monospace) {
                                                             R.string.monospace_on
                                                         } else {
                                                             R.string.monospace_off
@@ -366,19 +474,19 @@ fun ReaderApp(
                                             },
                                             onClick = {
                                                 showOverflowMenu = false
-                                                viewModel.setMonospace(!state.monospace)
+                                                viewModel.setMonospace(!ready.monospace)
                                             },
                                         )
                                     }
                                 }
                             }
                         }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                    ),
-                )
-            }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                ),
+            )
         },
     ) { padding ->
         Box(
@@ -424,10 +532,27 @@ fun ReaderApp(
         }
     }
 
-    if (showInfo && state is ReaderState.Ready) {
+    LaunchedEffect(showInfo, state) {
+        if (showInfo && state is ReaderState.Ready) {
+            viewModel.beginInfoEdit()
+        }
+    }
+
+    if (showInfo && state is ReaderState.Ready && infoDraft != null) {
         DocumentInfoDialog(
             info = state.info,
+            draft = infoDraft!!,
+            busy = busy,
+            onDraftChange = viewModel::updateInfoDraft,
             onDismiss = { showInfo = false },
+            onCancel = {
+                viewModel.cancelInfoEdit()
+                showInfo = false
+            },
+            onApply = {
+                viewModel.applyInfoEdit()
+                showInfo = false
+            },
         )
     }
 
@@ -480,6 +605,17 @@ fun ReaderApp(
             onApply = {
                 showCompactDialog = false
                 viewModel.compactPdf()
+            },
+        )
+    }
+
+    if (showTextSizeDialog && state is ReaderState.Ready) {
+        TextSizeDialog(
+            current = state.textSizePt,
+            onDismiss = { showTextSizeDialog = false },
+            onApply = { points ->
+                showTextSizeDialog = false
+                viewModel.setTextSizePt(points)
             },
         )
     }
@@ -741,12 +877,32 @@ private fun DocumentReader(
     onZoom: (Float) -> Unit,
     viewModel: ReaderViewModel,
 ) {
+    val plainText = state.plainText
+    if (plainText != null) {
+        PlainTextReader(
+            text = plainText,
+            textSizePt = state.textSizePt,
+            monospace = state.monospace,
+            singlePage = state.singlePage,
+            lineWrap = state.lineWrap,
+            alignRight = state.alignRight,
+            lineNumbers = state.lineNumbers,
+            modifier = Modifier.fillMaxSize(),
+        )
+        return
+    }
+
     val context = LocalContext.current
     val density = LocalDensity.current
     val densityDpi = context.resources.displayMetrics.densityDpi
     val listState = rememberLazyListState()
     val horizontalScroll = rememberScrollState()
-    val latestZoom by rememberUpdatedState(zoom)
+    // Reflowable documents change their text size through the menu; pinch and
+    // double-tap zoom stay reserved for fixed-layout pages. Their viewport is
+    // always laid out at 100%.
+    val zoomable = !state.reflowable
+    val interactiveZoom = if (zoomable) zoom else 1f
+    val latestZoom by rememberUpdatedState(interactiveZoom)
     val scope = rememberCoroutineScope()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
 
@@ -754,11 +910,11 @@ private fun DocumentReader(
     // is scaled from `zoom` immediately, so the page never waits for the
     // slower, sharper pass before changing size.
     var renderZoom by remember(state.file.absolutePath) { mutableFloatStateOf(1f) }
-    LaunchedEffect(state.file.absolutePath, zoom) {
+    LaunchedEffect(state.file.absolutePath, interactiveZoom) {
         if (state.reflowable) return@LaunchedEffect
-        if (zoom == renderZoom) return@LaunchedEffect
+        if (interactiveZoom == renderZoom) return@LaunchedEffect
         delay(RENDER_SETTLE_MS)
-        renderZoom = zoom
+        renderZoom = interactiveZoom
     }
 
     // Reflowable pages are rendered at the viewport width for the last layout.
@@ -866,48 +1022,54 @@ private fun DocumentReader(
         }
     }
 
+    val pinchModifier = if (zoomable) {
+        Modifier.twoFingerPinchZoom(
+            minZoom = ZoomMath.MIN_ZOOM,
+            maxZoom = ZoomMath.MAX_ZOOM,
+            currentZoom = { latestZoom },
+            onZoom = { value, focus ->
+                pinchFocus = focus
+                onZoom(value)
+            },
+            onZoomStart = { focus ->
+                zoomJob?.cancel()
+                restorePageFraction = visiblePageFraction()
+                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
+                    focus.y >= info.offset && focus.y < info.offset + info.size
+                } ?: primaryVisibleItem()
+                pinchFocus = focus
+                pinchActive = true
+                pinchAnchor = PinchAnchor(
+                    id = ++pinchSessionId,
+                    startZoom = latestZoom,
+                    startScroll = horizontalScroll.value,
+                    startFocus = focus,
+                    page = item?.index ?: -1,
+                    fraction = if (item != null && item.size > 0) {
+                        ((focus.y - item.offset) / item.size)
+                            .coerceIn(0f, 1f)
+                    } else {
+                        0f
+                    },
+                )
+            },
+            onPan = { dx, dy ->
+                // Move the content with the fingers immediately. Waiting
+                // for the zoom layout to catch up made a two-finger drag
+                // feel like it was stuck in treacle.
+                horizontalScroll.dispatchRawDelta(-dx)
+                listState.dispatchRawDelta(-dy)
+            },
+            onZoomEnd = { pinchActive = false },
+        )
+    } else {
+        Modifier
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .twoFingerPinchZoom(
-                minZoom = ZoomMath.MIN_ZOOM,
-                maxZoom = ZoomMath.MAX_ZOOM,
-                currentZoom = { latestZoom },
-                onZoom = { value, focus ->
-                    pinchFocus = focus
-                    onZoom(value)
-                },
-                onZoomStart = { focus ->
-                    zoomJob?.cancel()
-                    restorePageFraction = visiblePageFraction()
-                    val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { info ->
-                        focus.y >= info.offset && focus.y < info.offset + info.size
-                    } ?: primaryVisibleItem()
-                    pinchFocus = focus
-                    pinchActive = true
-                    pinchAnchor = PinchAnchor(
-                        id = ++pinchSessionId,
-                        startZoom = latestZoom,
-                        startScroll = horizontalScroll.value,
-                        startFocus = focus,
-                        page = item?.index ?: -1,
-                        fraction = if (item != null && item.size > 0) {
-                            ((focus.y - item.offset) / item.size)
-                                .coerceIn(0f, 1f)
-                        } else {
-                            0f
-                        },
-                    )
-                },
-                onPan = { dx, dy ->
-                    // Move the content with the fingers immediately. Waiting
-                    // for the zoom layout to catch up made a two-finger drag
-                    // feel like it was stuck in treacle.
-                    horizontalScroll.dispatchRawDelta(-dx)
-                    listState.dispatchRawDelta(-dy)
-                },
-                onZoomEnd = { pinchActive = false },
-            ),
+            .then(pinchModifier),
     ) {
         val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
         val viewportHeightPx = with(density) { maxHeight.toPx() }.toInt()
@@ -916,18 +1078,29 @@ private fun DocumentReader(
         // run once the fingers rest. Deferring it also avoids repaginating
         // halfway through the gesture, which would shift the text away from
         // the point being held.
-        LaunchedEffect(viewportWidthPx, viewportHeightPx, densityDpi, zoom, pinchActive) {
+        LaunchedEffect(
+            viewportWidthPx,
+            viewportHeightPx,
+            densityDpi,
+            interactiveZoom,
+            pinchActive,
+        ) {
             if (pinchActive) return@LaunchedEffect
-            viewModel.onViewportChanged(viewportWidthPx, viewportHeightPx, densityDpi, zoom)
+            viewModel.onViewportChanged(
+                viewportWidthPx,
+                viewportHeightPx,
+                densityDpi,
+                interactiveZoom,
+            )
         }
 
         // Reflowable layouts only change when the new layout arrives; until
         // then the previous layout is scaled by zoom / layoutZoom. Fixed-layout
         // pages are rasterised wider and panned horizontally instead.
         val contentScale = if (state.reflowable) {
-            ZoomMath.reflowRackScale(zoom, state.layoutZoom, widthZoomFloor)
+            ZoomMath.reflowRackScale(interactiveZoom, state.layoutZoom, widthZoomFloor)
         } else {
-            zoom
+            interactiveZoom
         }
         val pageWidthPx = (viewportWidthPx * contentScale).toInt().coerceAtLeast(1)
         val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
@@ -1074,13 +1247,13 @@ private fun DocumentReader(
                         documentKey = state.file.absolutePath,
                         viewportWidthPx = viewportWidthPx,
                         reflowable = state.reflowable,
-                        liveZoom = zoom,
+                        liveZoom = interactiveZoom,
                         layoutZoom = state.layoutZoom,
                         renderZoom = renderZoom,
                         layoutVersion = state.layoutVersion,
                         selection = selection,
                         viewModel = viewModel,
-                        onDoubleTap = doubleTapZoom,
+                        onDoubleTap = if (zoomable) doubleTapZoom else null,
                     )
                 }
             }
@@ -1134,7 +1307,7 @@ private fun PageItem(
     layoutVersion: Int,
     selection: SelectionState?,
     viewModel: ReaderViewModel,
-    onDoubleTap: () -> Unit,
+    onDoubleTap: (() -> Unit)?,
 ) {
     // Keep the last bitmap on screen while a sharper one is prepared. For
     // reflowable pages `renderedLayoutZoom` is the layout zoom of that bitmap,
@@ -1204,7 +1377,9 @@ private fun PageItem(
                     Modifier.pointerInput(documentKey, index) {
                         detectTapGestures(
                             onTap = { viewModel.clearSelection() },
-                            onDoubleTap = { onDoubleTap() },
+                            onDoubleTap = onDoubleTap?.let { callback ->
+                                { _: Offset -> callback() }
+                            },
                             onLongPress = {
                                 if (!multiTouch.value) {
                                     viewModel.showSelectionMenu(index)
@@ -1297,7 +1472,7 @@ private fun SelectionBar(
     }
 }
 
-private fun copySelection(context: Context, text: String) {
+internal fun copySelection(context: Context, text: String) {
     if (text.isBlank()) return
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), text))
@@ -1387,85 +1562,6 @@ private fun Modifier.twoFingerPinchZoom(
 }
 
 @Composable
-private fun DocumentInfoDialog(
-    info: DocumentInfo,
-    onDismiss: () -> Unit,
-) {
-    val context = LocalContext.current
-    // Leave room for the title, buttons and dialog padding so the whole
-    // dialog stays within 3/4 of the screen and only the text scrolls.
-    val maxTextHeight = (
-        LocalConfiguration.current.screenHeightDp.dp * DIALOG_MAX_HEIGHT_FRACTION -
-            DIALOG_CHROME_DP.dp
-        ).coerceAtLeast(96.dp)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.document_info)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = maxTextHeight)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                InfoRow(stringResource(R.string.file_name), info.fileName)
-                InfoRow(
-                    stringResource(R.string.file_size),
-                    Formatter.formatFileSize(context, info.sizeBytes),
-                )
-                InfoRow(stringResource(R.string.document_type), info.kind)
-                info.format?.let {
-                    if (!it.equals(info.kind, ignoreCase = true)) {
-                        InfoRow(stringResource(R.string.document_format), it)
-                    }
-                }
-                InfoRow(
-                    stringResource(R.string.page_count),
-                    pluralStringResource(
-                        R.plurals.page_count_value,
-                        info.pageCount,
-                        info.pageCount,
-                    ),
-                )
-                InfoRow(
-                    stringResource(R.string.password_protected),
-                    if (info.encrypted) {
-                        stringResource(R.string.yes)
-                    } else {
-                        stringResource(R.string.no)
-                    },
-                )
-
-                if (info.hasMetadata) {
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = stringResource(R.string.document_metadata),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(4.dp))
-
-                    info.title?.let { InfoRow(stringResource(R.string.metadata_title), it) }
-                    info.author?.let { InfoRow(stringResource(R.string.metadata_author), it) }
-                    info.subject?.let { InfoRow(stringResource(R.string.metadata_subject), it) }
-                    info.keywords?.let { InfoRow(stringResource(R.string.metadata_keywords), it) }
-                    info.creator?.let { InfoRow(stringResource(R.string.metadata_creator), it) }
-                    info.producer?.let { InfoRow(stringResource(R.string.metadata_producer), it) }
-                    info.created?.let { InfoRow(stringResource(R.string.metadata_created), it) }
-                    info.modified?.let { InfoRow(stringResource(R.string.metadata_modified), it) }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.close))
-            }
-        },
-    )
-}
-
-@Composable
 private fun PasswordDialog(
     displayName: String,
     wrongPassword: Boolean,
@@ -1517,25 +1613,6 @@ private fun PasswordDialog(
             }
         },
     )
-}
-
-@Composable
-private fun InfoRow(label: String, value: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
 }
 
 @Composable

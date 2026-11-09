@@ -22,6 +22,7 @@ object DocumentStore {
 
     private const val DIR = "documents"
     private const val MAX_NAME_BYTES = 160
+    private const val SHARE_PREFIX = "share-"
 
     // Only characters that are illegal on Android's filesystems (or control
     // characters) are replaced. Everything else - Hebrew, Arabic, CJK, accents,
@@ -178,12 +179,37 @@ object DocumentStore {
      * the reader has replaced it. The documents root is never removed.
      */
     fun discard(file: File) {
+        MetadataSidecar.delete(file)
         file.delete()
         val parent = file.parentFile ?: return
         val root = parent.parentFile ?: return
         if (parent != root && parent.list()?.isEmpty() == true) {
             parent.delete()
         }
+    }
+
+    /**
+     * Returns a copy for sharing under the user-edited display name. The
+     * original cache file keeps its internal suffix so MuPDF can still open
+     * it; this copy only exists to give the share target the right name.
+     */
+    fun shareCopy(
+        context: Context,
+        file: File,
+        displayName: String,
+        lastModified: Long? = null,
+    ): File {
+        val root = File(context.cacheDir, DIR).apply { mkdirs() }
+        // Sharing is rare, so old share directories are cleared here rather
+        // than adding another cleanup hook.
+        root.listFiles()
+            ?.filter { it.isDirectory && it.name.startsWith(SHARE_PREFIX) }
+            ?.forEach { it.deleteRecursively() }
+        val dir = File(root, SHARE_PREFIX + UUID.randomUUID()).apply { mkdirs() }
+        val target = File(dir, safeFileName(displayName))
+        file.copyTo(target, overwrite = true)
+        lastModified?.takeIf { it > 0L }?.let { target.setLastModified(it) }
+        return target
     }
 
     private fun removeStaleFiles(root: File, keep: File?) {

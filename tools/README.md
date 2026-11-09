@@ -42,7 +42,7 @@ tools\manual-testing.bat
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
 | `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
-| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `info`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
+| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
 
@@ -89,29 +89,44 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
    linearize.
 9. **Encrypted PDF** - open `dummy-encrypted.pdf`, password `secret`. Reorder,
    rotate, linearize or compact it; the replacement opens without a password.
-10. **TXT monospace** - open `notes.txt`, `README.nfo` or `book.text`, then
-    overflow -> Monospace: on/off. All three should reflow.
-11. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
-    zoom enlarges the layout.
-12. **Markdown** - open `guide.md`; headings, lists and paragraphs should
+10. **TXT reading** - open `notes.txt`, `README.nfo` or `book.text`. The custom
+    plain-text view shows one continuous page, line numbers and wrapped lines;
+    the overflow menu offers single page, line wrap, alignment, line numbers,
+    text size and monospace. Long-press selects text across paragraphs with the
+    system selection toolbar, so **Select all** and **Copy** work for the whole
+    document. Text size is 5-40 pt and starts at 12 pt.
+11. **Plain-text toggles** - turn single page off to page the text vertically;
+    turn line wrap off to pan long lines horizontally; turn align right on to
+    move both the text and the line-number gutter to the right side; turn line
+    numbers off to hide the gutter. Options survive rotation and the next file.
+12. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
+    text size enlarges the layout. Pinch and double-tap are disabled for
+    reflowable documents; use the menu's text size instead.
+13. **Markdown** - open `guide.md`; headings, lists and paragraphs should
     reflow. `guide.markdown` also works through the temporary `.md` alias.
     Office files (DOCX/XLSX/PPTX/HWPX) are not supported.
-13. **Source and config text** - open `config.yaml` and `main.c`; both should
+14. **Source and config text** - open `config.yaml` and `main.c`; both should
     reflow as monospace plain text. Copy `notes.txt` to `notes.xyz` and open it:
     the unknown suffix must fall back to text detection. JSON, CSV, TSV, shell
     scripts and other source files use the same path.
-14. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
+15. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
     document that stays sharp when zoomed.
-15. **Save as** - with any document open, tap the middle **Save** button, pick a
+16. **Metadata editor** - tap the circled **i**. Filename, extension and every
+    metadata field the document already has are editable; dates use
+    `yyyy-MM-ddThh:mm:ss` and have date/time pickers. Clearing a field removes
+    its value. **Apply** rewrites the cache file and reloads it; **Cancel**
+    discards the draft; dismissing the dialog keeps it for the next open.
+    Share and Save as use the edited name and timestamp.
+17. **Save as** - with any document open, tap the middle **Save** button, pick a
     destination, and confirm the copy has the same name, extension and content.
     Re-download the saved file and check that its modified time matches the
     source where the provider supports timestamps.
-16. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
+18. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
     HTML should all render and reflow.
-17. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
+19. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
     change to the last page as soon as that page occupies most of the screen,
     not after the previous page has completely left.
-18. **Rotation / process death** - rotate while reading, then enable
+20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
 
@@ -193,8 +208,8 @@ available from the `manual-testing.bat` menu as option 11.
 ### Reader action checks
 
 `reader-actions.ps1` covers the single-finger side of the reader: the
-long-press page menu, Select all/Copy, the overflow menu, the document-info
-dialog and scrolling.
+long-press page menu, Select all/Copy, the overflow menu, the document-info and
+metadata dialogs, text size, the plain-text toggles, and scrolling.
 
 ```bat
 tools\open-fixture.bat sample.pdf
@@ -206,9 +221,17 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-p
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action select-all
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action copy -Prefix copied
 
-:: Overflow menu and document info.
+:: Overflow menu, document info, and the editable metadata dialog.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action metadata -Prefix sample-metadata
+
+:: Text size and the plain-text toggles (open notes.txt or book.epub first).
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action text-size
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-single-page
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-wrap
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-align-right
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-numbers
 
 :: Scroll and take a plain screenshot.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action scroll
@@ -216,10 +239,12 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action screen
 ```
 
 The menu actions read `uiautomator dump` and tap the visible **Select all**,
-**Copy** or **Document info** button, so they do not hard-code a pixel position.
-If a build changes the labels, `-Action list` prints every visible text and
-content description. Override the press point with `-X`/`-Y` and the overflow
-button with `-MenuX`/`-MenuY`; both are screen fractions.
+**Copy**, **Document info**, **Text size** or toggle label, so they do not
+hard-code a pixel position. If a build changes the labels, `-Action list` prints
+every visible text and content description. Override the press point with
+`-X`/`-Y` and the overflow button with `-MenuX`/`-MenuY`; both are screen
+fractions. `metadata-apply` and `text-size-apply` confirm the dialog and capture
+the result after the reload.
 
 Screenshots and the dumped `window.xml` land in `build\reader-actions\`. Check
 that:
@@ -229,8 +254,14 @@ that:
 - after Select all, every text line on the page is highlighted and only **Copy**
   remains;
 - Copy empties the clipboard toast and dismisses the menu;
-- the info dialog scrolls and never covers more than three quarters of the
-  screen;
+- on plain text the native selection toolbar can select across paragraphs and
+  the line numbers are never copied;
+- the metadata editor keeps its draft when dismissed and shows Apply/Cancel at
+  the top, and Apply reloads with the edited name;
+- the text-size dialog stays inside 5-40 pt and applies to EPUB/Markdown but not
+  to a PDF;
+- the info and metadata dialogs scroll and never cover more than three quarters
+  of the screen;
 - the page indicator starts dim and fades to nearly invisible after about five
   seconds, then returns on the next scroll.
 

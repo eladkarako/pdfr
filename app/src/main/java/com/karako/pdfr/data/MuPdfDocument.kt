@@ -306,8 +306,9 @@ class MuPdfDocument private constructor(
             keywords = meta(Document.META_INFO_KEYWORDS),
             creator = meta(Document.META_INFO_CREATOR),
             producer = meta(Document.META_INFO_PRODUCER),
-            created = meta(Document.META_INFO_CREATIONDATE),
-            modified = meta(Document.META_INFO_MODIFICATIONDATE),
+            created = DocumentDates.normalise(meta(Document.META_INFO_CREATIONDATE)),
+            modified = DocumentDates.normalise(meta(Document.META_INFO_MODIFICATIONDATE)),
+            fileModified = file.lastModified().takeIf { it > 0L },
         )
     }
 
@@ -403,6 +404,7 @@ class MuPdfDocument private constructor(
             pageIndices: IntArray?,
             rotatePages: IntArray? = null,
             options: String,
+            metadata: Map<String, String>? = null,
         ): Boolean {
             Context.init()
 
@@ -450,6 +452,10 @@ class MuPdfDocument private constructor(
                     if (pageIndices.isEmpty()) return false
                     if (pageIndices.any { it < 0 || it >= pageCount }) return false
                     pdf.rearrangePages(pageIndices)
+                }
+
+                if (metadata != null) {
+                    metadata.forEach { (key, value) -> pdf.setMetaData(key, value) }
                 }
 
                 pdf.save(temp.absolutePath, options)

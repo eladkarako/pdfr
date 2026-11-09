@@ -246,6 +246,65 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun metadataRewriteUpdatesAndRemovesValues() {
+        val source = pdf("metadata-source.pdf", 1)
+        val edited = File(dir, "metadata-edited.pdf")
+
+        assertTrue(
+            onMuPdf {
+                MuPdfDocument.savePdfCopy(
+                    source = source,
+                    password = null,
+                    destination = edited,
+                    pageIndices = null,
+                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    metadata = mapOf(
+                        Document.META_INFO_TITLE to "Edited title",
+                        Document.META_INFO_AUTHOR to "Edited author",
+                        Document.META_INFO_CREATIONDATE to "D:20260102030405",
+                    ),
+                )
+            },
+        )
+
+        val doc = open(edited)
+        try {
+            val info = onMuPdf { doc.info() }
+            assertEquals("Edited title", info.title)
+            assertEquals("Edited author", info.author)
+            assertEquals("2026-01-02T03:04:05", info.created)
+            assertNull(info.subject)
+        } finally {
+            close(doc)
+        }
+
+        // An empty value is how the editor removes a property. The title key
+        // remains part of the rewrite map, but MuPDF must not keep the text.
+        val cleared = File(dir, "metadata-cleared.pdf")
+        assertTrue(
+            onMuPdf {
+                MuPdfDocument.savePdfCopy(
+                    source = edited,
+                    password = null,
+                    destination = cleared,
+                    pageIndices = null,
+                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    metadata = mapOf(Document.META_INFO_TITLE to ""),
+                )
+            },
+        )
+
+        val clearedDoc = open(cleared)
+        try {
+            val info = onMuPdf { clearedDoc.info() }
+            assertNull(info.title)
+            assertEquals("Edited author", info.author)
+        } finally {
+            close(clearedDoc)
+        }
+    }
+
+    @Test
     fun rotate180TurnsOnlyListedPages() {
         val source = pdf("rotate-source.pdf", 4)
         val target = File(dir, "rotated.pdf")

@@ -43,6 +43,35 @@
     <string name="metadata_producer">Producer</string>
     <string name="metadata_created">Created</string>
     <string name="metadata_modified">Modified</string>
+    <string name="file_modified">File modified</string>
+    <string name="file_extension">Extension</string>
+    <string name="file_extension_hint">Letters and digits only, up to 8.</string>
+    <string name="file_name_required">Enter a file name.</string>
+    <string name="metadata_empty_hint">Clearing a value removes it from the document. Fields the document does not have stay hidden.</string>
+    <string name="metadata_applied">Metadata updated.</string>
+    <string name="metadata_failed">Didn\'t update the metadata.</string>
+
+    <string name="apply">Apply</string>
+    <string name="ok">OK</string>
+    <string name="pick_date">Date</string>
+    <string name="pick_time">Time</string>
+    <string name="clear_value">Clear</string>
+    <string name="time_picker_title">Choose time</string>
+    <string name="date_invalid">Use yyyy-MM-ddThh:mm:ss.</string>
+
+    <string name="text_size_menu">Text size: %1$d pt</string>
+    <string name="text_size_title">Text size</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5 to 40 pt. This affects text documents; PDFs and images keep their own zoom.</string>
+
+    <string name="single_page_on">Single page: on</string>
+    <string name="single_page_off">Single page: off</string>
+    <string name="line_wrap_on">Line wrap: on</string>
+    <string name="line_wrap_off">Line wrap: off</string>
+    <string name="align_right_on">Align right: on</string>
+    <string name="align_right_off">Align right: off</string>
+    <string name="line_numbers_on">Line numbers: on</string>
+    <string name="line_numbers_off">Line numbers: off</string>
 
     <string name="copy">Copy</string>
     <string name="select_all">Select all</string>

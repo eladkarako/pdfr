@@ -13,6 +13,13 @@
 + the page indicator is slightly larger, starts dimmer and fades to almost invisible over five seconds; scrolling, panning, zooming or changing pages wakes it.
 + the overflow menu and the document-info dialog are capped at three quarters of the screen height and scroll their contents.
 + added `ZoomMathTest` plus fixed-layout/reflow zoom instrumented tests, `tools\zoom-probe.ps1`, which records before/down/mid/late/settled screenshots and reports whether a pinch settles without a jump, and `tools\reader-actions.ps1` for reproducible long-press, tap, menu and info checks.
++ plain text now uses a dedicated Compose reader: one continuous page (default), optional vertical paging, line wrap with horizontal panning when wrap is off, right-to-left direction/alignment, line numbers on the left (right in RTL), monospace and a 5-40 pt text size (12 pt default). Pinch and double-tap are disabled for plain text.
++ reflowable EPUB/Markdown/HTML use the text-size setting instead of pinch zoom; fixed-layout PDFs and images keep pinch/double-tap zoom.
++ plain text selection uses a single `SelectionContainer` around the `LazyColumn`, so the system toolbar can select across paragraphs and copy them; line numbers are excluded.
++ the toolbar is always visible; with no document open, share, info and save look disabled, and the overflow menu is disabled too.
++ document info is now an editor: Apply/Cancel at the top, editable filename and extension, existing metadata only, ISO `yyyy-MM-ddThh:mm:ss` dates with pickers, and clearing a value removes it. Edits stay in a draft until Apply, which rewrites a PDF's Info dictionary or a sidecar for other formats and reloads the document. Encryption/secured rows were removed.
++ Save as and Share use the edited display name/timestamp; PDF metadata edits are part of the shared/saved bytes.
++ added date, plain-text, metadata-draft and sidecar unit tests, a PDF metadata rewrite instrumented test, and new `reader-actions.ps1` actions for metadata, text size and plain-text toggles.
 
 26.11.6
 + page indicator now follows the page that fills most of the viewport, so it updates before the previous page leaves the screen.

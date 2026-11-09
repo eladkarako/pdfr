@@ -26,10 +26,17 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
 
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action metadata -Prefix sample-metadata
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action text-size -Prefix sample-text-size
+
 .NOTES
   Run tools\open-fixture.bat first so a document is open. The long-press point
   should be over readable text; the default (centre of the screen) is fine for
-  the first page of sample.pdf.
+  the first page of sample.pdf. The text-size and toggle actions need a
+  reflowable document (for example notes.txt or book.epub).
 #>
 [CmdletBinding()]
 param(
@@ -40,6 +47,14 @@ param(
         'copy',
         'menu',
         'info',
+        'metadata',
+        'metadata-apply',
+        'text-size',
+        'text-size-apply',
+        'toggle-single-page',
+        'toggle-line-wrap',
+        'toggle-align-right',
+        'toggle-line-numbers',
         'scroll',
         'screenshot',
         'list'
@@ -168,6 +183,23 @@ function Show-Text {
     }
 }
 
+function Test-OverflowMenuOpen {
+    $xml = Get-UiXml
+    $labels = '^(Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact)'
+    return [bool]($xml.SelectNodes('//node') | Where-Object { $_.text -match $labels })
+}
+
+function Open-OverflowMenu {
+    # BACK closes an open popup, but on its own it would leave the reader and
+    # make the next tap land on the launcher. Only dismiss when a menu exists.
+    if (Test-OverflowMenuOpen) {
+        Invoke-Adb shell input keyevent BACK
+        Start-Sleep -Milliseconds 300
+    }
+    Invoke-Adb shell input tap $script:menuX $script:menuY
+    Start-Sleep -Milliseconds $script:WaitMs
+}
+
 $pointX = [int]($ScreenWidth * $X)
 $pointY = [int]($ScreenHeight * $Y)
 $menuX = [int]($ScreenWidth * $MenuX)
@@ -210,12 +242,71 @@ switch ($Action) {
     'info' {
         Write-Host "[PDFr] Opening document info from the toolbar..."
         # Document info has its own toolbar button (the circled i); it was
-        # never part of the overflow menu. Dismiss any open popup first so
-        # uiautomator can see the toolbar's content descriptions again.
-        Invoke-Adb shell input keyevent BACK
-        Start-Sleep -Milliseconds 300
+        # never part of the overflow menu. Dismiss an open popup first so
+        # uiautomator can see the toolbar's content descriptions again, but
+        # never send BACK on its own: that would leave the reader.
+        if (Test-OverflowMenuOpen) {
+            Invoke-Adb shell input keyevent BACK
+            Start-Sleep -Milliseconds 300
+        }
         Tap-Node '^Document info$'
         Save-Shot 'info'
+    }
+    'metadata' {
+        Write-Host "[PDFr] Opening the editable metadata dialog..."
+        if (Test-OverflowMenuOpen) {
+            Invoke-Adb shell input keyevent BACK
+            Start-Sleep -Milliseconds 300
+        }
+        Tap-Node '^Document info$'
+        Save-Shot 'metadata'
+    }
+    'metadata-apply' {
+        Write-Host "[PDFr] Opening metadata and applying the draft..."
+        if (Test-OverflowMenuOpen) {
+            Invoke-Adb shell input keyevent BACK
+            Start-Sleep -Milliseconds 300
+        }
+        Tap-Node '^Document info$'
+        Tap-Node '^Apply$'
+        Save-Shot 'metadata-applied'
+    }
+    'text-size' {
+        Write-Host "[PDFr] Opening the text-size dialog..."
+        Open-OverflowMenu
+        Tap-Node '^Text size:'
+        Save-Shot 'text-size'
+    }
+    'text-size-apply' {
+        Write-Host "[PDFr] Opening the text-size dialog and applying it..."
+        Open-OverflowMenu
+        Tap-Node '^Text size:'
+        Tap-Node '^Apply$'
+        Save-Shot 'text-size-applied'
+    }
+    'toggle-single-page' {
+        Write-Host "[PDFr] Toggling the single-page text option..."
+        Open-OverflowMenu
+        Tap-Node '^Single page:'
+        Save-Shot 'single-page'
+    }
+    'toggle-line-wrap' {
+        Write-Host "[PDFr] Toggling the line-wrap text option..."
+        Open-OverflowMenu
+        Tap-Node '^Line wrap:'
+        Save-Shot 'line-wrap'
+    }
+    'toggle-align-right' {
+        Write-Host "[PDFr] Toggling right alignment..."
+        Open-OverflowMenu
+        Tap-Node '^Align right:'
+        Save-Shot 'align-right'
+    }
+    'toggle-line-numbers' {
+        Write-Host "[PDFr] Toggling line numbers..."
+        Open-OverflowMenu
+        Tap-Node '^Line numbers:'
+        Save-Shot 'line-numbers'
     }
     'scroll' {
         $fromY = if ($ScrollDirection -eq 'up') {

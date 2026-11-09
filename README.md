@@ -26,10 +26,12 @@
 | 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
 | 🧾 Source, config and data | `.cfg`, `.ini`, `.conf`, `.properties`, `.yaml`, `.yml`, `.toml`, `.json`, `.jsonl`, `.csv`, `.tsv`, `.xml`, `.c`, `.h`, `.cpp`, `.hpp`, `.cs`, `.java`, `.kt`, `.js`, `.ts`, `.py`, `.rb`, `.go`, `.rs`, `.php`, `.sh`, `.bat`, `.ps1`, `.sql`, `.css` and similar | Text files written for a program rather than for a reader: configuration, structured data and source code. | Shown as reflowable plain text with the monospace toggle. MuPDF has no handler for these suffixes, so PDFr opens a temporary `.txt` copy; the copy is byte-for-byte identical and no byte-order mark is added. MuPDF's content detector still treats a file whose first line starts with `# ` as Markdown, so such a comment may render as a heading without the marker. A file with an entirely unknown suffix is also detected from its bytes and opened as text when MuPDF cannot handle it. |
 
-💡 note: The same continuous-scroll reader is used for every format. Fixed-layout
-documents are rasterised page by page; reflowable documents (EPUB, MOBI, FB2,
-Markdown, HTML and text) are laid out to the current screen width and
-zoom level. Office files (DOCX/XLSX/PPTX/HWPX) are not supported.
+💡 note: Fixed-layout documents are rasterised page by page. Reflowable documents
+(EPUB, MOBI, FB2, Markdown, HTML and text) are laid out to the current screen
+width. Plain text gets its own Compose view with line numbers, wrapping, RTL
+alignment and a continuous or paged layout, so it can select across paragraphs
+with the native text toolbar. Office files (DOCX/XLSX/PPTX/HWPX) are not
+supported.
 
 📄 PDFr advertises the `text/*` family plus the common application text types
 (JSON, XML, YAML, TOML, JavaScript, shell, SQL and others) for **Open with** and
@@ -73,18 +75,26 @@ intact wherever the target provider allows its timestamp to be updated.
 - 💾 **Save as** next to **Open**: choose a destination and keep the current
   format, filename, extension and, where the provider supports it, the original
   modification time.
-- ✂️ **Text selection and copying** - long-press anywhere on a page to open the
-  page menu, then choose **Select all** to highlight every text block on that
-  page and expose **Copy**. Tapping elsewhere dismisses the menu. There are no
-  drag handles: selection is intentionally page-wide for now.
-- 🔍 **Zoom** from 100% to 600% with a two-finger pinch (any intermediate value)
-  or a smooth double-tap glide (2x, 4x, 6x, back to 1x). The content resizes and
-  pans under the fingers around the midpoint between them; the sharper bitmap
-  and the larger reflow layout arrive when the gesture ends. Fixed-layout pages
-  can be panned horizontally while zoomed.
+- ✂️ **Text selection and copying** - long-press a PDF page to open the page
+  menu, then choose **Select all** to highlight every text block on that page
+  and expose **Copy**. Plain text selects natively across paragraphs with the
+  system toolbar; line numbers are never included. There are no drag handles:
+  PDF selection is intentionally page-wide for now.
+- 🔍 **Zoom** from 100% to 600% for fixed-layout documents with a two-finger
+  pinch (any intermediate value) or a smooth double-tap glide (2x, 4x, 6x, back
+  to 1x). The content resizes and pans under the fingers around the midpoint
+  between them; the sharper bitmap arrives when the gesture ends. Reflowable
+  documents disable pinch and double-tap: use **Text size** instead.
+- 🔠 **Text size** from 5 to 40 pt (12 pt by default) for reflowable documents,
+  from the overflow menu. It persists across files, rotation and process death
+  and does not change the zoom of a PDF or image.
+- 📑 **Plain-text layout options** - one continuous page (default on), line wrap
+  (default on; horizontal scrolling when off), right-to-left direction and
+  alignment (default off), line numbers on the left, or on the right in RTL
+  (default on), and a monospace font override.
 - 📍 **Page indicator** fades away while you read and wakes on any scroll, pan or
-  zoom. The overflow menu and info dialog scroll when needed and never cover
-  more than three quarters of the screen.
+  zoom. The overflow menu, info editor and other dialogs scroll when needed and
+  never cover more than three quarters of the screen.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -102,9 +112,14 @@ intact wherever the target provider allows its timestamp to be updated.
 - 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
   decrypted copy is written when merely reading; any rewrite saves its
   replacement without encryption.
-- ℹ️ **Document info**: file name, size, type/format, page count, encryption, and
-  the usual title/author/subject/keywords/creator/producer/date metadata.
-- 📤 **Share** the open document through Android's share sheet / print spooler.
+- ℹ️ **Metadata editor**: the circled **i** opens the filename, extension and the
+  title/author/subject/keywords/creator/producer/date fields the document
+  already has. Dates are shown as `yyyy-MM-ddThh:mm:ss` and can be typed or
+  picked. Edits stay in a draft while the dialog is dismissed; **Apply** writes
+  them into the PDF (or a sidecar for other formats) and reloads. Clearing a
+  field removes its value.
+- 📤 **Share** and 💾 **Save as** use the edited display name and timestamp, and
+  PDF metadata changes are part of the bytes they copy.
 - 📍 **Reading position** is preserved across rotation, reflow and process death.
 
 </details>
@@ -119,6 +134,10 @@ app/src/main/java/com/karako/pdfr/
 ├── data/
 │   ├── DocumentFormats.kt   # 🏷️ MIME types, extensions and plain-text names
 │   ├── DocumentInfo.kt      # 🧾 generic metadata model
+│   ├── DocumentMetadata.kt  # ✏️ editable draft, PDF keys and sidecar overlay
+│   ├── DocumentDates.kt     # 🕒 ISO/PDF date parsing and formatting
+│   ├── MetadataSidecar.kt   # 🗂️ metadata for EPUB/image/text cache files
+│   ├── PlainText.kt         # 📃 BOM-aware text decoding and line splitting
 │   ├── DocumentStore.kt     # 💾 copies an incoming URI into cache
 │   ├── PageRanges.kt        # 🔢 parses "1-3,7,9-e" page selections
 │   ├── MuPdf.kt             # 🧵 one dedicated MuPDF thread
@@ -128,6 +147,9 @@ app/src/main/java/com/karako/pdfr/
 ├── ui/
 │   ├── ReaderApp.kt         # 🖥️ Compose continuous-scroll reader + dialogs
 │   ├── ReaderViewModel.kt   # 🧠 reader state, viewport, selection, reflow
+│   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
+│   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
+│   ├── TextSizeDialog.kt    # 🔠 reflowable text-size picker
 │   └── theme/Theme.kt       # 🎨 theme
 app/src/main/cpp/            # 🔌 JNI bridge to static libqpdf
 app/src/main/jniLibs/<abi>/  # 📦 stripped libqpdfjni.so per ABI
@@ -203,10 +225,11 @@ Three layers, all runnable from the repository root:
 | 🤖 MuPDF integration tests | `tools\run-instrumented-tests.bat` | ✅ yes |
 | 📋 Manual checklist | `tools\manual-testing.bat` | ✅ yes |
 
-- 📄 `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`.
+- 📄 `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`,
+  dates, plain-text decoding and metadata sidecars.
 - 📄 `app/src/androidTest/README.md` - opens, renders, selects, reorders,
-  rotates, compacts, linearizes through qpdf, unlocks AES-256 PDFs and toggles
-  plain-text monospace on real MuPDF.
+  rotates, compacts, linearizes through qpdf, unlocks AES-256 PDFs, rewrites
+  metadata and toggles plain-text monospace on real MuPDF.
 - 📄 `tools/README.md` - AVD creation, emulator/install helpers, fixture pushing,
   the manual checklist, the raw-multitouch pinch helper, and the
   dependency-free fixture generator/Project Gutenberg downloader.
