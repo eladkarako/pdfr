@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -100,7 +102,7 @@ internal fun PlainTextReader(
     val alignment = if (alignRight) TextAlign.Right else TextAlign.Left
     val padding = 10.dp
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = modifier.fillMaxSize().ignoreMultiTouch()) {
         val widthPx = with(density) { maxWidth.toPx() }.toInt()
         val heightPx = with(density) { maxHeight.toPx() }.toInt()
         val paddingPx = with(density) { padding.toPx() }.toInt()
@@ -432,3 +434,20 @@ private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
 
 /** 1 pt is 1/72 inch; Android's scaled pixel is 1/160 inch at font scale 1. */
 private fun ptToSp(points: Int): TextUnit = (points * (160f / 72f)).sp
+
+/**
+ * The plain-text reader has no pinch zoom or two-finger pan. Consume a second
+ * pointer in the initial pass so the selection gestures underneath cannot read
+ * a pinch as a long-press; otherwise a pinch would select a word and pop up the
+ * selection toolbar instead of doing nothing.
+ */
+private fun Modifier.ignoreMultiTouch(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.count { it.pressed } > 1) {
+                event.changes.forEach { it.consume() }
+            }
+        }
+    }
+}

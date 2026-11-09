@@ -304,15 +304,18 @@ function Write-Result([string]$Name, [bool]$Ok, [string]$Detail) {
 
 function Test-Check([string]$Name, [bool]$Condition, [string]$Detail = '') {
     Write-Result $Name $Condition $Detail
-    return $Condition
 }
 
 function Test-Equal([string]$Name, $Actual, $Expected) {
-    return Test-Check $Name ($Actual -eq $Expected) "expected '$Expected', got '$Actual'"
+    Test-Check $Name ($Actual -eq $Expected) "expected '$Expected', got '$Actual'"
 }
 
 function Test-Match([string]$Name, [string]$Actual, [string]$Pattern) {
-    return Test-Check $Name ($Actual -match $Pattern) "value '$Actual' does not match '$Pattern'"
+    if ($Actual -match $Pattern) {
+        Test-Check $Name $true "value '$Actual'"
+    } else {
+        Test-Check $Name $false "value '$Actual' does not match '$Pattern'"
+    }
 }
 
 function Test-Section([string]$Name, [scriptblock]$Body) {
@@ -322,15 +325,31 @@ function Test-Section([string]$Name, [scriptblock]$Body) {
     try {
         & $Body
     } catch {
-        Write-Result "$Name section completed" $false $_.Exception.Message
+        $detail = $_.Exception.Message
+        if ($_.ScriptStackTrace) {
+            $detail = "$detail`n$($_.ScriptStackTrace)"
+        }
+        Write-Result "$Name section completed" $false $detail
     }
 }
 
 function Invoke-Adb {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    $output = & $adb @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "adb failed ($LASTEXITCODE): $($Arguments -join ' ')`n$output"
+
+    # adb routinely writes harmless notices to stderr (for example "Activity
+    # not started"). Keep those from becoming terminating errors while still
+    # reporting a real non-zero exit code.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $adb @Arguments 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+
+    if ($code -ne 0) {
+        throw "adb failed ($code): $($Arguments -join ' ')`n$output"
     }
     return $output
 }
@@ -349,18 +368,24 @@ function Get-UiXml {
     $remote = '/sdcard/pdfr-checks-window.xml'
     $local = Join-Path $OutDir 'window.xml'
 
-    for ($attempt = 0; $attempt -lt 4; $attempt++) {
-        & $adb shell uiautomator dump $remote 2>&1 | Out-Null
-        & $adb pull $remote $local 2>&1 | Out-Null
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        for ($attempt = 0; $attempt -lt 4; $attempt++) {
+            & $adb shell uiautomator dump $remote 2>&1 | Out-Null
+            & $adb pull $remote $local 2>&1 | Out-Null
 
-        if ((Test-Path $local) -and ((Get-Item $local).Length -gt 100)) {
-            try {
-                return [xml](Get-Content -Raw -Encoding UTF8 $local)
-            } catch {
-                # The pull can race the dump; retry.
+            if ((Test-Path $local) -and ((Get-Item $local).Length -gt 100)) {
+                try {
+                    return [xml](Get-Content -Raw -Encoding UTF8 $local)
+                } catch {
+                    # The pull can race the dump; retry.
+                }
             }
+            Start-Sleep -Milliseconds 400
         }
-        Start-Sleep -Milliseconds 400
+    } finally {
+        $ErrorActionPreference = $previous
     }
 
     throw 'Could not read the UI hierarchy from uiautomator.'
@@ -578,7 +603,7 @@ function Set-TextSize([int]$Points) {
 
 function Open-EmptyApp {
     Invoke-Adb shell am force-stop com.karako.pdfr | Out-Null
-    Invoke-Adb shell am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.karako.pdfr/.MainActivity | Out-Null
+    Invoke-Adb shell 'am start -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -n com.karako.pdfr/.MainActivity' | Out-Null
     Wait-ForPattern '^Nothing open$' 12000 | Out-Null
 }
 
@@ -652,7 +677,7 @@ function Enable-Root {
     }
 }
 
-function Invoke-ZoomProbe([string]$Prefix, [string]$Action) {
+function Invoke-ZoomProbe([string]$Prefix, [string]$Action, [double]$CenterY = 0.45) {
     $probe = Join-Path $PSScriptRoot 'zoom-probe.ps1'
     $arguments = @(
         '-NoProfile',
@@ -662,6 +687,7 @@ function Invoke-ZoomProbe([string]$Prefix, [string]$Action) {
         '-EventDevice', $EventDevice,
         '-ScreenWidth', $ScreenWidth,
         '-ScreenHeight', $ScreenHeight,
+        '-CenterY', $CenterY,
         '-OutDir', $OutDir,
         '-Prefix', $Prefix
     )
@@ -844,7 +870,7 @@ function Test-PlainTextSettings {
     $pdfLabels = Get-MenuLabels
     Test-Check 'PDFs have no text-size option' (-not ($pdfLabels | Where-Object { $_ -match '^Text size:' })) ($pdfLabels -join ', ')
     Test-Check 'PDF menus keep the fixed-layout actions' (
-        [bool]($pdfLabels | Where-Object { $_ -match '^Reorder pages$' })
+        [bool]($pdfLabels | Where-Object { $_ -match '^Reorder pages\.?$' })
     ) ($pdfLabels -join ', ')
 }
 
@@ -892,11 +918,16 @@ function Test-Selection {
     Test-Check 'line numbers are excluded from Select all' ($gutterRatio -lt 0.08) ('gutter share {0:P1}' -f $gutterRatio)
     Test-Check 'line numbers stay visible after Select all' ((Get-NumericNodes (Get-UiXml)).Count -ge 8)
 
-    # BACK clears an active selection through the reader's BackHandler. It is
-    # only sent when the blue selection pixels prove the selection exists.
+    # A plain-text selection lives inside Compose's SelectionContainer, which
+    # does not consume BACK. A quick tap clears it without leaving the reader;
+    # BACK here would exit to the launcher.
     if ($allStats.Count -ge 1000) {
-        Invoke-Adb shell input keyevent 4 | Out-Null
-        Start-Sleep -Milliseconds 500
+        Invoke-Adb shell input tap ([int]($ScreenWidth * 0.5)) ([int]($ScreenHeight * 0.70)) | Out-Null
+        Start-Sleep -Milliseconds 700
+        $cleared = Save-Shot 'selection-cleared'
+        $clearedImage = New-Object PdfrImage -ArgumentList $cleared
+        $clearedStats = $clearedImage.MeasureSelection([int]($ScreenWidth * 0.13))
+        Test-Check 'tapping clears the selection' ($clearedStats.Count -lt 1000) "selection pixels: $($clearedStats.Count)"
     }
     Test-Check 'the reader survives clearing the selection' (
         [bool](Find-Node '^PDFr plain text fixture$')
@@ -977,7 +1008,13 @@ function Test-Metadata {
         # chooser. Checking the copy proves the chooser received that name.
         Tap-Pattern '^Share document$'
         Start-Sleep -Seconds 2
-        $shareCopy = & $adb shell run-as com.karako.pdfr find cache/documents -type f -name 'editednotes.txt' 2>&1
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $shareCopy = & $adb shell run-as com.karako.pdfr find cache/documents -type f -name 'editednotes.txt' 2>&1
+        } finally {
+            $ErrorActionPreference = $previous
+        }
         Test-Check 'Share uses the edited name' (($shareCopy -join ' ') -match 'editednotes\.txt') ($shareCopy -join ' ')
 
         Invoke-Adb shell input keyevent 4 | Out-Null
@@ -1002,7 +1039,7 @@ function Test-Gestures {
     ) ('mean {0:N2}, changed {1:P1}' -f $textDiff.Mean, $textDiff.Changed)
 
     Open-Doc 'sample.pdf'
-    Invoke-ZoomProbe 'pdf-pinch' 'pinch-out'
+    Invoke-ZoomProbe 'pdf-pinch' 'pinch-out' 0.20
     $pdfBefore = Join-Path $OutDir 'pdf-pinch-before.png'
     $pdfSettled = Join-Path $OutDir 'pdf-pinch-settled.png'
     $pdfDiff = [PdfrImage]::Compare($pdfBefore, $pdfSettled)
@@ -1013,12 +1050,12 @@ function Test-Gestures {
 
 # --- Run ---
 
-$state = (& $adb get-state 2>&1) -join ''
+$state = (& $adb get-state 2>$null) -join ''
 if ($state.Trim() -ne 'device') {
     throw "No Android device is connected. Start the emulator first.`n$state"
 }
 
-$packagePath = (& $adb shell pm path com.karako.pdfr 2>&1) -join ''
+$packagePath = (& $adb shell pm path com.karako.pdfr 2>$null) -join ''
 if ($packagePath -notmatch 'package:') {
     throw 'com.karako.pdfr is not installed. Run tools\install-debug.bat first.'
 }
