@@ -688,6 +688,24 @@ class ReaderViewModel(
     }
 
     /**
+     * Rewrites the current PDF through qpdf's QDF repair cycle, fixing stream
+     * lengths and the cross-reference table.
+     */
+    fun fixPdf() {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (!ready.info.isPdf) return
+
+        rewrite(ready, pages = null, rotate = null, kind = RewriteKind.FIX)
+    }
+
+    /** Explains why a file chosen for Fix PDF cannot be repaired. */
+    fun reportFixNeedsPdf() {
+        _messages.tryEmit(
+            getApplication<Application>().getString(R.string.fix_pdf_only_pdf),
+        )
+    }
+
+    /**
      * Rewrites the current PDF into a compact, fully compressed copy. This is
      * MuPDF's closest replacement for linearization and stays available next
      * to the qpdf-powered Linearize action.
@@ -867,20 +885,36 @@ class ReaderViewModel(
             try {
                 var failure: String? = null
                 output = withContext(
-                    if (kind == RewriteKind.LINEARIZE) Qpdf.dispatcher else MuPdf.dispatcher,
+                    if (kind == RewriteKind.LINEARIZE || kind == RewriteKind.FIX) {
+                        Qpdf.dispatcher
+                    } else {
+                        MuPdf.dispatcher
+                    },
                 ) {
                     val target =
                         DocumentStore.derivedFile(app, derivedDisplayName(ready.displayName, kind))
-                    val saved = if (kind == RewriteKind.LINEARIZE) {
-                        val error = Qpdf.linearize(
-                            source = ready.file,
-                            destination = target,
-                            password = password,
-                        )
-                        failure = error
-                        error == null
-                    } else {
-                        MuPdfDocument.savePdfCopy(
+                    val saved = when (kind) {
+                        RewriteKind.LINEARIZE -> {
+                            val error = Qpdf.linearize(
+                                source = ready.file,
+                                destination = target,
+                                password = password,
+                            )
+                            failure = error
+                            error == null
+                        }
+
+                        RewriteKind.FIX -> {
+                            val error = Qpdf.fix(
+                                source = ready.file,
+                                destination = target,
+                                password = password,
+                            )
+                            failure = error
+                            error == null
+                        }
+
+                        else -> MuPdfDocument.savePdfCopy(
                             source = ready.file,
                             password = password,
                             destination = target,
@@ -905,6 +939,10 @@ class ReaderViewModel(
                         kind == RewriteKind.LINEARIZE &&
                                 failure?.contains("not available") == true ->
                             R.string.linearize_unavailable
+
+                        kind == RewriteKind.FIX &&
+                                failure?.contains("not available") == true ->
+                            R.string.fix_pdf_unavailable
 
                         else -> R.string.rewrite_failed
                     }
@@ -953,6 +991,7 @@ class ReaderViewModel(
         REORDER("reordered", R.string.reorder_done),
         ROTATE("rotated", R.string.rotate_done),
         LINEARIZE("linearized", R.string.linearize_done),
+        FIX("fixed", R.string.fix_pdf_done),
         COMPACT("compact", R.string.compact_done),
     }
 

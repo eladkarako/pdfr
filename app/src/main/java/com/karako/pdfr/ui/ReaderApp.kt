@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -114,6 +115,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.system.exitProcess
 
 private const val DEFAULT_PAGE_ASPECT = 1.4142f
 private const val RENDER_SETTLE_MS = 120L
@@ -189,10 +191,19 @@ fun ReaderApp(
     val context = LocalContext.current
     val busy by viewModel.busy.collectAsStateWithLifecycle()
 
+    // Fix PDF can start from the empty screen: remember that the next document
+    // should be repaired as soon as it has been opened.
+    var pendingFix by rememberSaveable { mutableStateOf(false) }
+
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let(viewModel::open)
+        if (uri == null) {
+            pendingFix = false
+        } else {
+            viewModel.open(uri)
+        }
     }
     val openPicker = { picker.launch(DocumentFormats.PICKER_MIME_TYPES) }
+    val openPdfForFix = { picker.launch(arrayOf(DocumentFormats.PDF)) }
 
     // ACTION_CREATE_DOCUMENT is used directly because the suggested MIME type
     // and filename change with the open document.
@@ -243,6 +254,29 @@ fun ReaderApp(
 
     LaunchedEffect((state as? ReaderState.Ready)?.file?.absolutePath) {
         if (state is ReaderState.Ready) zoom = 1f
+    }
+
+    // After Fix PDF opened the picker, wait until the chosen document is ready
+    // (including after a password prompt) and then repair it. Non-PDF files
+    // are reported instead of being passed to qpdf.
+    LaunchedEffect(state, pendingFix) {
+        if (!pendingFix) return@LaunchedEffect
+        when (state) {
+            is ReaderState.Ready -> {
+                pendingFix = false
+                if (state.info.isPdf) {
+                    viewModel.fixPdf()
+                } else {
+                    viewModel.reportFixNeedsPdf()
+                }
+            }
+
+            // The empty state is where the picker was just launched from, so
+            // it must not cancel the pending fix. A cancelled picker clears
+            // the flag in its own callback instead.
+            is ReaderState.Error -> pendingFix = false
+            else -> Unit
+        }
     }
 
     BackHandler(enabled = selection != null) {
@@ -329,7 +363,10 @@ fun ReaderApp(
                         Box {
                             IconButton(
                                 onClick = { showOverflowMenu = true },
-                                enabled = state is ReaderState.Ready && !busy,
+                                // Exit is available from every state, so the
+                                // menu stays reachable with no document, after
+                                // an error and while a password is required.
+                                enabled = !busy,
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_more_vert),
@@ -345,6 +382,27 @@ fun ReaderApp(
                             ) {
                                 val ready = state as? ReaderState.Ready
                                 val plainText = ready?.plainText
+                                // Fix PDF stays available with no document:
+                                // it opens the picker and repairs the file that
+                                // is chosen. It never appears for non-PDFs.
+                                val canFixPdf =
+                                    (ready?.info?.isPdf == true) ||
+                                        state is ReaderState.Empty
+                                if (canFixPdf) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.fix_pdf)) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            if (ready != null) {
+                                                viewModel.fixPdf()
+                                            } else {
+                                                pendingFix = true
+                                                openPdfForFix()
+                                            }
+                                        },
+                                    )
+                                    if (ready != null) HorizontalDivider()
+                                }
                                 // Copy all is the only action here; everything
                                 // below changes how the document is shown, so
                                 // the divider keeps the two groups apart.
@@ -504,6 +562,24 @@ fun ReaderApp(
                                         )
                                     }
                                 }
+
+                                // Exit is always the last entry, kept apart
+                                // from the document actions by a divider.
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.exit)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        // Remove the task first so the
+                                        // launcher has nothing to resume, then
+                                        // end the process. PDFr has no service,
+                                        // but this also stops its reader, qpdf
+                                        // and metadata threads and the native
+                                        // contexts they own.
+                                        context.findActivity()?.finishAndRemoveTask()
+                                        exitProcess(0)
+                                    },
+                                )
                             }
                         }
                     }
@@ -1497,6 +1573,16 @@ private fun SelectionBar(
             }
         }
     }
+}
+
+/** Finds the Activity behind a Compose context, which may be wrapped. */
+private fun Context.findActivity(): Activity? {
+    var current: Context = this
+    while (current is ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
 }
 
 internal fun copyToClipboard(

@@ -9,8 +9,9 @@
   tree, and compares screenshots where only pixels can prove the result.
 
   The checks cover:
-    * the toolbar with no document open: Share, info, Save as and the overflow
-      button are disabled, look faded, and do nothing when tapped;
+    * the toolbar with no document open: Share, info and Save as are disabled,
+      look faded, and do nothing when tapped, while the overflow menu stays
+      enabled and offers Fix PDF then Exit;
     * plain text defaults and every text option: single page, line wrapping,
       right alignment, line numbers (left in LTR, right in RTL) and text size;
     * native SelectionContainer selection and the Copy/Copy all touch menu,
@@ -18,7 +19,8 @@
     * the editable info dialog: ISO dates, existing fields only, draft
       draft/reopen/Cancel/Apply behaviour, and edited names in Share/Save as;
     * pinch gestures: ignored by reflowable text, still zooming a fixed-layout
-      PDF.
+      PDF;
+    * Exit from every menu: it ends the task and the PDFr process.
 
   Run tools\install-debug.bat (or build and install the debug APK) first. The
   script writes screenshots and a results.txt to build\reader-checks\ and exits
@@ -499,7 +501,7 @@ function Test-PackageVisible([string]$Package) {
     } | Select-Object -First 1)
 }
 
-$menuPattern = '^(Copy all|Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact)'
+$menuPattern = '^(Fix PDF|Copy all|Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact|Exit)'
 
 function Test-MenuOpen {
     try {
@@ -731,9 +733,13 @@ function Test-EmptyState {
     Test-Check 'shows the empty pane' ([bool](Find-Node '^Nothing open$' -Xml $xml))
     Test-Check 'Open document is enabled' ((Test-ActionEnabled 'Open document') -eq $true)
 
-    foreach ($action in @('Share document', 'Document info', 'Save as', 'More options')) {
+    foreach ($action in @('Share document', 'Document info', 'Save as')) {
         Test-Check "$action is disabled" ((Test-ActionEnabled $action) -eq $false)
     }
+
+    # The overflow menu stays available with no document so Fix PDF can open
+    # the picker itself.
+    Test-Check 'More options is enabled' ((Test-ActionEnabled 'More options') -eq $true)
 
     $shot = Save-Shot 'empty'
     $image = New-Object PdfrImage -ArgumentList $shot
@@ -742,11 +748,21 @@ function Test-EmptyState {
         $image.InkCount($openRect.Left, $openRect.Top, $openRect.Right, $openRect.Bottom) -gt 200
     )
 
-    foreach ($action in @('Share document', 'Document info', 'Save as', 'More options')) {
+    foreach ($action in @('Share document', 'Document info', 'Save as')) {
         $rect = Get-ActionRect $action
         $ink = $image.InkCount($rect.Left, $rect.Top, $rect.Right, $rect.Bottom)
         Test-Check "$action looks faded" ($ink -lt 50) "ink pixels: $ink"
     }
+
+    $emptyLabels = @(Get-MenuLabels)
+    Test-Check 'the empty menu offers Fix PDF' (
+        $emptyLabels -contains 'Fix PDF'
+    ) ($emptyLabels -join ', ')
+    # A single-item array collapses to a string when returned from a function,
+    # so compare the joined labels rather than indexing.
+    Test-Check 'the empty menu offers Fix PDF then Exit' (
+        ($emptyLabels -join ', ') -eq 'Fix PDF, Exit'
+    ) ($emptyLabels -join ', ')
 
     # A disabled Compose button has no click listener; tapping its centre must
     # leave the empty pane in place instead of opening a dialog or picker.
@@ -762,6 +778,16 @@ function Test-EmptyState {
     Test-Check 'tapping Save as with no document does nothing' (
         Test-PackageVisible 'com.karako.pdfr'
     )
+
+    # Exit is deliberately last: it removes the task and ends the process.
+    Open-Overflow
+    Tap-Pattern '^Exit$'
+    Start-Sleep -Seconds 2
+    $pidText = ((& $adb shell pidof com.karako.pdfr 2>$null) -join '').Trim()
+    Test-Check 'Exit ends the PDFr process' ($pidText -eq '') "pid: $pidText"
+    Test-Check 'Exit leaves no PDFr screen behind' (
+        -not (Test-PackageVisible 'com.karako.pdfr')
+    )
 }
 
 function Test-PlainTextSettings {
@@ -770,6 +796,8 @@ function Test-PlainTextSettings {
 
     $labels = Get-MenuLabels
     Test-Check 'default text size is 12 pt' ($labels -contains 'Text size: 12 pt') ($labels -join ', ')
+    Test-Check 'plain text has no Fix PDF' (-not ($labels -contains 'Fix PDF')) ($labels -join ', ')
+    Test-Check 'plain text menu ends with Exit' ($labels[-1] -eq 'Exit') ($labels -join ', ')
     Test-Check 'single page defaults to on' ($labels -contains 'Single page: on') ($labels -join ', ')
     Test-Check 'line wrap defaults to on' ($labels -contains 'Line wrap: on') ($labels -join ', ')
     Test-Check 'right alignment defaults to off' ($labels -contains 'Align right: off') ($labels -join ', ')
@@ -861,10 +889,16 @@ function Test-PlainTextSettings {
 
     # Fixed-layout documents keep pinch zoom; they must not expose text size.
     Open-Doc 'sample.pdf'
-    $pdfLabels = Get-MenuLabels
+    $pdfLabels = @(Get-MenuLabels)
     Test-Check 'PDFs have no text-size option' (-not ($pdfLabels | Where-Object { $_ -match '^Text size:' })) ($pdfLabels -join ', ')
     Test-Check 'PDF menus keep the fixed-layout actions' (
         [bool]($pdfLabels | Where-Object { $_ -match '^Reorder pages' })
+    ) ($pdfLabels -join ', ')
+    Test-Check 'PDF menus offer Fix PDF first' (
+        $pdfLabels.Count -gt 0 -and $pdfLabels[0] -eq 'Fix PDF'
+    ) ($pdfLabels -join ', ')
+    Test-Check 'PDF menus end with Exit' (
+        $pdfLabels.Count -gt 0 -and $pdfLabels[-1] -eq 'Exit'
     ) ($pdfLabels -join ', ')
 }
 

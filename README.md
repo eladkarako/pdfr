@@ -53,8 +53,9 @@ after the copy succeeds. Everything else - the reader, the info dialog and the
 share sheet - uses that cached file. `FileProvider` exposes only the
 `documents/` tree.
 
-🔄 Reordering, rotating, linearizing or compacting writes a new PDF into a fresh
-subdirectory of the same cache, opens it, and then deletes the previous copy.
+🔄 Reordering, rotating, linearizing, fixing or compacting writes a new PDF into a
+fresh subdirectory of the same cache, opens it, and then deletes the previous
+copy.
 There is deliberately no undo stack and no original PDF kept around: use the
 **Open** toolbar button (or the system picker) to go back to the source file.
 ⚠️ Every rewrite saves without encryption, so a rewritten encrypted PDF opens
@@ -110,6 +111,11 @@ intact wherever the target provider allows its timestamp to be updated.
   native library to write a genuinely linearized PDF, so the first page can be
   shown before the rest of the file is read. The new copy replaces the current
   document.
+- 🩹 **Fix PDF** (PDF only, also offered when nothing is open): runs qpdf's
+  repair cycle in-process - QDF form, fix-qdf stream/xref repair, then a normal
+  rewrite - and opens the repaired copy. With no document open it opens the
+  picker first and fixes the chosen PDF after it loads. The entry is absent for
+  non-PDF documents.
 - 🗜️ **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
   streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
   stays a separate, clearly named action.
@@ -125,6 +131,9 @@ intact wherever the target provider allows its timestamp to be updated.
   field removes its value.
 - 📤 **Share** and 💾 **Save as** use the edited display name and timestamp, and
   PDF metadata changes are part of the bytes they copy.
+- 🚪 **Exit** is always the last overflow entry, above a divider: it removes the
+  task from recents and ends the PDFr process, so no reader or qpdf work is left
+  running in the background.
 - 📍 **Reading position** is preserved across rotation, reflow and process death.
 
 </details>
@@ -233,7 +242,7 @@ Three layers, all runnable from the repository root:
 - 📄 `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`,
   dates, plain-text decoding and metadata sidecars.
 - 📄 `app/src/androidTest/README.md` - opens, renders, selects, reorders,
-  rotates, compacts, linearizes through qpdf, unlocks AES-256 PDFs, rewrites
+  rotates, compacts, linearizes and repairs through qpdf, unlocks AES-256 PDFs, rewrites
   metadata and toggles plain-text monospace on real MuPDF.
 - 📄 `tools/README.md` - AVD creation, emulator/install helpers, fixture pushing,
   the manual checklist, the raw-multitouch pinch helper, and the

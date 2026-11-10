@@ -1,3 +1,9 @@
+26.11.10
++ added **Fix PDF** to the overflow menu: qpdf's fix-qdf repair cycle now runs entirely through the bundled native library (write QDF, repair stream lengths and the cross-reference table, rewrite as a normal PDF). The repaired `... (fixed).pdf` replaces the current document.
++ **Fix PDF** appears only when the open document is a PDF, or when nothing is open. With no document it opens the picker first and repairs the chosen PDF as soon as it loads; non-PDF documents are reported instead.
++ the overflow menu is now enabled on the empty screen and offers **Fix PDF** there; reader checks cover the empty, plain-text and PDF menus.
++ added **Exit** as the last overflow entry, above a divider and available in every state: it removes the task from recents and ends the process, stopping the reader and qpdf threads instead of leaving the app cached in the background.
+
 26.11.9
 * to work around the lazy text container, that only selects all viewport lines, I'll just skip having select all since it is just a midway to copy the selection, instead I'll have a direct copy all that ignores the selection, side by side with manual selection and copy. entry is in touch menu as well as in the menu (tests and generator added).
 

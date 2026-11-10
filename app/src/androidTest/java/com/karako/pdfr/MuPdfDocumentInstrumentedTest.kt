@@ -355,6 +355,32 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun qpdfFixesPdf() {
+        val source = pdf("fix-source.pdf", 3)
+        val target = File(dir, "fixed.pdf")
+
+        assertTrue(Qpdf.isAvailable())
+        val error = runBlocking(Qpdf.dispatcher) {
+            Qpdf.fix(source, target, null)
+        }
+        assertNull(error)
+        assertTrue(target.length() > 0L)
+
+        // The repair cycle ends with a normal rewrite, so no QDF markers are
+        // left in the output.
+        val header = String(target.readBytes(), Charsets.ISO_8859_1)
+        assertFalse(header.contains("%QDF"))
+
+        val doc = open(target)
+        try {
+            assertEquals(3, onMuPdf { doc.countPages() })
+            assertTrue(textOf(doc, 2).contains("Fixture page 3"))
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
     fun rejectsOutOfRangeReorderPages() {
         val source = pdf("bad-reorder.pdf", 3)
         val target = File(dir, "bad-reorder-out.pdf")

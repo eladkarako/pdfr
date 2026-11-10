@@ -33,6 +33,7 @@
     <string name="yes">Yes</string>
     <string name="no">No</string>
     <string name="close">Close</string>
+    <string name="exit">Exit</string>
 
     <string name="document_metadata">Document metadata</string>
     <string name="metadata_title">Title</string>
@@ -130,6 +131,11 @@
     <string name="linearize_apply">Linearize</string>
     <string name="linearize_done">Created a linearized PDF.</string>
     <string name="linearize_unavailable">qpdf is not available in this build.</string>
+
+    <string name="fix_pdf">Fix PDF</string>
+    <string name="fix_pdf_done">Created a fixed PDF.</string>
+    <string name="fix_pdf_unavailable">qpdf is not available in this build.</string>
+    <string name="fix_pdf_only_pdf">Only PDF files can be fixed.</string>
 
     <string name="compact">Compact…</string>
     <string name="compact_title">Compact PDF</string>
