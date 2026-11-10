@@ -27,7 +27,7 @@
   with 1 when a check fails. It never pushes or commits anything.
 
   The gesture checks need adb root, exactly like zoom-probe.ps1. Run the other
-  sections on a retail device with -Section empty,text,selection,metadata.
+  sections on a retail device with -Section empty,text,selection,metadata,exit.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\reader-checks.ps1
@@ -44,7 +44,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('all', 'empty', 'text', 'selection', 'metadata', 'gestures')]
+    [ValidateSet('all', 'empty', 'text', 'selection', 'metadata', 'gestures', 'exit')]
     [string[]]$Section = @('all'),
 
     [int]$ScreenWidth = 1080,
@@ -778,8 +778,18 @@ function Test-EmptyState {
     Test-Check 'tapping Save as with no document does nothing' (
         Test-PackageVisible 'com.karako.pdfr'
     )
+}
 
-    # Exit is deliberately last: it removes the task and ends the process.
+function Test-Exit {
+    Open-EmptyApp
+
+    # Exit is deliberately last in every menu. With no document open the menu
+    # is exactly Fix PDF then Exit.
+    $labels = @(Get-MenuLabels)
+    Test-Check 'the empty menu ends with Exit' (
+        $labels.Count -eq 2 -and $labels[-1] -eq 'Exit'
+    ) ($labels -join ', ')
+
     Open-Overflow
     Tap-Pattern '^Exit$'
     Start-Sleep -Seconds 2
@@ -787,6 +797,13 @@ function Test-EmptyState {
     Test-Check 'Exit ends the PDFr process' ($pidText -eq '') "pid: $pidText"
     Test-Check 'Exit leaves no PDFr screen behind' (
         -not (Test-PackageVisible 'com.karako.pdfr')
+    )
+
+    # A clean relaunch proves the task was removed rather than left in a
+    # half-finished state.
+    Open-EmptyApp
+    Test-Check 'the app starts again after Exit' (
+        [bool](Find-Node '^Nothing open$')
     )
 }
 
@@ -1178,7 +1195,7 @@ Invoke-Adb shell wm dismiss-keyguard | Out-Null
 
 $selected = @($Section)
 if ($selected -contains 'all') {
-    $selected = @('empty', 'text', 'selection', 'metadata', 'gestures')
+    $selected = @('empty', 'text', 'selection', 'metadata', 'gestures', 'exit')
 }
 
 if ($selected -contains 'empty') {
@@ -1195,6 +1212,9 @@ if ($selected -contains 'metadata') {
 }
 if ($selected -contains 'gestures') {
     Test-Section 'Gestures' { Test-Gestures }
+}
+if ($selected -contains 'exit') {
+    Test-Section 'Exit' { Test-Exit }
 }
 
 $report = Join-Path $OutDir 'results.txt'
