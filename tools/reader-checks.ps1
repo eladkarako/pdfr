@@ -325,12 +325,14 @@ function Get-UiXml {
     $ErrorActionPreference = 'Continue'
     try {
         for ($attempt = 0; $attempt -lt 4; $attempt++) {
-            & $adb shell uiautomator dump $remote 2>&1 | Out-Null
+            # --windows also dumps the Compose text context menu, which lives in
+            # its own Popup Window rather than in the activity window.
+            & $adb shell uiautomator dump --windows $remote 2>&1 | Out-Null
             & $adb pull $remote $local 2>&1 | Out-Null
 
             if ((Test-Path $local) -and ((Get-Item $local).Length -gt 100)) {
                 try {
-                    return [xml](Get-Content -Raw -Encoding UTF8 $local)
+                    return Merge-AppWindows ([xml](Get-Content -Raw -Encoding UTF8 $local))
                 } catch {
                     # The pull can race the dump; retry.
                 }
@@ -344,6 +346,34 @@ function Get-UiXml {
     throw 'Could not read the UI hierarchy from uiautomator.'
 }
 
+function Merge-AppWindows($Dump) {
+    # A --windows dump has a <displays> root. Fold the windows into one
+    # hierarchy so every existing //node lookup keeps working, while dropping
+    # the launcher and system chrome (status bar, clipboard preview) that never
+    # matter to these checks. Nested windows repeat their parent's subtree, so
+    # only direct display children are considered.
+    $doc = New-Object System.Xml.XmlDocument
+    $root = $doc.CreateElement('hierarchy')
+    $doc.AppendChild($root) | Out-Null
+
+    foreach ($window in $Dump.SelectNodes('/displays/display/window')) {
+        $first = $window.SelectNodes('.//node') |
+            Where-Object { $_.package } |
+            Select-Object -First 1
+        if (-not $first) { continue }
+        if ($first.package -eq 'com.android.launcher3') { continue }
+        if ($first.package -eq 'com.android.systemui') { continue }
+
+        foreach ($hierarchy in $window.SelectNodes('./hierarchy')) {
+            foreach ($child in @($hierarchy.ChildNodes)) {
+                $root.AppendChild($doc.ImportNode($child, $true)) | Out-Null
+            }
+        }
+    }
+
+    return $doc
+}
+
 function Find-Node {
     param(
         [string]$Pattern,
@@ -351,8 +381,14 @@ function Find-Node {
     )
 
     if ($null -eq $Xml) { $Xml = Get-UiXml }
+    # Nodes that are not laid out (for example from a popup that is closing)
+    # carry no bounds and cannot be tapped, so skip them.
     return $Xml.SelectNodes('//node') | Where-Object {
-        ($_.text -match $Pattern) -or ($_.'content-desc' -match $Pattern)
+        $_.bounds -match '^\[-?\d+,-?\d+\]\[-?\d+,-?\d+\]$' -and
+        (
+            ($_.text -match $Pattern) -or
+            ($_.'content-desc' -match $Pattern)
+        )
     } | Select-Object -First 1
 }
 
@@ -939,13 +975,18 @@ function Test-Selection {
 
     Open-Overflow
     Tap-Pattern '^Copy all$'
-    # Android shows its own clipboard preview (and the toast) for a few
+    # Android shows its own clipboard preview (and a share button) for a few
     # seconds. Both are blue-tinted, so wait for them to fade before measuring
-    # whether the reader itself drew a selection.
-    Start-Sleep -Seconds 4
-    $copyShot = Save-Shot 'copy-all'
-    $copyImage = New-Object PdfrImage -ArgumentList $copyShot
-    $copyStats = $copyImage.MeasureSelection([int]($ScreenWidth * 0.13))
+    # whether the reader itself drew a selection. The preview can linger longer
+    # than a fixed delay, so retry until the frame is clean.
+    $copyStats = $null
+    for ($attempt = 0; $attempt -lt 5; $attempt++) {
+        Start-Sleep -Seconds 2
+        $copyShot = Save-Shot 'copy-all'
+        $copyImage = New-Object PdfrImage -ArgumentList $copyShot
+        $copyStats = $copyImage.MeasureSelection([int]($ScreenWidth * 0.13))
+        if ($copyStats.Count -lt 500) { break }
+    }
     Test-Check 'Copy all from the overflow menu draws no selection' (
         $copyStats.Count -lt 500
     ) "selection pixels: $($copyStats.Count)"
