@@ -400,7 +400,7 @@ object ImageMetadata {
 
             if (positionTouched) {
                 if (latitude != null && longitude != null) {
-                    exif.setLatLong(latitude!!, longitude!!)
+                    exif.setLatLong(latitude, longitude)
                 } else if (latitude == null && longitude == null) {
                     listOf(
                         ExifInterface.TAG_GPS_LATITUDE,
@@ -415,7 +415,7 @@ object ImageMetadata {
 
             if (altitudeTouched) {
                 if (altitude != null) {
-                    exif.setAltitude(altitude!!)
+                    exif.setAltitude(altitude)
                 } else {
                     exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, null)
                     exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, null)
