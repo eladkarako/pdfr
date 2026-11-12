@@ -26,6 +26,12 @@ data class DocumentInfo(
      * Share.
      */
     val fileModified: Long? = null,
+    /**
+     * Creation timestamp of the cached file in milliseconds. Android cannot
+     * change a birth time, so an edited value is stored beside the document
+     * and used by the dialog, Save as and Share.
+     */
+    val fileCreated: Long? = null,
 ) {
     val hasMetadata: Boolean
         get() = listOf(

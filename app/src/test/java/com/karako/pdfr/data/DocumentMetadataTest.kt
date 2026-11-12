@@ -38,11 +38,44 @@ class DocumentMetadataTest {
             pageCount = 1,
             kind = "EPUB",
             fileModified = now,
+            fileCreated = now,
         )
 
         val draft = DocumentMetadataDraft.from(info, lastModified = 0L, timeZone = utc)
 
         assertEquals("2026-01-01T00:00:00", draft.fileModified)
+        assertEquals("2026-01-01T00:00:00", draft.fileCreated)
+    }
+
+    @Test
+    fun fileTimestampsAreStoredSeparatelyFromDocumentDates() {
+        val draft = DocumentMetadataDraft(
+            fileName = "book",
+            extension = "epub",
+            fileCreated = "2026-02-03T04:05:06",
+            fileModified = "2026-02-04T05:06:07",
+            created = "2020-01-02T03:04:05",
+            modified = "",
+        )
+
+        val values = draft.fileTimestampValues()
+
+        assertEquals("2026-02-03T04:05:06", values[DocumentMetadataDraft.KEY_FILE_CREATED])
+        assertEquals("2026-02-04T05:06:07", values[DocumentMetadataDraft.KEY_FILE_MODIFIED])
+        assertEquals(2, values.size)
+    }
+
+    @Test
+    fun sidecarCarriesTheFileCreationTime() {
+        val draft = DocumentMetadataDraft(
+            fileName = "book",
+            extension = "pdf",
+            fileCreated = "2026-02-03T04:05:06",
+        )
+
+        val values = draft.sidecarValues(utc)
+
+        assertEquals("2026-02-03T04:05:06", values[DocumentMetadataDraft.KEY_FILE_CREATED])
     }
 
     @Test

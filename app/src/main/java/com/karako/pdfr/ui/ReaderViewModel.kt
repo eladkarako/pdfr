@@ -208,7 +208,20 @@ class ReaderViewModel(
             try {
                 val (file, lastModified) = withContext(Dispatchers.IO) {
                     val modified = DocumentStore.sourceLastModified(app, uri)
-                    DocumentStore.import(app, uri, name, modified) to modified
+                    val created = DocumentStore.sourceCreated(app, uri)
+                    val imported = DocumentStore.import(app, uri, name, modified)
+                    // Birth times cannot be assigned on Android, so keep the
+                    // provider's best creation value beside the cached file.
+                    if (created != null) {
+                        MetadataSidecar.write(
+                            imported,
+                            mapOf(
+                                DocumentMetadataDraft.KEY_FILE_CREATED to
+                                    DocumentDates.formatIso(created),
+                            ),
+                        )
+                    }
+                    imported to modified
                 }
                 load(
                     file = file,
@@ -784,6 +797,11 @@ class ReaderViewModel(
                     }
 
                     modified?.takeIf { it > 0L }?.let { target.setLastModified(it) }
+                    // PDF metadata itself is in the bytes; the birth and
+                    // modified times live beside the rewritten cache file.
+                    withContext(Dispatchers.IO) {
+                        MetadataSidecar.write(target, draft.fileTimestampValues())
+                    }
                     val replaced = load(
                         file = target,
                         displayName = targetName,
@@ -948,6 +966,18 @@ class ReaderViewModel(
                     }
                     _messages.tryEmit(app.getString(message))
                     return@launch
+                }
+
+                withContext(Dispatchers.IO) {
+                    val createdIso = ready.info.fileCreated
+                        ?.takeIf { it > 0L }
+                        ?.let { DocumentDates.formatIso(it) }
+                    if (createdIso != null) {
+                        MetadataSidecar.write(
+                            created,
+                            mapOf(DocumentMetadataDraft.KEY_FILE_CREATED to createdIso),
+                        )
+                    }
                 }
 
                 val replaced = load(

@@ -1069,11 +1069,12 @@ function Test-Metadata {
 
     $dialog = Open-InfoDialog
     $edits = Get-EditNodes $dialog
-    Test-Check 'the filename and extension are editable' ($edits.Count -ge 3) "found $($edits.Count) fields"
-    if ($edits.Count -ge 3) {
+    Test-Check 'the filename and extension are editable' ($edits.Count -ge 4) "found $($edits.Count) fields"
+    if ($edits.Count -ge 4) {
         Test-Equal 'the filename starts as the document name' $edits[0].text 'notes'
         Test-Equal 'the extension is separate' $edits[1].text 'txt'
-        Test-Match 'the modified date is ISO' $edits[2].text '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$'
+        Test-Match 'the created date is ISO' $edits[2].text '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$'
+        Test-Match 'the modified date is ISO' $edits[3].text '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$'
     }
 
     $visibleText = @($dialog.SelectNodes('//node') | Where-Object { $_.text } | ForEach-Object { $_.text })

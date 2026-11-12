@@ -18,6 +18,7 @@ import java.util.TimeZone
 data class DocumentMetadataDraft(
     val fileName: String,
     val extension: String,
+    val fileCreated: String? = null,
     val fileModified: String? = null,
     val title: String? = null,
     val author: String? = null,
@@ -36,15 +37,30 @@ data class DocumentMetadataDraft(
     val extensionValid: Boolean get() = extensionPattern.matches(extension.trim())
 
     val hasValidDates: Boolean
-        get() = listOf(fileModified, created, modified).all { value ->
+        get() = listOf(fileCreated, fileModified, created, modified).all { value ->
             value.isNullOrBlank() || DocumentDates.parseIso(value) != null
         }
 
     val isValid: Boolean
         get() = fileNameValid && extensionValid && hasValidDates
 
+    fun fileCreatedMillis(timeZone: TimeZone = TimeZone.getDefault()): Long? =
+        DocumentDates.parseIso(fileCreated, timeZone)
+
     fun fileModifiedMillis(timeZone: TimeZone = TimeZone.getDefault()): Long? =
         DocumentDates.parseIso(fileModified, timeZone)
+
+    /**
+     * The filesystem timestamps stored in a sidecar. PDF metadata is written
+     * into the PDF itself, but birth and modified times still live beside the
+     * cache file because they are not document properties.
+     */
+    fun fileTimestampValues(): Map<String, String> {
+        val values = linkedMapOf<String, String>()
+        fileCreated?.let { values[KEY_FILE_CREATED] = it }
+        fileModified?.let { values[KEY_FILE_MODIFIED] = it }
+        return values
+    }
 
     /** Metadata keys understood by MuPDF's `Document.setMetaData`. */
     fun pdfMetadata(timeZone: TimeZone = TimeZone.getDefault()): Map<String, String> {
@@ -73,6 +89,7 @@ data class DocumentMetadataDraft(
     fun sidecarValues(timeZone: TimeZone = TimeZone.getDefault()): Map<String, String> {
         val values = linkedMapOf<String, String>()
         values[KEY_DISPLAY_NAME] = displayName
+        fileCreated?.let { values[KEY_FILE_CREATED] = it }
         fileModified?.let { values[KEY_FILE_MODIFIED] = it }
         title?.let { values[KEY_TITLE] = it }
         author?.let { values[KEY_AUTHOR] = it }
@@ -92,6 +109,7 @@ data class DocumentMetadataDraft(
     companion object {
 
         const val KEY_DISPLAY_NAME = "displayName"
+        const val KEY_FILE_CREATED = "fileCreated"
         const val KEY_FILE_MODIFIED = "fileModified"
         const val KEY_TITLE = "title"
         const val KEY_AUTHOR = "author"
@@ -111,9 +129,13 @@ data class DocumentMetadataDraft(
         ): DocumentMetadataDraft {
             val (stem, extension) = splitName(info.fileName)
             val modifiedMillis = info.fileModified ?: lastModified
+            val createdMillis = info.fileCreated
             return DocumentMetadataDraft(
                 fileName = stem,
                 extension = extension,
+                fileCreated = createdMillis
+                    ?.takeIf { it > 0L }
+                    ?.let { DocumentDates.formatIso(it, timeZone) },
                 fileModified = modifiedMillis
                     ?.takeIf { it > 0L }
                     ?.let { DocumentDates.formatIso(it, timeZone) },
@@ -172,8 +194,15 @@ data class DocumentMetadataDraft(
                 info.fileModified
             }
 
+            val createdMillis = if (values.containsKey(KEY_FILE_CREATED)) {
+                DocumentDates.parseIso(values[KEY_FILE_CREATED], timeZone) ?: info.fileCreated
+            } else {
+                info.fileCreated
+            }
+
             return info.copy(
                 fileName = text(KEY_DISPLAY_NAME, info.fileName) ?: info.fileName,
+                fileCreated = createdMillis,
                 fileModified = modifiedMillis,
                 title = text(KEY_TITLE, info.title),
                 author = text(KEY_AUTHOR, info.author),

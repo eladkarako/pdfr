@@ -115,44 +115,45 @@ internal fun DocumentInfoDialog(
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 24.dp, vertical = 12.dp),
                 ) {
-                    ReadOnlyRow(
-                        label = stringResource(R.string.file_size),
-                        value = Formatter.formatFileSize(context, info.sizeBytes),
-                    )
-                    ReadOnlyRow(
-                        label = stringResource(R.string.document_type),
-                        value = info.kind,
-                    )
-                    info.format?.let { format ->
-                        if (!format.equals(info.kind, ignoreCase = true)) {
+                    SectionHeader(stringResource(R.string.file_properties))
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                             ReadOnlyRow(
-                                label = stringResource(R.string.document_format),
-                                value = format,
+                                label = stringResource(R.string.file_size),
+                                value = Formatter.formatFileSize(context, info.sizeBytes),
+                            )
+                            ReadOnlyRow(
+                                label = stringResource(R.string.document_type),
+                                value = info.kind,
+                            )
+                            info.format?.let { format ->
+                                if (!format.equals(info.kind, ignoreCase = true)) {
+                                    ReadOnlyRow(
+                                        label = stringResource(R.string.document_format),
+                                        value = format,
+                                    )
+                                }
+                            }
+                            ReadOnlyRow(
+                                label = stringResource(R.string.page_count),
+                                value = pluralStringResource(
+                                    R.plurals.page_count_value,
+                                    info.pageCount,
+                                    info.pageCount,
+                                ),
                             )
                         }
                     }
-                    ReadOnlyRow(
-                        label = stringResource(R.string.page_count),
-                        value = pluralStringResource(
-                            R.plurals.page_count_value,
-                            info.pageCount,
-                            info.pageCount,
-                        ),
-                    )
-
-                    Spacer(Modifier.height(8.dp))
-                    HorizontalDivider()
-                    Spacer(Modifier.height(12.dp))
-
-                    Text(
-                        text = stringResource(R.string.document_metadata),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.height(8.dp))
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.Top,
                     ) {
@@ -188,13 +189,23 @@ internal fun DocumentInfoDialog(
                         )
                     }
 
-                    draft.fileModified?.let { value ->
-                        DateTimeField(
-                            label = stringResource(R.string.file_modified),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(fileModified = it)) },
-                        )
-                    }
+                    DateTimeField(
+                        label = stringResource(R.string.file_created),
+                        value = draft.fileCreated.orEmpty(),
+                        onChange = { onDraftChange(draft.copy(fileCreated = it)) },
+                    )
+                    DateTimeField(
+                        label = stringResource(R.string.file_modified),
+                        value = draft.fileModified.orEmpty(),
+                        onChange = { onDraftChange(draft.copy(fileModified = it)) },
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(12.dp))
+
+                    SectionHeader(stringResource(R.string.document_metadata))
+
                     draft.created?.let { value ->
                         DateTimeField(
                             label = stringResource(R.string.metadata_created),
@@ -264,6 +275,16 @@ internal fun DocumentInfoDialog(
             }
         }
     }
+}
+
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(bottom = 4.dp),
+    )
 }
 
 @Composable

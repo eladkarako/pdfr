@@ -80,6 +80,24 @@ object DocumentStore {
         return normaliseTimestamp(fromDocuments) ?: normaliseTimestamp(fromMediaStore)
     }
 
+    fun sourceCreated(context: Context, uri: Uri): Long? {
+        // MediaStore exposes DATE_ADDED (seconds since the epoch), which is the
+        // closest provider-level "creation" value. DocumentsProvider has no
+        // creation column, so it is queried only as a best effort.
+        val added = runCatching {
+            context.contentResolver.query(
+                uri,
+                arrayOf(MediaStore.MediaColumns.DATE_ADDED),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else null
+            }
+        }.getOrNull()
+        return normaliseTimestamp(added)
+    }
+
     /**
      * Best-effort preservation of a file's last-modified time on the target of
      * a "Save as" operation. SAF providers are not required to accept either

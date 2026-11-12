@@ -309,6 +309,7 @@ class MuPdfDocument private constructor(
             created = DocumentDates.normalise(meta(Document.META_INFO_CREATIONDATE)),
             modified = DocumentDates.normalise(meta(Document.META_INFO_MODIFICATIONDATE)),
             fileModified = file.lastModified().takeIf { it > 0L },
+            fileCreated = FileTimes.created(file),
         )
     }
 

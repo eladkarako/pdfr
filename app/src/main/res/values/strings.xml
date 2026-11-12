@@ -36,6 +36,7 @@
     <string name="exit">Exit</string>
 
     <string name="document_metadata">Document metadata</string>
+    <string name="file_properties">File properties</string>
     <string name="metadata_title">Title</string>
     <string name="metadata_author">Author</string>
     <string name="metadata_subject">Subject</string>
@@ -44,6 +45,7 @@
     <string name="metadata_producer">Producer</string>
     <string name="metadata_created">Created</string>
     <string name="metadata_modified">Modified</string>
+    <string name="file_created">File created</string>
     <string name="file_modified">File modified</string>
     <string name="file_extension">Extension</string>
     <string name="file_extension_hint">Letters and digits only, up to 8.</string>
