@@ -182,7 +182,7 @@ object DocumentStore {
     }
 
     /**
-     * Allocates a cache file for a reordered, rotated, linearized or compacted
+     * Allocates a cache file for a reordered, rotated, normalized or fixed
      * rewrite. Each rewrite gets its own directory so the visible file name can
      * stay readable without colliding with the document it replaces.
      */

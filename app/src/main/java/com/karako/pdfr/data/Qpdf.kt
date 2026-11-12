@@ -34,18 +34,45 @@ object Qpdf {
     fun isAvailable(): Boolean = loaded
 
     /**
-     * Writes a truly linearized copy of [source] to [destination].
+     * Applies the selected qpdf transformations to [source] and writes the
+     * result to [destination].
+     *
+     * qpdf runs the whole option set in one pass. Linearization, stream
+     * compression and image optimization are ordered internally by qpdf, so
+     * no intermediate files are needed.
      *
      * Must be called on [dispatcher]. Returns null on success, or a
      * human-readable error. The destination is removed on failure.
      */
-    fun linearize(source: File, destination: File, password: String?): String? =
+    fun normalize(
+        source: File,
+        destination: File,
+        password: String?,
+        options: NormalizeOptions,
+    ): String? =
         rewrite(
             source = source,
             destination = destination,
             password = password,
-            operation = ::nativeLinearize,
-            failure = "qpdf could not linearize this PDF.",
+            operation = { input, output, secret ->
+                nativeNormalize(
+                    inputPath = input,
+                    outputPath = output,
+                    password = secret,
+                    compressStreams = options.compressStreams,
+                    decodeAllStreams = options.decodeAllStreams,
+                    recompressFlate = options.recompressFlate,
+                    compressionLevel9 = options.compressionLevel9,
+                    jpegQuality = options.jpegQuality,
+                    optimizeImages = options.optimizeImages,
+                    newlineBeforeEndstream = options.newlineBeforeEndstream,
+                    removeUnreferencedResources = options.removeUnreferencedResources,
+                    externalizeInlineImages = options.externalizeInlineImages,
+                    linearize = options.linearize,
+                    pdfA = options.pdfA,
+                )
+            },
+            failure = "qpdf could not normalize this PDF.",
         )
 
     /**
@@ -113,10 +140,21 @@ object Qpdf {
         }
     }
 
-    private external fun nativeLinearize(
+    private external fun nativeNormalize(
         inputPath: String,
         outputPath: String,
         password: String?,
+        compressStreams: Boolean,
+        decodeAllStreams: Boolean,
+        recompressFlate: Boolean,
+        compressionLevel9: Boolean,
+        jpegQuality: Int,
+        optimizeImages: Boolean,
+        newlineBeforeEndstream: Boolean,
+        removeUnreferencedResources: Boolean,
+        externalizeInlineImages: Boolean,
+        linearize: Boolean,
+        pdfA: Boolean,
     ): String?
 
     private external fun nativeFixPdf(

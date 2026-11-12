@@ -382,15 +382,16 @@ class MuPdfDocument private constructor(
 
         /**
          * Rewrites the PDF without encryption, with unused objects removed and
-         * content streams, fonts and images compressed. MuPDF 1.28 no longer
-         * linearizes, so this is PDFr's compact action. True linearization is
-         * provided by qpdf (see [Qpdf]).
+         * content streams, fonts and images compressed. MuPDF 1.28 cannot
+         * linearize, so reorder, rotate and metadata writes use this set while
+         * the qpdf-backed Normalize action handles linearization and fine
+         * tuning (see [Qpdf]).
          */
-        const val PDF_COMPACT_OPTIONS =
+        const val PDF_REWRITE_OPTIONS =
             "garbage=compact,compress=yes,compress-images=yes,compress-fonts=yes,objstms=yes,encrypt=none"
 
         /**
-         * Saves a reordered, rotated or compacted copy of [source] into
+         * Saves a reordered or rotated copy of [source] into
          * [destination].
          *
          * [pageIndices] are zero-based source page numbers. They are passed to

@@ -16,6 +16,7 @@ import com.karako.pdfr.data.DocumentWrongPasswordException
 import com.karako.pdfr.data.MetadataSidecar
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
+import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
@@ -692,12 +693,25 @@ class ReaderViewModel(
         rewrite(ready, pages = null, rotate = pageIndices.copyOf(), kind = RewriteKind.ROTATE)
     }
 
-    /** Uses qpdf to write a genuinely linearized replacement PDF. */
-    fun linearizePdf() {
+    /**
+     * Runs qpdf's Normalize transformations on the current PDF.
+     *
+     * All selected options are applied in one qpdf pass, so the output is
+     * never written and reopened between steps. PDF/A is the only extra
+     * pass; it is folded into the same writer call by the native bridge.
+     */
+    fun normalizePdf(options: NormalizeOptions) {
         val ready = _state.value as? ReaderState.Ready ?: return
         if (!ready.info.isPdf) return
+        if (!options.canApply) return
 
-        rewrite(ready, pages = null, rotate = null, kind = RewriteKind.LINEARIZE)
+        rewrite(
+            ready,
+            pages = null,
+            rotate = null,
+            kind = RewriteKind.NORMALIZE,
+            normalizeOptions = options,
+        )
     }
 
     /**
@@ -716,18 +730,6 @@ class ReaderViewModel(
         _messages.tryEmit(
             getApplication<Application>().getString(R.string.fix_pdf_only_pdf),
         )
-    }
-
-    /**
-     * Rewrites the current PDF into a compact, fully compressed copy. This is
-     * MuPDF's closest replacement for linearization and stays available next
-     * to the qpdf-powered Linearize action.
-     */
-    fun compactPdf() {
-        val ready = _state.value as? ReaderState.Ready ?: return
-        if (!ready.info.isPdf) return
-
-        rewrite(ready, pages = null, rotate = null, kind = RewriteKind.COMPACT)
     }
 
     /**
@@ -788,7 +790,7 @@ class ReaderViewModel(
                             password = password,
                             destination = target,
                             pageIndices = null,
-                            options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                            options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                             metadataUpdate = if (metadataChanged) draft.pdfUpdate() else null,
                         )
                     }
@@ -855,7 +857,7 @@ class ReaderViewModel(
     /**
      * Copies the document that is currently on screen to a user-chosen URI.
      * The bytes are copied verbatim, so the existing format (including any
-     * reorder/rotate/linearize/compact result and its embedded metadata) is
+     * reorder/rotate/normalize result and its embedded metadata) is
      * preserved. File timestamp and display name are carried over where the
      * target provider supports it.
      */
@@ -892,6 +894,7 @@ class ReaderViewModel(
         pages: IntArray?,
         rotate: IntArray?,
         kind: RewriteKind,
+        normalizeOptions: NormalizeOptions? = null,
     ) {
         if (_busy.value) return
 
@@ -904,7 +907,7 @@ class ReaderViewModel(
             try {
                 var failure: String? = null
                 output = withContext(
-                    if (kind == RewriteKind.LINEARIZE || kind == RewriteKind.FIX) {
+                    if (kind == RewriteKind.NORMALIZE || kind == RewriteKind.FIX) {
                         Qpdf.dispatcher
                     } else {
                         MuPdf.dispatcher
@@ -913,14 +916,20 @@ class ReaderViewModel(
                     val target =
                         DocumentStore.derivedFile(app, derivedDisplayName(ready.displayName, kind))
                     val saved = when (kind) {
-                        RewriteKind.LINEARIZE -> {
-                            val error = Qpdf.linearize(
-                                source = ready.file,
-                                destination = target,
-                                password = password,
-                            )
-                            failure = error
-                            error == null
+                        RewriteKind.NORMALIZE -> {
+                            val options = normalizeOptions
+                            if (options == null) {
+                                false
+                            } else {
+                                val error = Qpdf.normalize(
+                                    source = ready.file,
+                                    destination = target,
+                                    password = password,
+                                    options = options,
+                                )
+                                failure = error
+                                error == null
+                            }
                         }
 
                         RewriteKind.FIX -> {
@@ -939,7 +948,7 @@ class ReaderViewModel(
                             destination = target,
                             pageIndices = pages,
                             rotatePages = rotate,
-                            options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                            options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                         )
                     }
                     if (saved) {
@@ -955,9 +964,9 @@ class ReaderViewModel(
                 val created = output
                 if (created == null) {
                     val message = when {
-                        kind == RewriteKind.LINEARIZE &&
+                        kind == RewriteKind.NORMALIZE &&
                                 failure?.contains("not available") == true ->
-                            R.string.linearize_unavailable
+                            R.string.normalize_unavailable
 
                         kind == RewriteKind.FIX &&
                                 failure?.contains("not available") == true ->
@@ -1021,9 +1030,8 @@ class ReaderViewModel(
     private enum class RewriteKind(val label: String, val doneMessage: Int) {
         REORDER("reordered", R.string.reorder_done),
         ROTATE("rotated", R.string.rotate_done),
-        LINEARIZE("linearized", R.string.linearize_done),
+        NORMALIZE("normalized", R.string.normalize_done),
         FIX("fixed", R.string.fix_pdf_done),
-        COMPACT("compact", R.string.compact_done),
     }
 
     private fun layoutSpec(viewport: Viewport): LayoutSpec {

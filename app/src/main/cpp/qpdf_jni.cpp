@@ -16,14 +16,19 @@
 #include <jni.h>
 
 #include <qpdf/QPDF.hh>
+#include <qpdf/QPDFJob.hh>
+#include <qpdf/QPDFObjectHandle.hh>
 #include <qpdf/QPDFWriter.hh>
 #include <qpdf/QPDFXRefEntry.hh>
 #include <qpdf/QIntC.hh>
 #include <qpdf/QUtil.hh>
 
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <fstream>
+#include <memory>
 #include <regex>
 #include <stdexcept>
 #include <string>
@@ -395,17 +400,278 @@ namespace {
         out << data;
     }
 
+    // ------------------------------------------------------------------
+    // Best-effort PDF/A-2b support
+    //
+    // qpdf can preserve PDF/A but cannot create it. For the Normalize
+    // action we add the two pieces qpdf does not provide: a PDF/A XMP
+    // identification block and an sRGB output intent with an embedded ICC
+    // profile. Fonts and page content are left untouched.
+    // ------------------------------------------------------------------
+
+    void appendU16(std::string &out, unsigned value) {
+        out.push_back(static_cast<char>((value >> 8) & 0xff));
+        out.push_back(static_cast<char>(value & 0xff));
+    }
+
+    void appendU32(std::string &out, std::uint32_t value) {
+        out.push_back(static_cast<char>((value >> 24) & 0xff));
+        out.push_back(static_cast<char>((value >> 16) & 0xff));
+        out.push_back(static_cast<char>((value >> 8) & 0xff));
+        out.push_back(static_cast<char>(value & 0xff));
+    }
+
+    void appendS15Fixed16(std::string &out, double value) {
+        auto fixed = static_cast<std::int32_t>(std::llround(value * 65536.0));
+        appendU32(out, static_cast<std::uint32_t>(fixed));
+    }
+
+    std::string iccDescTag(std::string const &text) {
+        std::string tag;
+        tag.append("desc", 4);
+        appendU32(tag, 0);
+        appendU32(tag, static_cast<std::uint32_t>(text.size() + 1));
+        tag += text;
+        tag.push_back('\0');
+        appendU32(tag, 0); // Unicode language code
+        appendU32(tag, 0); // Unicode count
+        appendU16(tag, 0); // ScriptCode code
+        tag.push_back('\0'); // ScriptCode count
+        tag.append(67, '\0'); // ScriptCode data
+        return tag;
+    }
+
+    std::string iccTextTag(std::string const &text) {
+        std::string tag;
+        tag.append("text", 4);
+        appendU32(tag, 0);
+        tag += text;
+        tag.push_back('\0');
+        return tag;
+    }
+
+    std::string iccXyzTag(double x, double y, double z) {
+        std::string tag;
+        tag.append("XYZ ", 4);
+        appendU32(tag, 0);
+        appendS15Fixed16(tag, x);
+        appendS15Fixed16(tag, y);
+        appendS15Fixed16(tag, z);
+        return tag;
+    }
+
+    std::string iccCurveTag() {
+        std::string tag;
+        tag.append("curv", 4);
+        appendU32(tag, 0);
+        appendU32(tag, 1); // one entry: a gamma value
+        appendU16(tag, 563); // 2.19921875 in u8Fixed8 notation
+        return tag;
+    }
+
+    /**
+     * Builds a compact matrix/TRC sRGB profile. The primaries are adapted to
+     * D50 as required by ICC, and the tone curves use gamma 2.2 (the usual
+     * approximation of the sRGB transfer function).
+     */
+    std::string srgbProfile() {
+        struct Tag {
+            char const *name;
+            std::string data;
+        };
+
+        const std::vector<Tag> tags = {
+            {"desc", iccDescTag("sRGB IEC61966-2.1")},
+            {"cprt", iccTextTag("Copyright (c) 2026 PDFr")},
+            {"wtpt", iccXyzTag(0.9642, 1.0, 0.8249)},
+            {"rXYZ", iccXyzTag(0.4360747, 0.2225045, 0.0139322)},
+            {"gXYZ", iccXyzTag(0.3850649, 0.7168786, 0.0971045)},
+            {"bXYZ", iccXyzTag(0.1430804, 0.0606169, 0.7141733)},
+            {"rTRC", iccCurveTag()},
+            {"gTRC", iccCurveTag()},
+            {"bTRC", iccCurveTag()},
+        };
+
+        const auto padding = [](size_t size) { return (size + 3) & ~size_t(3); };
+
+        size_t offset = 128 + 4 + tags.size() * 12;
+        std::string table;
+        appendU32(table, static_cast<std::uint32_t>(tags.size()));
+        for (auto const &tag: tags) {
+            table.append(tag.name, 4);
+            appendU32(table, static_cast<std::uint32_t>(offset));
+            appendU32(table, static_cast<std::uint32_t>(tag.data.size()));
+            offset += padding(tag.data.size());
+        }
+
+        std::string body;
+        for (auto const &tag: tags) {
+            body += tag.data;
+            while (body.size() % 4 != 0) {
+                body.push_back('\0');
+            }
+        }
+
+        std::string header;
+        appendU32(header, static_cast<std::uint32_t>(128 + table.size() + body.size()));
+        header.append("lcms", 4); // CMM type
+        appendU32(header, 0x02100000); // ICC 2.1
+        header.append("mntr", 4); // display profile
+        header.append("RGB ", 4); // data colour space
+        header.append("XYZ ", 4); // PCS
+        appendU16(header, 2026);
+        appendU16(header, 1);
+        appendU16(header, 1);
+        appendU16(header, 0);
+        appendU16(header, 0);
+        appendU16(header, 0);
+        header.append("acsp", 4);
+        header.append("APPL", 4);
+        appendU32(header, 0); // flags
+        appendU32(header, 0); // manufacturer
+        appendU32(header, 0); // model
+        appendU32(header, 0); // attributes
+        appendU32(header, 0);
+        appendU32(header, 0); // rendering intent
+        appendS15Fixed16(header, 0.9642); // D50 illuminant
+        appendS15Fixed16(header, 1.0);
+        appendS15Fixed16(header, 0.8249);
+        header.append("PDFr", 4);
+        header.append(16, '\0'); // profile ID
+        header.append(28, '\0'); // reserved
+
+        if (header.size() != 128) {
+            throw std::logic_error("ICC header is not 128 bytes");
+        }
+        return header + table + body;
+    }
+
+    /** Removes any pdfaid:part/conformance pair and inserts a PDF/A-2B one. */
+    std::string withPdfAIdentification(std::string const &existing) {
+        static const std::string description =
+                "<rdf:Description rdf:about=\"\" "
+                "xmlns:pdfaid=\"http://www.aiim.org/pdfa/ns/id/\">"
+                "<pdfaid:part>2</pdfaid:part>"
+                "<pdfaid:conformance>B</pdfaid:conformance>"
+                "</rdf:Description>";
+
+        std::string xmp = existing;
+        auto eraseElement = [&xmp](std::string const &name) {
+            auto open = xmp.find("<" + name);
+            while (open != std::string::npos) {
+                auto close = xmp.find("</" + name + ">", open);
+                if (close != std::string::npos) {
+                    xmp.erase(open, close + name.size() + 3 - open);
+                } else {
+                    auto end = xmp.find('>', open);
+                    if (end == std::string::npos) {
+                        break;
+                    }
+                    xmp.erase(open, end - open + 1);
+                }
+                open = xmp.find("<" + name, open);
+            }
+        };
+
+        eraseElement("pdfaid:part");
+        eraseElement("pdfaid:conformance");
+
+        auto rdfEnd = xmp.rfind("</rdf:RDF>");
+        if (rdfEnd != std::string::npos) {
+            xmp.insert(rdfEnd, description);
+            return xmp;
+        }
+
+        std::string packet;
+        packet += "<?xpacket begin=\"\xEF\xBB\xBF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n";
+        packet += "<x:xmpmeta xmlns:x=\"adobe:ns:meta/\">\n";
+        packet += "<rdf:RDF xmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\">\n";
+        packet += description;
+        packet += "\n</rdf:RDF>\n</x:xmpmeta>\n<?xpacket end=\"w\"?>";
+        return packet;
+    }
+
+    void applyPdfA(QPDF &pdf) {
+        auto root = pdf.getRoot();
+
+        auto intents = root.getKey("/OutputIntents");
+        if (!(intents.isArray() && intents.getArrayNItems() > 0)) {
+            auto profile = QPDFObjectHandle::newStream(&pdf, srgbProfile());
+            auto profileDict = profile.getDict();
+            profileDict.replaceKey("/N", QPDFObjectHandle::newInteger(3));
+            profileDict.replaceKey("/Alternate", QPDFObjectHandle::newName("/DeviceRGB"));
+
+            auto intent = QPDFObjectHandle::newDictionary();
+            intent.replaceKey("/Type", QPDFObjectHandle::newName("/OutputIntent"));
+            intent.replaceKey("/S", QPDFObjectHandle::newName("/GTS_PDFA1"));
+            intent.replaceKey(
+                    "/OutputConditionIdentifier",
+                    QPDFObjectHandle::newString("sRGB IEC61966-2.1"));
+            intent.replaceKey(
+                    "/RegistryName",
+                    QPDFObjectHandle::newString("http://www.color.org"));
+            intent.replaceKey("/Info", QPDFObjectHandle::newString("sRGB IEC61966-2.1"));
+            intent.replaceKey("/DestOutputProfile", profile);
+            root.replaceKey("/OutputIntents", QPDFObjectHandle::newArray({intent}));
+        }
+
+        auto metadata = root.getKey("/Metadata");
+        std::string existing;
+        if (metadata.isStream()) {
+            try {
+                auto data = metadata.getStreamData(qpdf_dl_all);
+                if (data && data->getSize() > 0) {
+                    existing.assign(
+                            reinterpret_cast<char const *>(data->getBuffer()),
+                            data->getSize());
+                }
+            } catch (...) {
+                // A metadata stream with an unsupported filter is replaced
+                // below rather than failing the whole Normalize operation.
+                existing.clear();
+            }
+        }
+
+        auto updated = withPdfAIdentification(existing);
+        if (metadata.isStream()) {
+            metadata.replaceStreamData(
+                    updated,
+                    QPDFObjectHandle::newNull(),
+                    QPDFObjectHandle::newNull());
+            auto dict = metadata.getDict();
+            dict.replaceKey("/Type", QPDFObjectHandle::newName("/Metadata"));
+            dict.replaceKey("/Subtype", QPDFObjectHandle::newName("/XML"));
+        } else {
+            auto stream = QPDFObjectHandle::newStream(&pdf, updated);
+            auto dict = stream.getDict();
+            dict.replaceKey("/Type", QPDFObjectHandle::newName("/Metadata"));
+            dict.replaceKey("/Subtype", QPDFObjectHandle::newName("/XML"));
+            root.replaceKey("/Metadata", stream);
+        }
+    }
+
 }  // namespace
 
 extern "C" JNIEXPORT jstring
 
 JNICALL
-Java_com_karako_pdfr_data_Qpdf_nativeLinearize(
+Java_com_karako_pdfr_data_Qpdf_nativeNormalize(
         JNIEnv *env,
         jobject /* thiz */,
         jstring inputPath,
         jstring outputPath,
-        jstring password) {
+        jstring password,
+        jboolean compressStreams,
+        jboolean decodeAllStreams,
+        jboolean recompressFlate,
+        jboolean compressionLevel9,
+        jint jpegQuality,
+        jboolean optimizeImages,
+        jboolean newlineBeforeEndstream,
+        jboolean removeUnreferencedResources,
+        jboolean externalizeInlineImages,
+        jboolean linearize,
+        jboolean pdfA) {
     const std::string input = fromJava(env, inputPath);
     const std::string output = fromJava(env, outputPath);
     const std::string secret = fromJava(env, password);
@@ -414,16 +680,83 @@ Java_com_karako_pdfr_data_Qpdf_nativeLinearize(
         return failure(env, "missing input or output path");
     }
 
+    std::vector<std::string> args;
+    args.emplace_back("qpdf");
+    args.push_back(input);
+    args.push_back(output);
+    if (!secret.empty()) {
+        args.push_back("--password=" + secret);
+    }
+
+    // qpdf applies these in one pass. Its internal ordering already puts
+    // decoding before recompression and image optimization before output.
+    args.push_back(
+            std::string("--compress-streams=") + (compressStreams ? "y" : "n"));
+    if (decodeAllStreams) {
+        args.emplace_back("--decode-level=all");
+    }
+    if (recompressFlate) {
+        args.emplace_back("--recompress-flate");
+    }
+    if (compressionLevel9) {
+        args.emplace_back("--compression-level=9");
+    }
+    if (optimizeImages) {
+        args.emplace_back("--optimize-images");
+        if (jpegQuality >= 0 && jpegQuality <= 100) {
+            args.push_back("--jpeg-quality=" + std::to_string(jpegQuality));
+        }
+    }
+    if (newlineBeforeEndstream || pdfA) {
+        args.emplace_back("--newline-before-endstream");
+    }
+    args.push_back(
+            std::string("--remove-unreferenced-resources=") +
+            (removeUnreferencedResources ? "yes" : "no"));
+    if (externalizeInlineImages) {
+        args.emplace_back("--externalize-inline-images");
+    }
+    if (linearize) {
+        args.emplace_back("--linearize");
+    }
+    if (pdfA) {
+        // PDF/A-2 forbids encryption and is based on PDF 1.7. The qpdf writer
+        // preserves encryption by default, so ask it to decrypt first.
+        args.emplace_back("--decrypt");
+        args.emplace_back("--force-version=1.7");
+    }
+
+    // initializeFromArgv may reorder or otherwise touch the argument array,
+    // so give it writable, NUL-terminated copies rather than string internals.
+    std::vector<std::vector<char>> buffers;
+    buffers.reserve(args.size());
+    for (auto const &arg: args) {
+        buffers.emplace_back(arg.c_str(), arg.c_str() + arg.size() + 1);
+    }
+    std::vector<char *> argv;
+    argv.reserve(buffers.size() + 1);
+    for (auto &buffer: buffers) {
+        argv.push_back(buffer.data());
+    }
+    argv.push_back(nullptr);
+
     try {
-        QPDF pdf;
-        pdf.processFile(input.c_str(), secret.c_str());
+        QPDFJob job;
+        job.setMessagePrefix("pdfr");
+        job.initializeFromArgv(argv.data());
 
-        QPDFWriter writer(pdf, output.c_str());
-        writer.setLinearization(true);
-        writer.setCompressStreams(true);
-        writer.setPreserveUnreferencedObjects(false);
-        writer.write();
+        auto pdf = job.createQPDF();
+        if (!pdf) {
+            return failure(env, "qpdf could not read this PDF");
+        }
+        if (pdfA) {
+            applyPdfA(*pdf);
+        }
+        job.writeQPDF(*pdf);
 
+        if (job.getExitCode() == QPDFJob::EXIT_ERROR) {
+            return failure(env, "qpdf reported an error");
+        }
         return nullptr;
     } catch (const std::exception &e) {
         return failure(env, e.what());

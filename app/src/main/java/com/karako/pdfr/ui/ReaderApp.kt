@@ -46,6 +46,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -102,6 +103,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentFormats
+import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.PlainText
@@ -218,8 +220,7 @@ fun ReaderApp(
     var showPasswordDialog by rememberSaveable { mutableStateOf(false) }
     var showReorderDialog by rememberSaveable { mutableStateOf(false) }
     var showRotateDialog by rememberSaveable { mutableStateOf(false) }
-    var showLinearizeDialog by rememberSaveable { mutableStateOf(false) }
-    var showCompactDialog by rememberSaveable { mutableStateOf(false) }
+    var showNormalizeDialog by rememberSaveable { mutableStateOf(false) }
     var showTextSizeDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var showOverflowMenu by remember { mutableStateOf(false) }
@@ -245,8 +246,7 @@ fun ReaderApp(
             showInfo = false
             showReorderDialog = false
             showRotateDialog = false
-            showLinearizeDialog = false
-            showCompactDialog = false
+            showNormalizeDialog = false
             showTextSizeDialog = false
             viewModel.cancelInfoEdit()
         }
@@ -442,17 +442,10 @@ fun ReaderApp(
                                             },
                                         )
                                         DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.linearize)) },
+                                            text = { Text(stringResource(R.string.normalize)) },
                                             onClick = {
                                                 showOverflowMenu = false
-                                                showLinearizeDialog = true
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.compact)) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showCompactDialog = true
+                                                showNormalizeDialog = true
                                             },
                                         )
                                     }
@@ -690,22 +683,12 @@ fun ReaderApp(
         )
     }
 
-    if (showLinearizeDialog && state is ReaderState.Ready && state.info.isPdf) {
-        LinearizeDialog(
-            onDismiss = { showLinearizeDialog = false },
-            onApply = {
-                showLinearizeDialog = false
-                viewModel.linearizePdf()
-            },
-        )
-    }
-
-    if (showCompactDialog && state is ReaderState.Ready && state.info.isPdf) {
-        CompactDialog(
-            onDismiss = { showCompactDialog = false },
-            onApply = {
-                showCompactDialog = false
-                viewModel.compactPdf()
+    if (showNormalizeDialog && state is ReaderState.Ready && state.info.isPdf) {
+        NormalizeDialog(
+            onDismiss = { showNormalizeDialog = false },
+            onApply = { options ->
+                showNormalizeDialog = false
+                viewModel.normalizePdf(options)
             },
         )
     }
@@ -907,50 +890,137 @@ private fun pageRangeError(error: PageRanges.Result.Error, pageCount: Int): Stri
     }
 
 @Composable
-private fun LinearizeDialog(
+private fun NormalizeDialog(
     onDismiss: () -> Unit,
-    onApply: () -> Unit,
+    onApply: (NormalizeOptions) -> Unit,
 ) {
-    RewriteDialog(
-        title = stringResource(R.string.linearize_title),
-        body = stringResource(R.string.linearize_body),
-        apply = stringResource(R.string.linearize_apply),
-        onDismiss = onDismiss,
-        onApply = onApply,
-    )
-}
+    var options by remember { mutableStateOf(NormalizeOptions()) }
+    var qualityText by remember {
+        mutableStateOf(NormalizeOptions.DEFAULT_JPEG_QUALITY.toString())
+    }
 
-@Composable
-private fun CompactDialog(
-    onDismiss: () -> Unit,
-    onApply: () -> Unit,
-) {
-    RewriteDialog(
-        title = stringResource(R.string.compact_title),
-        body = stringResource(R.string.compact_body),
-        apply = stringResource(R.string.compact_apply),
-        onDismiss = onDismiss,
-        onApply = onApply,
-    )
-}
+    fun updateQuality(text: String) {
+        qualityText = text.filter(Char::isDigit).take(3)
+        qualityText.toIntOrNull()?.let { quality ->
+            options = options.copy(jpegQuality = quality)
+        }
+    }
 
-@Composable
-private fun RewriteDialog(
-    title: String,
-    body: String,
-    apply: String,
-    onDismiss: () -> Unit,
-    onApply: () -> Unit,
-) {
+    val quality = qualityText.toIntOrNull()
+    val qualityValid = quality != null &&
+        quality in NormalizeOptions.MIN_JPEG_QUALITY..NormalizeOptions.MAX_JPEG_QUALITY
+    val needsQuality = options.optimizeImages
+    val canApply = options.hasWork && (!needsQuality || qualityValid)
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = { Text(stringResource(R.string.normalize_title)) },
         text = {
-            Column {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 440.dp)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 Text(
-                    text = body,
+                    text = stringResource(R.string.normalize_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
+
+                NormalizeSection(stringResource(R.string.normalize_section_streams))
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_compress_streams),
+                    description = stringResource(R.string.normalize_compress_streams_desc),
+                    checked = options.compressStreams,
+                    onCheckedChange = { options = options.copy(compressStreams = it) },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_decode_all),
+                    description = stringResource(R.string.normalize_decode_all_desc),
+                    checked = options.decodeAllStreams,
+                    onCheckedChange = { options = options.copy(decodeAllStreams = it) },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_recompress_flate),
+                    description = stringResource(R.string.normalize_recompress_flate_desc),
+                    checked = options.recompressFlate,
+                    onCheckedChange = { options = options.copy(recompressFlate = it) },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_compression_level),
+                    description = stringResource(R.string.normalize_compression_level_desc),
+                    checked = options.compressionLevel9,
+                    onCheckedChange = { options = options.copy(compressionLevel9 = it) },
+                )
+
+                NormalizeSection(stringResource(R.string.normalize_section_images))
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_optimize_images),
+                    description = stringResource(R.string.normalize_optimize_images_desc),
+                    checked = options.optimizeImages,
+                    onCheckedChange = { options = options.copy(optimizeImages = it) },
+                )
+                OutlinedTextField(
+                    value = qualityText,
+                    onValueChange = ::updateQuality,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = options.optimizeImages,
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.normalize_jpeg_quality)) },
+                    isError = needsQuality && !qualityValid,
+                    supportingText = {
+                        Text(
+                            if (needsQuality && !qualityValid) {
+                                stringResource(R.string.normalize_quality_error)
+                            } else {
+                                stringResource(R.string.normalize_jpeg_quality_desc)
+                            },
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+
+                NormalizeSection(stringResource(R.string.normalize_section_structure))
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_newline),
+                    description = stringResource(R.string.normalize_newline_desc),
+                    checked = options.newlineBeforeEndstream,
+                    onCheckedChange = { options = options.copy(newlineBeforeEndstream = it) },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_remove_resources),
+                    description = stringResource(R.string.normalize_remove_resources_desc),
+                    checked = options.removeUnreferencedResources,
+                    onCheckedChange = {
+                        options = options.copy(removeUnreferencedResources = it)
+                    },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_externalize_images),
+                    description = stringResource(R.string.normalize_externalize_images_desc),
+                    checked = options.externalizeInlineImages,
+                    onCheckedChange = {
+                        options = options.copy(externalizeInlineImages = it)
+                    },
+                )
+
+                NormalizeSection(stringResource(R.string.normalize_section_output))
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_linearize),
+                    description = stringResource(R.string.normalize_linearize_desc),
+                    checked = options.linearize,
+                    onCheckedChange = { options = options.copy(linearize = it) },
+                )
+                NormalizeOption(
+                    title = stringResource(R.string.normalize_pdfa),
+                    description = stringResource(R.string.normalize_pdfa_desc),
+                    checked = options.pdfA,
+                    onCheckedChange = { options = options.copy(pdfA = it) },
+                )
+
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.rewrite_replace_note),
@@ -960,8 +1030,11 @@ private fun RewriteDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onApply) {
-                Text(apply)
+            TextButton(
+                onClick = { onApply(options) },
+                enabled = canApply,
+            ) {
+                Text(stringResource(R.string.normalize_apply))
             }
         },
         dismissButton = {
@@ -970,6 +1043,42 @@ private fun RewriteDialog(
             }
         },
     )
+}
+
+@Composable
+private fun NormalizeSection(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(top = 14.dp, bottom = 2.dp),
+    )
+}
+
+@Composable
+private fun NormalizeOption(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 4.dp),
+        ) {
+            Text(text = title, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
