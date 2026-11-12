@@ -291,12 +291,14 @@ class MuPdfDocument private constructor(
         val encryption = meta(Document.META_ENCRYPTION)
             ?.takeUnless { it.equals("none", ignoreCase = true) }
         val pageCount = runCatching { document.countPages() }.getOrDefault(0)
+        val kind = kindOf(format, file.name)
+        val pdfMetadata = if (kind == "PDF") PdfMetadata.read(document) else null
 
         DocumentInfo(
             fileName = displayName,
             sizeBytes = file.length(),
             pageCount = pageCount,
-            kind = kindOf(format, file.name),
+            kind = kind,
             format = format,
             encrypted = needsPasswordToOpen || encryption != null,
             encryption = encryption,
@@ -310,6 +312,8 @@ class MuPdfDocument private constructor(
             modified = DocumentDates.normalise(meta(Document.META_INFO_MODIFICATIONDATE)),
             fileModified = file.lastModified().takeIf { it > 0L },
             fileCreated = FileTimes.created(file),
+            pdfInfo = pdfMetadata?.info ?: emptyMap(),
+            pdfXmp = pdfMetadata?.xmp ?: emptyMap(),
         )
     }
 
@@ -406,6 +410,7 @@ class MuPdfDocument private constructor(
             rotatePages: IntArray? = null,
             options: String,
             metadata: Map<String, String>? = null,
+            metadataUpdate: PdfMetadata.Update? = null,
         ): Boolean {
             Context.init()
 
@@ -457,6 +462,9 @@ class MuPdfDocument private constructor(
 
                 if (metadata != null) {
                     metadata.forEach { (key, value) -> pdf.setMetaData(key, value) }
+                }
+                if (metadataUpdate != null && !PdfMetadata.apply(pdf, metadataUpdate)) {
+                    return false
                 }
 
                 pdf.save(temp.absolutePath, options)

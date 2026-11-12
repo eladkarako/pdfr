@@ -32,6 +32,12 @@ data class DocumentInfo(
      * and used by the dialog, Save as and Share.
      */
     val fileCreated: Long? = null,
+    /** Every Info dictionary property found in a PDF, including custom keys. */
+    val pdfInfo: Map<String, String> = emptyMap(),
+    /** Every simple XMP property found in a PDF, keyed by qualified name. */
+    val pdfXmp: Map<String, String> = emptyMap(),
+    /** Format-specific metadata that is not one of the standard slots. */
+    val extraFields: List<MetadataField> = emptyList(),
 ) {
     val hasMetadata: Boolean
         get() = listOf(

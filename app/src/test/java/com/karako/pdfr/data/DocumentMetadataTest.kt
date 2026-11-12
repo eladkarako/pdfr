@@ -54,8 +54,10 @@ class DocumentMetadataTest {
             extension = "epub",
             fileCreated = "2026-02-03T04:05:06",
             fileModified = "2026-02-04T05:06:07",
-            created = "2020-01-02T03:04:05",
-            modified = "",
+            fields = listOf(
+                MetadataField(MetadataKeys.CREATION_DATE, "2020-01-02T03:04:05"),
+                MetadataField(MetadataKeys.MODIFIED_DATE, ""),
+            ),
         )
 
         val values = draft.fileTimestampValues()
@@ -79,7 +81,7 @@ class DocumentMetadataTest {
     }
 
     @Test
-    fun buildsADraftFromExistingInfoOnly() {
+    fun buildsTheStandardPdfSlotsInTheRequestedOrder() {
         val info = DocumentInfo(
             fileName = "report.pdf",
             sizeBytes = 12,
@@ -95,9 +97,47 @@ class DocumentMetadataTest {
         assertEquals("report", draft.fileName)
         assertEquals("pdf", draft.extension)
         assertEquals("Old title", draft.title)
+        assertEquals("2026-01-02T03:04:05", draft.created)
         assertNull(draft.author)
         assertEquals("2026-01-01T00:00:00", draft.fileModified)
+        assertEquals(
+            listOf(
+                "Title", "Author", "Subject", "Keywords", "Creator",
+                "Producer", "CreationDate", "ModDate",
+            ),
+            draft.fields.map { it.key },
+        )
         assertTrue(draft.isValid)
+    }
+
+    @Test
+    fun existingInfoAndXmpExtrasFollowTheStandardSlots() {
+        val info = DocumentInfo(
+            fileName = "report.pdf",
+            sizeBytes = 12,
+            pageCount = 3,
+            kind = "PDF",
+            pdfInfo = linkedMapOf(
+                "Title" to "Info title",
+                "Company" to "ACME",
+                "CreationDate" to "D:20260102030405",
+            ),
+            pdfXmp = linkedMapOf(
+                "dc:title" to "XMP title",
+                "xmp:Label" to "Green",
+                "dc:language" to "en",
+            ),
+        )
+
+        val fields = MetadataSchema.fields(info)
+
+        assertEquals("Title", fields[0].key)
+        assertEquals("Info title", fields[0].value)
+        assertEquals(
+            listOf("info:Company", "xmp:xmp:Label", "xmp:dc:language"),
+            fields.drop(MetadataKeys.STANDARD_PDF.size).map { it.key },
+        )
+        assertEquals(MetadataValueKind.DATE_TIME, fields[6].kind)
     }
 
     @Test
@@ -130,8 +170,10 @@ class DocumentMetadataTest {
         val draft = DocumentMetadataDraft(
             fileName = "book",
             extension = "epub",
-            title = "",
-            author = "Writer",
+            fields = listOf(
+                MetadataField(MetadataKeys.TITLE, ""),
+                MetadataField(MetadataKeys.AUTHOR, "Writer"),
+            ),
         )
 
         val values = draft.sidecarValues(utc)
@@ -143,34 +185,102 @@ class DocumentMetadataTest {
     }
 
     @Test
-    fun pdfMetadataConvertsDatesAndSkipsAbsentFields() {
+    fun extraFieldsRoundTripThroughTheSidecar() {
         val draft = DocumentMetadataDraft(
-            fileName = "report",
-            extension = "pdf",
-            title = "Title",
-            created = "2026-01-02T03:04:05",
+            fileName = "photo",
+            extension = "jpg",
+            fields = listOf(
+                MetadataField(MetadataKeys.EXIF_PREFIX + "Make", "Camera Co"),
+                MetadataField(MetadataKeys.EXIF_PREFIX + "Model", ""),
+            ),
         )
 
-        val values = draft.pdfMetadata(utc)
+        val values = draft.sidecarValues(utc)
+        assertEquals("Camera Co", values["field:exif:Make"])
+        assertEquals("", values["field:exif:Model"])
 
-        assertEquals("Title", values["info:Title"])
-        assertEquals("D:20260102030405", values["info:CreationDate"])
-        assertFalse(values.containsKey("info:Author"))
+        val overlaid = DocumentMetadataDraft.applySidecar(
+            DocumentInfo(
+                fileName = "photo.jpg",
+                sizeBytes = 1,
+                pageCount = 1,
+                kind = "JPEG",
+                extraFields = listOf(
+                    MetadataField(MetadataKeys.EXIF_PREFIX + "Make", "Old"),
+                    MetadataField(MetadataKeys.EXIF_PREFIX + "Model", "Old model"),
+                ),
+            ),
+            values,
+        )
+
+        assertEquals(
+            "Camera Co",
+            overlaid.extraFields.first { it.key == "exif:Make" }.value,
+        )
+        assertEquals("", overlaid.extraFields.first { it.key == "exif:Model" }.value)
     }
 
     @Test
-    fun clearingAPdfFieldStillWritesTheEmptyValue() {
+    fun pdfUpdateConvertsDatesAndSkipsAbsentFields() {
         val draft = DocumentMetadataDraft(
             fileName = "report",
             extension = "pdf",
-            title = "",
-            author = "",
+            fields = listOf(
+                MetadataField(MetadataKeys.TITLE, "Title"),
+                MetadataField(MetadataKeys.CREATION_DATE, "2026-01-02T03:04:05"),
+            ),
         )
 
-        val values = draft.pdfMetadata(utc)
+        val update = draft.pdfUpdate(utc)
 
-        assertEquals("", values["info:Title"])
-        assertEquals("", values["info:Author"])
+        assertEquals("Title", update.info["Title"])
+        assertEquals("D:20260102030405", update.info["CreationDate"])
+        assertEquals("Title", update.xmp["dc:title"])
+        assertEquals("2026-01-02T03:04:05", update.xmp["xmp:CreateDate"])
+        assertFalse(update.info.containsKey("Author"))
+    }
+
+    @Test
+    fun clearingAPdfFieldWritesNullSoThePropertyIsRemoved() {
+        val draft = DocumentMetadataDraft(
+            fileName = "report",
+            extension = "pdf",
+            fields = listOf(
+                MetadataField(MetadataKeys.TITLE, ""),
+                MetadataField(MetadataKeys.AUTHOR, ""),
+            ),
+        )
+
+        val update = draft.pdfUpdate(utc)
+
+        assertTrue(update.info.containsKey("Title"))
+        assertNull(update.info["Title"])
+        assertNull(update.info["Author"])
+        assertNull(update.xmp["dc:title"])
+        assertNull(update.xmp["dc:creator"])
+    }
+
+    @Test
+    fun extraPdfPropertiesKeepTheirSource() {
+        val draft = DocumentMetadataDraft(
+            fileName = "report",
+            extension = "pdf",
+            fields = listOf(
+                MetadataField("info:Company", "ACME"),
+                MetadataField("xmp:photoshop:City", "Haifa"),
+                MetadataField("xmp:xmp:Label", ""),
+                MetadataField("info:CustomDate", "2026-01-02T03:04:05", MetadataValueKind.DATE_TIME),
+            ),
+        )
+
+        val update = draft.pdfUpdate(utc)
+
+        assertEquals("ACME", update.info["Company"])
+        assertEquals("D:20260102030405", update.info["CustomDate"])
+        assertEquals("Haifa", update.xmp["photoshop:City"])
+        assertTrue(update.xmp.containsKey("xmp:Label"))
+        assertNull(update.xmp["xmp:Label"])
+        assertFalse(update.xmp.containsKey("Company"))
     }
 
     @Test
@@ -180,11 +290,20 @@ class DocumentMetadataTest {
         assertFalse(DocumentMetadataDraft("book", "p df").isValid)
         assertFalse(DocumentMetadataDraft("book", "toolongex").isValid)
         assertFalse(
-            DocumentMetadataDraft("book", "pdf", created = "yesterday").isValid,
+            DocumentMetadataDraft(
+                "book",
+                "pdf",
+                fields = listOf(MetadataField("info:Date", "yesterday", MetadataValueKind.DATE_TIME)),
+            ).isValid,
         )
         assertTrue(
-            DocumentMetadataDraft("book", "pdf", created = "").isValid,
+            DocumentMetadataDraft(
+                "book",
+                "pdf",
+                fields = listOf(MetadataField("info:Date", "", MetadataValueKind.DATE_TIME)),
+            ).isValid,
         )
+        assertFalse(DocumentMetadataDraft("book", "pdf", fileCreated = "yesterday").isValid)
     }
 
     @Test

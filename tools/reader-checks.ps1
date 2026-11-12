@@ -1081,9 +1081,10 @@ function Test-Metadata {
     Test-Check 'encryption details are not shown' (
         -not ($visibleText | Where-Object { $_ -match 'Encrypt|Password' })
     )
-    Test-Check 'absent metadata stays hidden' (
-        -not ($visibleText -contains 'Title') -and
-        -not ($visibleText -contains 'Author')
+    Test-Check 'empty standard slots are still offered' (
+        ($visibleText -contains 'Title') -and
+        ($visibleText -contains 'Author') -and
+        ($visibleText -contains 'Producer')
     )
 
     $dialogHeight = Get-DialogHeight $dialog

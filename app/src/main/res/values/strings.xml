@@ -50,7 +50,7 @@
     <string name="file_extension">Extension</string>
     <string name="file_extension_hint">Letters and digits only, up to 8.</string>
     <string name="file_name_required">Enter a file name.</string>
-    <string name="metadata_empty_hint">Clearing a value removes it from the document. Fields the document does not have stay hidden.</string>
+    <string name="metadata_empty_hint">All document properties are listed, including empty ones. Clearing a value removes it from the document when the format allows it; otherwise the empty value is stored beside the file.</string>
     <string name="metadata_applied">Metadata updated.</string>
     <string name="metadata_failed">Didn\'t update the metadata.</string>
 

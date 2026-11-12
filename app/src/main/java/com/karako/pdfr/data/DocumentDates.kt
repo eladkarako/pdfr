@@ -28,6 +28,14 @@ object DocumentDates {
     private const val PDF_READ_PATTERN = "yyyyMMddHHmmss"
     private const val PDF_WRITE_PATTERN = "'D:'yyyyMMddHHmmss"
 
+    private val flexiblePatterns = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd'T'HH:mm:ssXXX",
+        "yyyy-MM-dd'T'HH:mm:ss.SSSXXX",
+        "yyyy-MM-dd HH:mm:ss",
+        "yyyy:MM:dd HH:mm:ss",
+    )
+
     /**
      * Matches `D:YYYYMMDDHHmmSS`, any missing trailing components, and an
      * optional `Z` / `+HH'mm'` / `-HH'mm'` offset. Apostrophes around the
@@ -74,12 +82,35 @@ object DocumentDates {
         val millis = if (text.startsWith("D:", ignoreCase = true)) {
             parsePdfDate(text, timeZone)
         } else {
-            parseIso(text, timeZone)
+            parseFlexible(text, timeZone)
         }
         if (millis == null) return text
         val format = SimpleDateFormat(PDF_WRITE_PATTERN, Locale.US)
         format.timeZone = timeZone
         return format.format(Date(millis))
+    }
+
+    /**
+     * Accepts the shapes found in PDF, XMP and EXIF metadata and returns ISO.
+     * Values that are not recognised are returned trimmed, never discarded, so
+     * unusual producer output stays visible and editable.
+     */
+    fun normaliseFlexible(value: String?, timeZone: TimeZone = TimeZone.getDefault()): String? {
+        val text = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val millis = parseFlexible(text, timeZone) ?: return text
+        return formatIso(millis, timeZone)
+    }
+
+    /** Parses ISO, EXIF (`yyyy:MM:dd HH:mm:ss`) and PDF date strings. */
+    fun parseFlexible(value: String?, timeZone: TimeZone = TimeZone.getDefault()): Long? {
+        val text = value?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (text.startsWith("D:", ignoreCase = true)) {
+            return parsePdfDate(text, timeZone)
+        }
+        for (pattern in flexiblePatterns) {
+            parseExact(pattern, text, timeZone)?.let { return it }
+        }
+        return null
     }
 
     fun parsePdfDate(value: String, timeZone: TimeZone = TimeZone.getDefault()): Long? {

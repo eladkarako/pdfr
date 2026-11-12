@@ -9,8 +9,10 @@ import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.PDFPage
 import com.karako.pdfr.data.DocumentPasswordRequiredException
 import com.karako.pdfr.data.DocumentWrongPasswordException
+import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
+import com.karako.pdfr.data.PdfMetadata
 import com.karako.pdfr.data.Qpdf
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -299,6 +301,87 @@ class MuPdfDocumentInstrumentedTest {
             val info = onMuPdf { clearedDoc.info() }
             assertNull(info.title)
             assertEquals("Edited author", info.author)
+        } finally {
+            close(clearedDoc)
+        }
+    }
+
+    @Test
+    fun pdfMetadataReadsAndWritesInfoAndXmp() {
+        val source = pdf("metadata-xmp-source.pdf", 1)
+        val edited = File(dir, "metadata-xmp-edited.pdf")
+
+        assertTrue(
+            onMuPdf {
+                MuPdfDocument.savePdfCopy(
+                    source = source,
+                    password = null,
+                    destination = edited,
+                    pageIndices = null,
+                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    metadataUpdate = PdfMetadata.Update(
+                        info = mapOf(
+                            "Title" to "Info title",
+                            "Company" to "ACME",
+                            "CreationDate" to "D:20260102030405",
+                        ),
+                        xmp = mapOf(
+                            "dc:title" to "XMP title",
+                            "xmp:Label" to "Green",
+                            "xmp:CreateDate" to "2026-01-02T03:04:05",
+                        ),
+                    ),
+                )
+            },
+        )
+
+        val doc = open(edited)
+        try {
+            val info = onMuPdf { doc.info() }
+            assertEquals("Info title", info.title)
+            assertEquals("ACME", info.pdfInfo["Company"])
+            assertEquals("Green", info.pdfXmp["xmp:Label"])
+            assertEquals("2026-01-02T03:04:05", info.pdfInfo["CreationDate"])
+            assertEquals("2026-01-02T03:04:05", info.created)
+
+            val draft = DocumentMetadataDraft.from(info)
+            assertEquals(
+                "ACME",
+                draft.fields.first { it.key == "info:Company" }.value,
+            )
+            assertEquals(
+                "Green",
+                draft.fields.first { it.key == "xmp:xmp:Label" }.value,
+            )
+        } finally {
+            close(doc)
+        }
+
+        // Clearing the slots must delete the entries, including the XMP
+        // property and the custom Info key.
+        val cleared = File(dir, "metadata-xmp-cleared.pdf")
+        assertTrue(
+            onMuPdf {
+                MuPdfDocument.savePdfCopy(
+                    source = edited,
+                    password = null,
+                    destination = cleared,
+                    pageIndices = null,
+                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    metadataUpdate = PdfMetadata.Update(
+                        info = mapOf("Title" to null, "Company" to null),
+                        xmp = mapOf("dc:title" to null, "xmp:Label" to null),
+                    ),
+                )
+            },
+        )
+
+        val clearedDoc = open(cleared)
+        try {
+            val info = onMuPdf { clearedDoc.info() }
+            assertNull(info.title)
+            assertNull(info.pdfInfo["Company"])
+            assertNull(info.pdfXmp["xmp:Label"])
         } finally {
             close(clearedDoc)
         }

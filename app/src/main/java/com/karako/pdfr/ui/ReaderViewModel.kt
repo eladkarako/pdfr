@@ -752,11 +752,11 @@ class ReaderViewModel(
     /**
      * Writes the dialog's draft to the cached document and reloads it.
      *
-     * PDFs get their Info dictionary rewritten by MuPDF (and are saved without
-     * encryption, even if the source was encrypted). Other formats store the
-     * values in a sidecar beside the cache file, because MuPDF cannot rewrite
-     * EPUB, images or plain text in place. Either way the display name and
-     * timestamp become the ones Save as and Share use.
+     * PDFs get their Info dictionary and XMP stream rewritten (and are saved
+     * without encryption, even if the source was encrypted). Other formats
+     * store the values in a sidecar beside the cache file, because MuPDF
+     * cannot rewrite EPUB, images or plain text in place. Either way the
+     * display name and timestamps become the ones Save as and Share use.
      */
     fun applyInfoEdit() {
         val ready = _state.value as? ReaderState.Ready ?: return
@@ -781,6 +781,7 @@ class ReaderViewModel(
                         DocumentStore.derivedFile(app, "metadata.pdf")
                     }
                     output = target
+                    val metadataChanged = draft.documentChanged(ready.info)
                     val saved = withContext(MuPdf.dispatcher) {
                         MuPdfDocument.savePdfCopy(
                             source = ready.file,
@@ -788,7 +789,7 @@ class ReaderViewModel(
                             destination = target,
                             pageIndices = null,
                             options = MuPdfDocument.PDF_COMPACT_OPTIONS,
-                            metadata = draft.pdfMetadata(),
+                            metadataUpdate = if (metadataChanged) draft.pdfUpdate() else null,
                         )
                     }
                     if (!saved) {

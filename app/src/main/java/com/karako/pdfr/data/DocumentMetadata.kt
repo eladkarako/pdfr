@@ -1,33 +1,24 @@
 package com.karako.pdfr.data
 
-import com.artifex.mupdf.fitz.Document
 import java.util.TimeZone
 
 /**
  * The editable view of [DocumentInfo] used by the info dialog.
  *
- * Only metadata that already exists is carried in a non-null field, so the
- * dialog can render exactly those values and never invent new properties.
- * Editing a value to an empty string means "remove the value"; fields that
- * were absent stay absent.
+ * [fields] is ordered exactly as the dialog shows it: the standard slots for
+ * the format, then every additional property found in the file. Empty values
+ * are kept, so a missing property still gets an editable slot; applying an
+ * empty value removes it where the format supports removal.
  *
- * [fileModified] is the cached file's timestamp (seeded from the original
- * file whenever the provider exposed one). It is not a document property, but
- * it is editable here because Save as and Share use it.
+ * [fileCreated] and [fileModified] are filesystem timestamps, not document
+ * properties. They are editable because Save as and Share use them.
  */
 data class DocumentMetadataDraft(
     val fileName: String,
     val extension: String,
     val fileCreated: String? = null,
     val fileModified: String? = null,
-    val title: String? = null,
-    val author: String? = null,
-    val subject: String? = null,
-    val keywords: String? = null,
-    val creator: String? = null,
-    val producer: String? = null,
-    val created: String? = null,
-    val modified: String? = null,
+    val fields: List<MetadataField> = emptyList(),
 ) {
 
     val displayName: String get() = combineName(fileName, extension)
@@ -37,12 +28,28 @@ data class DocumentMetadataDraft(
     val extensionValid: Boolean get() = extensionPattern.matches(extension.trim())
 
     val hasValidDates: Boolean
-        get() = listOf(fileCreated, fileModified, created, modified).all { value ->
+        get() = listOf(fileCreated, fileModified).all { value ->
             value.isNullOrBlank() || DocumentDates.parseIso(value) != null
+        } && fields.all { field ->
+            field.kind != MetadataValueKind.DATE_TIME ||
+                field.value.isBlank() ||
+                DocumentDates.parseFlexible(field.value) != null
         }
 
     val isValid: Boolean
         get() = fileNameValid && extensionValid && hasValidDates
+
+    fun value(key: String): String? =
+        fields.firstOrNull { it.key == key }?.value?.takeIf { it.isNotBlank() }
+
+    val title: String? get() = value(MetadataKeys.TITLE)
+    val author: String? get() = value(MetadataKeys.AUTHOR)
+    val subject: String? get() = value(MetadataKeys.SUBJECT)
+    val keywords: String? get() = value(MetadataKeys.KEYWORDS)
+    val creator: String? get() = value(MetadataKeys.CREATOR)
+    val producer: String? get() = value(MetadataKeys.PRODUCER)
+    val created: String? get() = value(MetadataKeys.CREATION_DATE)
+    val modified: String? get() = value(MetadataKeys.MODIFIED_DATE)
 
     fun fileCreatedMillis(timeZone: TimeZone = TimeZone.getDefault()): Long? =
         DocumentDates.parseIso(fileCreated, timeZone)
@@ -62,46 +69,89 @@ data class DocumentMetadataDraft(
         return values
     }
 
-    /** Metadata keys understood by MuPDF's `Document.setMetaData`. */
-    fun pdfMetadata(timeZone: TimeZone = TimeZone.getDefault()): Map<String, String> {
-        val values = linkedMapOf<String, String>()
-        title?.let { values[Document.META_INFO_TITLE] = it }
-        author?.let { values[Document.META_INFO_AUTHOR] = it }
-        subject?.let { values[Document.META_INFO_SUBJECT] = it }
-        keywords?.let { values[Document.META_INFO_KEYWORDS] = it }
-        creator?.let { values[Document.META_INFO_CREATOR] = it }
-        producer?.let { values[Document.META_INFO_PRODUCER] = it }
-        created?.let {
-            values[Document.META_INFO_CREATIONDATE] = DocumentDates.toPdfDate(it, timeZone) ?: it
+    /** True when the document properties differ from what was read. */
+    fun documentChanged(info: DocumentInfo): Boolean =
+        fields != MetadataSchema.fields(info)
+
+    /**
+     * The Info and XMP values to write for a PDF. Standard slots update both
+     * dictionaries; `info:` and `xmp:` entries update only their source.
+     */
+    fun pdfUpdate(timeZone: TimeZone = TimeZone.getDefault()): PdfMetadata.Update {
+        val info = linkedMapOf<String, String?>()
+        val xmp = linkedMapOf<String, String?>()
+
+        fields.forEach { field ->
+            when {
+                MetadataKeys.isStandard(field.key) -> {
+                    val standard = PdfMetadataInfo.STANDARD
+                        .firstOrNull { it.key == field.key }
+                        ?: return@forEach
+                    val value = field.value.trim().takeIf { it.isNotEmpty() }
+                    info[standard.infoKey] = if (standard.isDate) {
+                        value?.let { DocumentDates.toPdfDate(it, timeZone) ?: it }
+                    } else {
+                        value
+                    }
+                    xmp[standard.xmpKey] = if (standard.isDate) {
+                        value?.let { DocumentDates.normaliseFlexible(it, timeZone) ?: it }
+                    } else {
+                        value
+                    }
+                }
+
+                field.key.startsWith(MetadataKeys.INFO_PREFIX) -> {
+                    val key = field.key.removePrefix(MetadataKeys.INFO_PREFIX)
+                    val value = field.value.trim().takeIf { it.isNotEmpty() }
+                    info[key] = if (field.kind == MetadataValueKind.DATE_TIME) {
+                        value?.let { DocumentDates.toPdfDate(it, timeZone) ?: it }
+                    } else {
+                        value
+                    }
+                }
+
+                field.key.startsWith(MetadataKeys.XMP_PREFIX) -> {
+                    val key = field.key.removePrefix(MetadataKeys.XMP_PREFIX)
+                    val value = field.value.trim().takeIf { it.isNotEmpty() }
+                    xmp[key] = if (field.kind == MetadataValueKind.DATE_TIME) {
+                        value?.let { DocumentDates.normaliseFlexible(it, timeZone) ?: it }
+                    } else {
+                        value
+                    }
+                }
+            }
         }
-        modified?.let {
-            values[Document.META_INFO_MODIFICATIONDATE] =
-                DocumentDates.toPdfDate(it, timeZone) ?: it
-        }
-        return values
+        return PdfMetadata.Update(info, xmp)
     }
 
     /**
-     * Values stored beside a non-PDF document. A key is present for every
-     * editable field the document already had; an empty value therefore
-     * overrides the file's own metadata with "removed" when it is read back.
+     * Values stored beside a non-PDF document. Standard keys keep the sidecar
+     * names used by older versions; every other field is stored under
+     * [EXTRA_FIELD_PREFIX] so its source and key survive a round trip.
      */
     fun sidecarValues(timeZone: TimeZone = TimeZone.getDefault()): Map<String, String> {
         val values = linkedMapOf<String, String>()
         values[KEY_DISPLAY_NAME] = displayName
-        fileCreated?.let { values[KEY_FILE_CREATED] = it }
-        fileModified?.let { values[KEY_FILE_MODIFIED] = it }
-        title?.let { values[KEY_TITLE] = it }
-        author?.let { values[KEY_AUTHOR] = it }
-        subject?.let { values[KEY_SUBJECT] = it }
-        keywords?.let { values[KEY_KEYWORDS] = it }
-        creator?.let { values[KEY_CREATOR] = it }
-        producer?.let { values[KEY_PRODUCER] = it }
-        created?.let {
-            values[KEY_CREATED] = DocumentDates.normalise(it, timeZone) ?: it
-        }
-        modified?.let {
-            values[KEY_MODIFIED] = DocumentDates.normalise(it, timeZone) ?: it
+        fileTimestampValues().forEach { (key, value) -> values[key] = value }
+
+        fields.forEach { field ->
+            val sidecarKey = standardSidecarKey(field.key)
+            if (sidecarKey != null) {
+                values[sidecarKey] = when (field.kind) {
+                    MetadataValueKind.DATE_TIME ->
+                        DocumentDates.normaliseFlexible(field.value, timeZone) ?: field.value
+
+                    MetadataValueKind.TEXT -> field.value
+                }
+            } else if (
+                field.key.startsWith(MetadataKeys.INFO_PREFIX) ||
+                field.key.startsWith(MetadataKeys.XMP_PREFIX) ||
+                field.key.startsWith(MetadataKeys.EXIF_PREFIX) ||
+                field.key.startsWith(MetadataKeys.PNG_PREFIX) ||
+                field.key.startsWith(MetadataKeys.GENERIC_PREFIX)
+            ) {
+                values[EXTRA_FIELD_PREFIX + field.key] = field.value
+            }
         }
         return values
     }
@@ -119,6 +169,9 @@ data class DocumentMetadataDraft(
         const val KEY_PRODUCER = "producer"
         const val KEY_CREATED = "created"
         const val KEY_MODIFIED = "modified"
+
+        /** Prefix for extra, format-specific fields in the sidecar. */
+        const val EXTRA_FIELD_PREFIX = "field:"
 
         private val extensionPattern = Regex("[A-Za-z0-9]{0,8}")
 
@@ -139,14 +192,7 @@ data class DocumentMetadataDraft(
                 fileModified = modifiedMillis
                     ?.takeIf { it > 0L }
                     ?.let { DocumentDates.formatIso(it, timeZone) },
-                title = info.title,
-                author = info.author,
-                subject = info.subject,
-                keywords = info.keywords,
-                creator = info.creator,
-                producer = info.producer,
-                created = info.created,
-                modified = info.modified,
+                fields = MetadataSchema.fields(info),
             )
         }
 
@@ -183,7 +229,7 @@ data class DocumentMetadataDraft(
 
             fun date(key: String, fallback: String?): String? =
                 if (values.containsKey(key)) {
-                    DocumentDates.normalise(values[key], timeZone)
+                    DocumentDates.normaliseFlexible(values[key], timeZone)
                 } else {
                     fallback
                 }
@@ -200,7 +246,7 @@ data class DocumentMetadataDraft(
                 info.fileCreated
             }
 
-            return info.copy(
+            val overlaid = info.copy(
                 fileName = text(KEY_DISPLAY_NAME, info.fileName) ?: info.fileName,
                 fileCreated = createdMillis,
                 fileModified = modifiedMillis,
@@ -213,6 +259,33 @@ data class DocumentMetadataDraft(
                 created = date(KEY_CREATED, info.created),
                 modified = date(KEY_MODIFIED, info.modified),
             )
+
+            // PDF properties are edited in the PDF itself, never in a sidecar.
+            if (overlaid.isPdf) return overlaid
+
+            val extras = overlaid.extraFields.toMutableList()
+            values.forEach { (key, value) ->
+                if (!key.startsWith(EXTRA_FIELD_PREFIX)) return@forEach
+                val fieldKey = key.removePrefix(EXTRA_FIELD_PREFIX)
+                val index = extras.indexOfFirst { it.key == fieldKey }
+                val existingKind = if (index >= 0) extras[index].kind else null
+                val kind = existingKind ?: MetadataSchema.kindFor(fieldKey, value, timeZone)
+                val field = MetadataField(fieldKey, value, kind)
+                if (index >= 0) extras[index] = field else extras += field
+            }
+            return overlaid.copy(extraFields = extras)
+        }
+
+        private fun standardSidecarKey(key: String): String? = when (key) {
+            MetadataKeys.TITLE -> KEY_TITLE
+            MetadataKeys.AUTHOR -> KEY_AUTHOR
+            MetadataKeys.SUBJECT -> KEY_SUBJECT
+            MetadataKeys.KEYWORDS -> KEY_KEYWORDS
+            MetadataKeys.CREATOR -> KEY_CREATOR
+            MetadataKeys.PRODUCER -> KEY_PRODUCER
+            MetadataKeys.CREATION_DATE -> KEY_CREATED
+            MetadataKeys.MODIFIED_DATE -> KEY_MODIFIED
+            else -> null
         }
     }
 }

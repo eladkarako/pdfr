@@ -42,6 +42,8 @@ import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentDates
 import com.karako.pdfr.data.DocumentInfo
 import com.karako.pdfr.data.DocumentMetadataDraft
+import com.karako.pdfr.data.MetadataKeys
+import com.karako.pdfr.data.MetadataValueKind
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -206,62 +208,30 @@ internal fun DocumentInfoDialog(
 
                     SectionHeader(stringResource(R.string.document_metadata))
 
-                    draft.created?.let { value ->
-                        DateTimeField(
-                            label = stringResource(R.string.metadata_created),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(created = it)) },
-                        )
-                    }
-                    draft.modified?.let { value ->
-                        DateTimeField(
-                            label = stringResource(R.string.metadata_modified),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(modified = it)) },
-                        )
-                    }
-
-                    draft.title?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_title),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(title = it)) },
-                        )
-                    }
-                    draft.author?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_author),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(author = it)) },
-                        )
-                    }
-                    draft.subject?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_subject),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(subject = it)) },
-                        )
-                    }
-                    draft.keywords?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_keywords),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(keywords = it)) },
-                        )
-                    }
-                    draft.creator?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_creator),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(creator = it)) },
-                        )
-                    }
-                    draft.producer?.let { value ->
-                        MetadataTextField(
-                            label = stringResource(R.string.metadata_producer),
-                            value = value,
-                            onChange = { onDraftChange(draft.copy(producer = it)) },
-                        )
+                    draft.fields.forEach { field ->
+                        val label = metadataLabel(field.key)
+                        val onChange: (String) -> Unit = { value ->
+                            onDraftChange(
+                                draft.copy(
+                                    fields = draft.fields.map {
+                                        if (it.key == field.key) it.copy(value = value) else it
+                                    },
+                                ),
+                            )
+                        }
+                        if (field.kind == MetadataValueKind.DATE_TIME) {
+                            DateTimeField(
+                                label = label,
+                                value = field.value,
+                                onChange = onChange,
+                            )
+                        } else {
+                            MetadataTextField(
+                                label = label,
+                                value = field.value,
+                                onChange = onChange,
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(4.dp))
@@ -305,6 +275,36 @@ private fun ReadOnlyRow(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium,
         )
+    }
+}
+
+@Composable
+private fun metadataLabel(key: String): String = when (key) {
+    MetadataKeys.TITLE -> stringResource(R.string.metadata_title)
+    MetadataKeys.AUTHOR -> stringResource(R.string.metadata_author)
+    MetadataKeys.SUBJECT -> stringResource(R.string.metadata_subject)
+    MetadataKeys.KEYWORDS -> stringResource(R.string.metadata_keywords)
+    MetadataKeys.CREATOR -> stringResource(R.string.metadata_creator)
+    MetadataKeys.PRODUCER -> stringResource(R.string.metadata_producer)
+    MetadataKeys.CREATION_DATE -> stringResource(R.string.metadata_created)
+    MetadataKeys.MODIFIED_DATE -> stringResource(R.string.metadata_modified)
+    else -> when {
+        key.startsWith(MetadataKeys.INFO_PREFIX) ->
+            key.removePrefix(MetadataKeys.INFO_PREFIX) + " (Info)"
+
+        key.startsWith(MetadataKeys.XMP_PREFIX) ->
+            key.removePrefix(MetadataKeys.XMP_PREFIX) + " (XMP)"
+
+        key.startsWith(MetadataKeys.EXIF_PREFIX) ->
+            key.removePrefix(MetadataKeys.EXIF_PREFIX) + " (EXIF)"
+
+        key.startsWith(MetadataKeys.PNG_PREFIX) ->
+            key.removePrefix(MetadataKeys.PNG_PREFIX) + " (PNG)"
+
+        key.startsWith(MetadataKeys.GENERIC_PREFIX) ->
+            key.removePrefix(MetadataKeys.GENERIC_PREFIX)
+
+        else -> key
     }
 }
 
