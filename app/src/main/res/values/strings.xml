@@ -45,6 +45,32 @@
     <string name="metadata_producer">Producer</string>
     <string name="metadata_created">Created</string>
     <string name="metadata_modified">Modified</string>
+    <string name="metadata_make">Make</string>
+    <string name="metadata_model">Model</string>
+    <string name="metadata_lens_model">Lens model</string>
+    <string name="metadata_datetime_original">Date taken</string>
+    <string name="metadata_datetime">Date modified</string>
+    <string name="metadata_exposure_time">Exposure time</string>
+    <string name="metadata_f_number">F-number</string>
+    <string name="metadata_iso">ISO speed</string>
+    <string name="metadata_focal_length">Focal length</string>
+    <string name="metadata_orientation">Orientation</string>
+    <string name="metadata_image_width">Image width</string>
+    <string name="metadata_image_length">Image height</string>
+    <string name="metadata_x_resolution">X resolution</string>
+    <string name="metadata_y_resolution">Y resolution</string>
+    <string name="metadata_color_space">Colour space</string>
+    <string name="metadata_software">Software</string>
+    <string name="metadata_gps_latitude">GPS latitude</string>
+    <string name="metadata_gps_longitude">GPS longitude</string>
+    <string name="metadata_gps_altitude">GPS altitude</string>
+    <string name="metadata_caption">Caption / Abstract</string>
+    <string name="metadata_copyright">Copyright notice</string>
+    <string name="metadata_headline">Headline</string>
+    <string name="metadata_city">City</string>
+    <string name="metadata_country">Country</string>
+    <string name="metadata_rating">Rating</string>
+    <string name="metadata_icc_profile">ICC profile</string>
     <string name="file_created">File created</string>
     <string name="file_modified">File modified</string>
     <string name="file_extension">Extension</string>
@@ -52,6 +78,7 @@
     <string name="file_name_required">Enter a file name.</string>
     <string name="metadata_empty_hint">All document properties are listed, including empty ones. Clearing a value removes it from the document when the format allows it; otherwise the empty value is stored beside the file.</string>
     <string name="metadata_applied">Metadata updated.</string>
+    <string name="metadata_partially_applied">Metadata updated. Some values are kept beside the file because this format cannot store them.</string>
     <string name="metadata_failed">Didn\'t update the metadata.</string>
 
     <string name="apply">Apply</string>
@@ -165,12 +192,6 @@
     <string name="fix_pdf_done">Created a fixed PDF.</string>
     <string name="fix_pdf_unavailable">qpdf is not available in this build.</string>
     <string name="fix_pdf_only_pdf">Only PDF files can be fixed.</string>
-
-    <string name="compact">Compact…</string>
-    <string name="compact_title">Compact PDF</string>
-    <string name="compact_body">Rewrites the PDF with unused objects removed and streams, fonts and images compressed. The compact copy usually opens faster and takes less space. MuPDF 1.28 cannot linearize, so use Linearize for that.</string>
-    <string name="compact_apply">Create copy</string>
-    <string name="compact_done">Created a compact PDF.</string>
 
     <string name="rewrite_failed">Couldn’t create the new PDF.</string>
     <string name="working">Working…</string>

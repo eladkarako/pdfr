@@ -13,6 +13,7 @@ import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.DocumentPasswordRequiredException
 import com.karako.pdfr.data.DocumentStore
 import com.karako.pdfr.data.DocumentWrongPasswordException
+import com.karako.pdfr.data.ImageMetadata
 import com.karako.pdfr.data.MetadataSidecar
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
@@ -777,6 +778,7 @@ class ReaderViewModel(
 
         viewModelScope.launch {
             var output: File? = null
+            var partial = false
             try {
                 if (ready.info.isPdf) {
                     val target = withContext(Dispatchers.IO) {
@@ -821,6 +823,35 @@ class ReaderViewModel(
 
                     output = null // the reader now owns the rewritten file
                     MuPdf.execute { DocumentStore.discard(ready.file) }
+                } else if (ready.info.isImage) {
+                    val changed = draft.changedFields(ready.info)
+                    val result = withContext(Dispatchers.IO) {
+                        val written = ImageMetadata.write(ready.file, changed)
+                        // Values the image format cannot store (IPTC, the ICC
+                        // description, HEIC metadata) stay beside the file,
+                        // exactly like other non-PDF formats.
+                        if (written.supported && written.complete) {
+                            MetadataSidecar.write(ready.file, draft.identityValues())
+                        } else {
+                            MetadataSidecar.write(ready.file, draft.sidecarValues())
+                        }
+                        modified?.takeIf { it > 0L }?.let { ready.file.setLastModified(it) }
+                        written
+                    }
+                    partial = !result.complete
+                    val replaced = load(
+                        file = ready.file,
+                        displayName = targetName,
+                        mimeType = mime,
+                        password = password,
+                        startPage = currentPage,
+                        preservePrevious = true,
+                        lastModified = modified,
+                    )
+                    if (!replaced) {
+                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        return@launch
+                    }
                 } else {
                     withContext(Dispatchers.IO) {
                         MetadataSidecar.write(ready.file, draft.sidecarValues())
@@ -842,7 +873,11 @@ class ReaderViewModel(
                 }
 
                 _infoDraft.value = null
-                _messages.tryEmit(app.getString(R.string.metadata_applied))
+                _messages.tryEmit(
+                    app.getString(
+                        if (partial) R.string.metadata_partially_applied else R.string.metadata_applied,
+                    ),
+                )
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {

@@ -123,12 +123,16 @@ intact wherever the target provider allows its timestamp to be updated.
 - 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
   decrypted copy is written when merely reading; any rewrite saves its
   replacement without encryption.
-- ℹ️ **Metadata editor**: the circled **i** opens the filename, extension and the
-  title/author/subject/keywords/creator/producer/date fields the document
-  already has. Dates are shown as `yyyy-MM-ddThh:mm:ss` and can be typed or
-  picked. Edits stay in a draft while the dialog is dismissed; **Apply** writes
-  them into the PDF (or a sidecar for other formats) and reloads. Clearing a
-  field removes its value.
+- ℹ️ **Metadata editor**: the circled **i** opens the filename, extension, file
+  created/modified timestamps and the document metadata the file already has.
+  PDFs list every Info and XMP property; images list an ordered EXIF/XMP set
+  (camera, lens, exposure, GPS, caption, keywords, creator, rights, rating,
+  ICC profile) followed by any other EXIF, IPTC, PNG or XMP entries. Dates are
+  shown as `yyyy-MM-ddThh:mm:ss` and can be typed or picked. Edits stay in a
+  draft while the dialog is dismissed; **Apply** writes them into the file (or
+  a sidecar for formats that cannot store them) and reloads. Clearing a field
+  removes its value. JPEG, PNG and WebP metadata is written in place; HEIC,
+  IPTC and ICC edits are read-only and stay beside the file.
 - 📤 **Share** and 💾 **Save as** use the edited display name and timestamp, and
   PDF metadata changes are part of the bytes they copy.
 - 🚪 **Exit** is always the last overflow entry, above a divider: it removes the

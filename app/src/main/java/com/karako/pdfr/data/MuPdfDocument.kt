@@ -293,6 +293,9 @@ class MuPdfDocument private constructor(
         val pageCount = runCatching { document.countPages() }.getOrDefault(0)
         val kind = kindOf(format, file.name)
         val pdfMetadata = if (kind == "PDF") PdfMetadata.read(document) else null
+        val isImage = kind != "PDF" &&
+            (DocumentFormats.isImageName(file.name) || DocumentFormats.isImageKind(kind))
+        val imageFields = if (isImage) ImageMetadata.read(file) else emptyList()
 
         DocumentInfo(
             fileName = displayName,
@@ -314,6 +317,7 @@ class MuPdfDocument private constructor(
             fileCreated = FileTimes.created(file),
             pdfInfo = pdfMetadata?.info ?: emptyMap(),
             pdfXmp = pdfMetadata?.xmp ?: emptyMap(),
+            extraFields = imageFields,
         )
     }
 

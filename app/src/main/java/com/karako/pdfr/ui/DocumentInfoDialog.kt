@@ -288,6 +288,34 @@ private fun metadataLabel(key: String): String = when (key) {
     MetadataKeys.PRODUCER -> stringResource(R.string.metadata_producer)
     MetadataKeys.CREATION_DATE -> stringResource(R.string.metadata_created)
     MetadataKeys.MODIFIED_DATE -> stringResource(R.string.metadata_modified)
+    MetadataKeys.EXIF_PREFIX + "Make" -> stringResource(R.string.metadata_make)
+    MetadataKeys.EXIF_PREFIX + "Model" -> stringResource(R.string.metadata_model)
+    MetadataKeys.EXIF_PREFIX + "LensModel" -> stringResource(R.string.metadata_lens_model)
+    MetadataKeys.EXIF_PREFIX + "DateTimeOriginal" -> stringResource(R.string.metadata_datetime_original)
+    MetadataKeys.EXIF_PREFIX + "DateTime" -> stringResource(R.string.metadata_datetime)
+    MetadataKeys.EXIF_PREFIX + "ExposureTime" -> stringResource(R.string.metadata_exposure_time)
+    MetadataKeys.EXIF_PREFIX + "FNumber" -> stringResource(R.string.metadata_f_number)
+    MetadataKeys.EXIF_PREFIX + "ISOSpeedRatings" -> stringResource(R.string.metadata_iso)
+    MetadataKeys.EXIF_PREFIX + "FocalLength" -> stringResource(R.string.metadata_focal_length)
+    MetadataKeys.EXIF_PREFIX + "Orientation" -> stringResource(R.string.metadata_orientation)
+    MetadataKeys.EXIF_PREFIX + "ImageWidth" -> stringResource(R.string.metadata_image_width)
+    MetadataKeys.EXIF_PREFIX + "ImageLength" -> stringResource(R.string.metadata_image_length)
+    MetadataKeys.EXIF_PREFIX + "XResolution" -> stringResource(R.string.metadata_x_resolution)
+    MetadataKeys.EXIF_PREFIX + "YResolution" -> stringResource(R.string.metadata_y_resolution)
+    MetadataKeys.EXIF_PREFIX + "ColorSpace" -> stringResource(R.string.metadata_color_space)
+    MetadataKeys.EXIF_PREFIX + "Software" -> stringResource(R.string.metadata_software)
+    MetadataKeys.EXIF_PREFIX + "GPSLatitude" -> stringResource(R.string.metadata_gps_latitude)
+    MetadataKeys.EXIF_PREFIX + "GPSLongitude" -> stringResource(R.string.metadata_gps_longitude)
+    MetadataKeys.EXIF_PREFIX + "GPSAltitude" -> stringResource(R.string.metadata_gps_altitude)
+    MetadataKeys.XMP_PREFIX + "dc:description" -> stringResource(R.string.metadata_caption)
+    MetadataKeys.XMP_PREFIX + "dc:subject" -> stringResource(R.string.metadata_keywords)
+    MetadataKeys.XMP_PREFIX + "dc:creator" -> stringResource(R.string.metadata_creator)
+    MetadataKeys.XMP_PREFIX + "dc:rights" -> stringResource(R.string.metadata_copyright)
+    MetadataKeys.XMP_PREFIX + "photoshop:Headline" -> stringResource(R.string.metadata_headline)
+    MetadataKeys.XMP_PREFIX + "photoshop:City" -> stringResource(R.string.metadata_city)
+    MetadataKeys.XMP_PREFIX + "photoshop:Country" -> stringResource(R.string.metadata_country)
+    MetadataKeys.XMP_PREFIX + "xmp:Rating" -> stringResource(R.string.metadata_rating)
+    MetadataKeys.ICC_PREFIX + "profile" -> stringResource(R.string.metadata_icc_profile)
     else -> when {
         key.startsWith(MetadataKeys.INFO_PREFIX) ->
             key.removePrefix(MetadataKeys.INFO_PREFIX) + " (Info)"
@@ -300,6 +328,12 @@ private fun metadataLabel(key: String): String = when (key) {
 
         key.startsWith(MetadataKeys.PNG_PREFIX) ->
             key.removePrefix(MetadataKeys.PNG_PREFIX) + " (PNG)"
+
+        key.startsWith(MetadataKeys.IPTC_PREFIX) ->
+            key.removePrefix(MetadataKeys.IPTC_PREFIX) + " (IPTC)"
+
+        key.startsWith(MetadataKeys.ICC_PREFIX) ->
+            key.removePrefix(MetadataKeys.ICC_PREFIX) + " (ICC)"
 
         key.startsWith(MetadataKeys.GENERIC_PREFIX) ->
             key.removePrefix(MetadataKeys.GENERIC_PREFIX)

@@ -24,6 +24,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 |------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `TestPdfWriter.kt`                 | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`.                                                                                                                                                                  |
 | `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/normalizes/fixes, edits PDF metadata, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
+| `ImageMetadataInstrumentedTest.kt` | Reads and writes JPEG/PNG/WebP metadata through the real Android `ExifInterface`, checks XMP/IPTC/ICC fallbacks and sidecar behaviour, and verifies that unsupported formats stay read-only. |
 
 ## What is covered
 
