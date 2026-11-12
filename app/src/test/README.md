@@ -22,6 +22,8 @@ native MuPDF library.
 | `TextSettingsTest`     | Plain-text size limits: 5-40 pt range, 12 pt default, clamping out-of-range values and repairing an invalid stored size.                                                                                                                                                         |
 | `TextPaginationTest`   | Line-to-page grouping for paged plain text: exact fits, tall and zero-height lines, the empty/unmeasured fallbacks, and every line covered exactly once.                                                                                                                         |
 | `DocumentMetadataTest` | Filename/extension splitting, draft validation, PDF metadata keys and date conversion, sidecar overlays (including cleared values), and sidecar round-trips.                                                                                                                     |
+| `ImageMetadataFormatsTest` | PNG text/physical/time chunks, IPTC datasets, ICC description parsing and XMP read/update round-trips, including clearing values.                                                                                                                                            |
+| `NormalizeOptionsTest` | Defaults, the all-off guard, JPEG-quality validation and apply enablement for the Normalize dialog.                                                                                                                                                                              |
 
 Reports are written to
 `build/app/reports/tests/testDebugUnitTest/index.html`.

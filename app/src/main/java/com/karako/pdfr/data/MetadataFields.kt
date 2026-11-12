@@ -33,6 +33,8 @@ object MetadataKeys {
     const val XMP_PREFIX = "xmp:"
     const val EXIF_PREFIX = "exif:"
     const val PNG_PREFIX = "png:"
+    const val IPTC_PREFIX = "iptc:"
+    const val ICC_PREFIX = "icc:"
     const val GENERIC_PREFIX = "meta:"
 
     val STANDARD_PDF = listOf(
@@ -66,6 +68,8 @@ object MetadataSchema {
 
         if (info.isPdf) {
             pdfFields(info).forEach(fields::add)
+        } else if (info.isImage) {
+            imageFields(info).forEach(fields::add)
         } else {
             standardFields(info).forEach(fields::add)
             info.extraFields.forEach { field ->
@@ -107,6 +111,17 @@ object MetadataSchema {
             MetadataValueKind.DATE_TIME,
         ),
     )
+
+    private fun imageFields(info: DocumentInfo): List<MetadataField> {
+        val existing = info.extraFields.associateBy { it.key }
+        val fields = ImageMetadata.SLOTS.map { slot ->
+            existing[slot.key] ?: MetadataField(slot.key, "", slot.kind)
+        }.toMutableList()
+        info.extraFields
+            .filter { field -> ImageMetadata.SLOTS.none { it.key == field.key } }
+            .forEach(fields::add)
+        return fields
+    }
 
     private fun pdfFields(info: DocumentInfo): List<MetadataField> {
         val fields = mutableListOf<MetadataField>()

@@ -27,6 +27,7 @@ object DocumentDates {
 
     private const val PDF_READ_PATTERN = "yyyyMMddHHmmss"
     private const val PDF_WRITE_PATTERN = "'D:'yyyyMMddHHmmss"
+    private const val EXIF_WRITE_PATTERN = "yyyy:MM:dd HH:mm:ss"
 
     private val flexiblePatterns = listOf(
         "yyyy-MM-dd'T'HH:mm:ss",
@@ -86,6 +87,19 @@ object DocumentDates {
         }
         if (millis == null) return text
         val format = SimpleDateFormat(PDF_WRITE_PATTERN, Locale.US)
+        format.timeZone = timeZone
+        return format.format(Date(millis))
+    }
+
+    /**
+     * Converts an editor value to EXIF's `yyyy:MM:dd HH:mm:ss` shape. Values
+     * that cannot be parsed are returned trimmed so they stay visible.
+     */
+    fun toExifDate(value: String?, timeZone: TimeZone = TimeZone.getDefault()): String? {
+        val text = value?.trim() ?: return null
+        if (text.isEmpty()) return ""
+        val millis = parseFlexible(text, timeZone) ?: return text
+        val format = SimpleDateFormat(EXIF_WRITE_PATTERN, Locale.US)
         format.timeZone = timeZone
         return format.format(Date(millis))
     }

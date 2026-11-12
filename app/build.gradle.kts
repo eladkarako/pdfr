@@ -394,6 +394,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")                      // Material Design 3 UI
     implementation("androidx.compose.ui:ui")                                    // Jetpack Compose UI framework
     implementation("androidx.core:core-ktx:1.19.1")                             // AndroidX core libraries + Kotlin essentials
+    implementation("androidx.exifinterface:exifinterface:1.4.2")                // EXIF/XMP metadata for JPEG, PNG, WebP and HEIF
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")        // Lifecycle support
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.11.0")          // Lifecycle support
     implementation("com.artifex.mupdf:fitz:1.28.5")                             // MuPDF engine for PDF, EPUB, XPS, CBZ and text selection

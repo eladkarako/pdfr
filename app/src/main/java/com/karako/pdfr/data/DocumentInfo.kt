@@ -48,6 +48,14 @@ data class DocumentInfo(
     val isPdf: Boolean
         get() = kind.equals("PDF", ignoreCase = true) ||
                 format?.trim()?.uppercase()?.startsWith("PDF") == true
+
+    /** True for still images, which show their own EXIF/XMP/PNG slots. */
+    val isImage: Boolean
+        get() = !isPdf && (
+                DocumentFormats.isImageName(fileName) ||
+                        DocumentFormats.isImageKind(kind) ||
+                        DocumentFormats.isImageKind(format)
+                )
 }
 
 /** The document is encrypted and no password has been supplied yet. */

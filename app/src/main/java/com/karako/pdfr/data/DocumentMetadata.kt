@@ -73,6 +73,27 @@ data class DocumentMetadataDraft(
     fun documentChanged(info: DocumentInfo): Boolean =
         fields != MetadataSchema.fields(info)
 
+    /** Only the slots the reader actually changed, in dialog order. */
+    fun changedFields(info: DocumentInfo): List<MetadataField> {
+        val before = MetadataSchema.fields(info).associate { it.key to it.value }
+        return fields.filter { field ->
+            val old = before[field.key]
+            if (old == null) field.value.isNotBlank() else old != field.value
+        }
+    }
+
+    /**
+     * The display name and filesystem timestamps. Image metadata is written
+     * into the file itself, so the sidecar only needs these unless a value
+     * could not be written.
+     */
+    fun identityValues(): Map<String, String> {
+        val values = linkedMapOf<String, String>()
+        values[KEY_DISPLAY_NAME] = displayName
+        fileTimestampValues().forEach { (key, value) -> values[key] = value }
+        return values
+    }
+
     /**
      * The Info and XMP values to write for a PDF. Standard slots update both
      * dictionaries; `info:` and `xmp:` entries update only their source.
@@ -148,6 +169,8 @@ data class DocumentMetadataDraft(
                 field.key.startsWith(MetadataKeys.XMP_PREFIX) ||
                 field.key.startsWith(MetadataKeys.EXIF_PREFIX) ||
                 field.key.startsWith(MetadataKeys.PNG_PREFIX) ||
+                field.key.startsWith(MetadataKeys.IPTC_PREFIX) ||
+                field.key.startsWith(MetadataKeys.ICC_PREFIX) ||
                 field.key.startsWith(MetadataKeys.GENERIC_PREFIX)
             ) {
                 values[EXTRA_FIELD_PREFIX + field.key] = field.value

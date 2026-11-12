@@ -229,11 +229,40 @@ object DocumentFormats {
         "jbig2" to "image/x-jbig2",
     )
 
+    /**
+     * Suffixes handled as raster images. MuPDF reports its own names for
+     * these (`JPEG`, `PNG`, ...), while [DocumentInfo.isImage] also accepts the
+     * cache file's suffix so an image is recognised even when MuPDF's format
+     * string is unusual.
+     */
+    private val imageExtensions = setOf(
+        "bmp", "gif", "jpg", "jpeg", "jpe", "jfif", "png", "tif", "tiff",
+        "jp2", "jpx", "j2k", "pnm", "pbm", "pgm", "ppm", "pam", "pfm",
+        "psd", "jxr", "wdp", "hdp", "jb2", "jbig2", "webp", "heic", "heif",
+        "avif",
+    )
+
+    /** MuPDF format names that describe a still image. */
+    private val imageKinds = setOf(
+        "JPEG", "JPG", "PNG", "GIF", "BMP", "TIFF", "TIF", "JP2", "JPX",
+        "J2K", "PNM", "PBM", "PGM", "PPM", "PAM", "PFM", "PSD", "JXR",
+        "WDP", "HDP", "JBIG2", "WEBP", "HEIC", "HEIF", "AVIF",
+    )
+
     fun mimeTypeForName(name: String): String? {
         val extension = name.substringAfterLast('.', "").lowercase()
         return byExtension[extension]
             ?: TEXT.takeIf { extension in plainTextExtensions }
     }
+
+    fun isImageName(name: String): Boolean =
+        name.substringAfterLast('.', "").lowercase() in imageExtensions
+
+    fun isImageKind(kind: String?): Boolean = kind
+        ?.trim()
+        ?.uppercase()
+        ?.let { it in imageKinds || it.startsWith("JPEG") || it.startsWith("PNG") }
+        ?: false
 
     /** True for every suffix PDFr treats as reflowable plain text. */
     fun isPlainTextName(name: String): Boolean {
