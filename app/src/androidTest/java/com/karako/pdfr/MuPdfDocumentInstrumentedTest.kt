@@ -12,6 +12,7 @@ import com.karako.pdfr.data.DocumentWrongPasswordException
 import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
+import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PdfMetadata
 import com.karako.pdfr.data.Qpdf
 import kotlinx.coroutines.runBlocking
@@ -29,7 +30,7 @@ import java.io.File
 
 /**
  * Exercises the real native MuPDF library on the device: opening, layout,
- * rendering, text selection, and the reorder/rotate/compact/linearize rewrites.
+ * rendering, text selection, and the reorder/rotate/normalize rewrites.
  *
  * All MuPDF work is dispatched to [MuPdf.dispatcher], exactly like the app.
  */
@@ -200,7 +201,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = target,
                     pageIndices = intArrayOf(2, 0, 0, 3),
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
             },
         )
@@ -221,9 +222,9 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun compactKeepsAllPages() {
-        val source = pdf("compact-source.pdf", 5)
-        val target = File(dir, "compact.pdf")
+    fun rewriteKeepsAllPages() {
+        val source = pdf("rewrite-source.pdf", 5)
+        val target = File(dir, "rewrite.pdf")
 
         assertTrue(
             onMuPdf {
@@ -232,7 +233,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = target,
                     pageIndices = null,
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
             },
         )
@@ -259,7 +260,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = edited,
                     pageIndices = null,
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                     metadata = mapOf(
                         Document.META_INFO_TITLE to "Edited title",
                         Document.META_INFO_AUTHOR to "Edited author",
@@ -290,7 +291,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = cleared,
                     pageIndices = null,
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                     metadata = mapOf(Document.META_INFO_TITLE to ""),
                 )
             },
@@ -318,7 +319,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = edited,
                     pageIndices = null,
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                     metadataUpdate = PdfMetadata.Update(
                         info = mapOf(
                             "Title" to "Info title",
@@ -367,7 +368,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = cleared,
                     pageIndices = null,
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                     metadataUpdate = PdfMetadata.Update(
                         info = mapOf("Title" to null, "Company" to null),
                         xmp = mapOf("dc:title" to null, "xmp:Label" to null),
@@ -400,7 +401,7 @@ class MuPdfDocumentInstrumentedTest {
                     destination = target,
                     pageIndices = null,
                     rotatePages = intArrayOf(0, 2),
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
             },
         )
@@ -412,13 +413,21 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun qpdfLinearizesPdf() {
-        val source = pdf("linearize-source.pdf", 3)
-        val target = File(dir, "linearized.pdf")
+    fun qpdfNormalizeCanLinearizeAndTagPdfA() {
+        val source = pdf("normalize-source.pdf", 3)
+        val target = File(dir, "normalized.pdf")
 
         assertTrue(Qpdf.isAvailable())
         val error = runBlocking(Qpdf.dispatcher) {
-            Qpdf.linearize(source, target, null)
+            Qpdf.normalize(
+                source = source,
+                destination = target,
+                password = null,
+                options = NormalizeOptions(
+                    linearize = true,
+                    pdfA = true,
+                ),
+            )
         }
         assertNull(error)
         assertTrue(target.length() > 0L)
@@ -427,6 +436,8 @@ class MuPdfDocumentInstrumentedTest {
         // /Linearized near the top of the file.
         val header = String(target.readBytes(), Charsets.ISO_8859_1)
         assertTrue(header.take(8192).contains("/Linearized"))
+        assertTrue(header.contains("/GTS_PDFA1"))
+        assertTrue(header.contains("pdfaid:part"))
 
         val doc = open(target)
         try {
@@ -475,7 +486,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = null,
                     destination = target,
                     pageIndices = intArrayOf(0, 3),
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
             },
         )
@@ -519,7 +530,7 @@ class MuPdfDocumentInstrumentedTest {
                     password = PASSWORD,
                     destination = rewritten,
                     pageIndices = intArrayOf(1),
-                    options = MuPdfDocument.PDF_COMPACT_OPTIONS,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
             },
         )

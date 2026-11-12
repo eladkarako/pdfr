@@ -185,7 +185,7 @@ function Show-Text {
 
 function Test-OverflowMenuOpen {
     $xml = Get-UiXml
-    $labels = '^(Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact)'
+    $labels = '^(Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Normalize)'
     return [bool]($xml.SelectNodes('//node') | Where-Object { $_.text -match $labels })
 }
 

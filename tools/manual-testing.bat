@@ -10,7 +10,7 @@ echo ============================================================
 echo   Device: %PDFR_AVD%     Fixtures: %PDFR_FIXTURES%
 echo.
 echo   1. Push generated fixtures to the emulator
-echo   2. Open sample.pdf (14 pages, reorder/rotate/linearize)
+echo   2. Open sample.pdf (14 pages, reorder/rotate/normalize)
 echo   3. Open dummy-encrypted.pdf (password: secret)
 echo   4. Open text: notes.txt, README.nfo or book.text
 echo   5. Open an EPUB, HTML or Gutenberg sample

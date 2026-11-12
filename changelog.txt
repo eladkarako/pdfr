@@ -1,3 +1,8 @@
+26.11.11
++ replaced **Linearize** and **Compact** with **Normalize**: a qpdf-driven dialog with individually selectable stream compression, decode-all/recompress-Flate, compression level 9, image optimisation with a 0-100 JPEG quality, newline-before-endstream, unreferenced-resource removal, inline-image externalisation, linearization and best-effort PDF/A-2b.
++ Normalize runs the selected transformations in a single qpdf pass, so decoding, image optimisation, compression and linearization feed each other without intermediate PDFs.
++ PDF/A-2b adds the XMP identification, an sRGB output intent with an embedded ICC profile, PDF 1.7 and an unencrypted output; fonts and content are left untouched, so it is labelled best effort.
+
 26.11.10
 + added **Fix PDF** to the overflow menu: qpdf's fix-qdf repair cycle now runs entirely through the bundled native library (write QDF, repair stream lengths and the cross-reference table, rewrite as a normal PDF). The repaired `... (fixed).pdf` replaces the current document.
 + **Fix PDF** appears only when the open document is a PDF, or when nothing is open. With no document it opens the picker first and repairs the chosen PDF as soon as it loads; non-PDF documents are reported instead.

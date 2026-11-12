@@ -81,21 +81,20 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
    deleted, so the result keeps only page 1-3, 7, 9-14 and then page 3 again.
 6. **Rotate 180°** - overflow -> Rotate 180° -> keep `1-e` to turn every page
    upside down, or enter `2,4` to rotate only those pages.
-7. **Linearize** - overflow -> Linearize -> qpdf writes
-   `... (linearized).pdf`. The first 8 KiB of the file should contain
-   `/Linearized`; the new copy opens with the same page count.
+7. **Normalize** - overflow -> Normalize -> choose options and apply. qpdf
+   writes `... (normalized).pdf`; the new copy opens with the same page count.
+   With **Linearize** selected the first 8 KiB of the file should contain
+   `/Linearized`; with **PDF/A-2b** selected it should contain `/GTS_PDFA1`
+   and `pdfaid:part`. Try a run with image optimisation and JPEG quality 70 to
+   confirm the images still render.
 8. **Fix PDF** - overflow -> Fix PDF -> qpdf writes `... (fixed).pdf` and opens
    it with the same content. With no document open, the overflow menu offers
    only **Fix PDF**; choosing it opens the picker and repairs the selected PDF
    as soon as it loads. The entry is absent for plain text, EPUB, images and
    other non-PDF documents.
-9. **Compact** - overflow -> Compact -> MuPDF writes
-   `... (compact).pdf` with unused objects removed and streams, fonts and
-   images compressed. This is separate from Linearize because MuPDF 1.28 cannot
-   linearize.
-10. **Encrypted PDF** - open `dummy-encrypted.pdf`, password `secret`. Reorder,
-    rotate, linearize, fix or compact it; the replacement opens without a password.
-11. **TXT reading** - open `notes.txt`, `README.nfo` or `book.text`. The custom
+9. **Encrypted PDF** - open `dummy-encrypted.pdf`, password `secret`. Reorder,
+   rotate, normalize or fix it; the replacement opens without a password.
+10. **TXT reading** - open `notes.txt`, `README.nfo` or `book.text`. The custom
     plain-text view shows one continuous page, line numbers and wrapped lines;
     the overflow menu starts with **Copy all**, then a divider, then the
     settings: single page, line wrap, alignment, line numbers, text size and
@@ -103,41 +102,41 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
     with **Copy** (the selection, greyed out when empty) and **Copy all** (the
     whole document, whatever is selected); there is no **Select all**. Text
     size is 5-40 pt and starts at 12 pt.
-12. **Plain-text toggles** - turn single page off to page the text vertically;
+11. **Plain-text toggles** - turn single page off to page the text vertically;
     turn line wrap off to pan long lines horizontally; turn align right on to
     move both the text and the line-number gutter to the right side; turn line
     numbers off to hide the gutter. Options survive rotation and the next file.
-13. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
+12. **EPUB reflow** - open `alice.epub`; the text fills the reader width and
     text size enlarges the layout. Pinch and double-tap are disabled for
     reflowable documents; use the menu's text size instead.
-14. **Markdown** - open `guide.md`; headings, lists and paragraphs should
+13. **Markdown** - open `guide.md`; headings, lists and paragraphs should
     reflow. `guide.markdown` also works through the temporary `.md` alias.
     Office files (DOCX/XLSX/PPTX/HWPX) are not supported.
-15. **Source and config text** - open `config.yaml` and `main.c`; both should
+14. **Source and config text** - open `config.yaml` and `main.c`; both should
     reflow as monospace plain text. Copy `notes.txt` to `notes.xyz` and open it:
     the unknown suffix must fall back to text detection. JSON, CSV, TSV, shell
     scripts and other source files use the same path.
-16. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
+15. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
     document that stays sharp when zoomed.
-17. **Metadata editor** - tap the circled **i**. Filename, extension and every
+16. **Metadata editor** - tap the circled **i**. Filename, extension and every
     metadata field the document already has are editable; dates use
     `yyyy-MM-ddThh:mm:ss` and have date/time pickers. Clearing a field removes
     its value. **Apply** rewrites the cache file and reloads it; **Cancel**
     discards the draft; dismissing the dialog keeps it for the next open.
     Share and Save as use the edited name and timestamp.
-18. **Save as** - with any document open, tap the middle **Save** button, pick a
+17. **Save as** - with any document open, tap the middle **Save** button, pick a
     destination, and confirm the copy has the same name, extension and content.
     Re-download the saved file and check that its modified time matches the
     source where the provider supports timestamps.
-19. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
+18. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
     HTML should all render and reflow.
-20. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
+19. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
     change to the last page as soon as that page occupies most of the screen,
     not after the previous page has completely left.
-21. **Rotation / process death** - rotate while reading, then enable
+20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
-22. **Exit** - the overflow menu ends with a divider and **Exit**, with or
+21. **Exit** - the overflow menu ends with a divider and **Exit**, with or
     without a document open. Choosing it removes the task from recents and stops
     the process: `adb shell pidof com.karako.pdfr` prints nothing afterwards.
 

@@ -23,7 +23,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 | File                               | Purpose                                                                                                                                                                                                                                                                                                        |
 |------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `TestPdfWriter.kt`                 | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`.                                                                                                                                                                  |
-| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/compacts/linearizes/fixes, edits PDF metadata, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
+| `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/normalizes/fixes, edits PDF metadata, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
 
 ## What is covered
 
@@ -35,9 +35,9 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 - `Reorder`: page order and duplicates are preserved (`[2, 0, 0, 3]` becomes
   pages 3, 1, 1, 4 of the source).
 - `Rotate 180°`: only the listed pages get `/Rotate 180`, the others stay at 0.
-- `Compact`: every page survives.
-- `Linearize`: qpdf writes a file whose header contains `/Linearized` and which
-  still opens and renders with MuPDF.
+- `Normalize`: qpdf writes a file whose header contains `/Linearized` when
+  linearization is selected, adds `/GTS_PDFA1` and `pdfaid:part` when PDF/A is
+  selected, and the result still opens and renders with MuPDF.
 - `Fix PDF`: qpdf's QDF repair cycle writes a normal PDF with no `%QDF` markers
   that still opens and renders every page with MuPDF.
 - PDF metadata: a rewrite sets title/author/creation date, and an empty value

@@ -53,7 +53,7 @@ after the copy succeeds. Everything else - the reader, the info dialog and the
 share sheet - uses that cached file. `FileProvider` exposes only the
 `documents/` tree.
 
-🔄 Reordering, rotating, linearizing, fixing or compacting writes a new PDF into a
+🔄 Reordering, rotating, normalizing or fixing writes a new PDF into a
 fresh subdirectory of the same cache, opens it, and then deletes the previous
 copy.
 There is deliberately no undo stack and no original PDF kept around: use the
@@ -107,18 +107,18 @@ intact wherever the target provider allows its timestamp to be updated.
   unencrypted PDF into its cache and opens it in place of the current document.
 - 🔄 **Rotate 180°** (PDF only): turns the listed pages upside down. The range
   defaults to `1-e`, and only the pages you list are rotated.
-- ⚡ **Linearize** (PDF only): calls the bundled [qpdf](https://qpdf.readthedocs.io/)
-  native library to write a genuinely linearized PDF, so the first page can be
-  shown before the rest of the file is read. The new copy replaces the current
-  document.
+- 🧰 **Normalize** (PDF only): calls the bundled
+  [qpdf](https://qpdf.readthedocs.io/) native library and applies the selected
+  optimisations in one pass. Choose stream compression, decode-all/recompress
+  Flate and compression level 9, image optimisation with a 0-100 JPEG quality,
+  newline-before-endstream, unreferenced-resource removal, inline-image
+  externalisation, linearization and best-effort PDF/A-2b identification. The
+  tuned copy replaces the current document.
 - 🩹 **Fix PDF** (PDF only, also offered when nothing is open): runs qpdf's
   repair cycle in-process - QDF form, fix-qdf stream/xref repair, then a normal
   rewrite - and opens the repaired copy. With no document open it opens the
   picker first and fixes the chosen PDF after it loads. The entry is absent for
   non-PDF documents.
-- 🗜️ **Compact** (PDF only): MuPDF's rewrite with unused objects removed and
-  streams, fonts and images compressed. MuPDF 1.28 cannot linearize, so this
-  stays a separate, clearly named action.
 - 🔤 **Monospace** override for plain-text documents, from the overflow menu.
 - 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
   decrypted copy is written when merely reading; any rewrite saves its
@@ -242,7 +242,7 @@ Three layers, all runnable from the repository root:
 - 📄 `app/src/test/README.md` - `PageRanges`, `DocumentFormats`, `DocumentInfo`,
   dates, plain-text decoding and metadata sidecars.
 - 📄 `app/src/androidTest/README.md` - opens, renders, selects, reorders,
-  rotates, compacts, linearizes and repairs through qpdf, unlocks AES-256 PDFs, rewrites
+  rotates, normalizes and repairs through qpdf, unlocks AES-256 PDFs, rewrites
   metadata and toggles plain-text monospace on real MuPDF.
 - 📄 `tools/README.md` - AVD creation, emulator/install helpers, fixture pushing,
   the manual checklist, the raw-multitouch pinch helper, and the

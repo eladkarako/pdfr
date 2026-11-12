@@ -501,7 +501,7 @@ function Test-PackageVisible([string]$Package) {
     } | Select-Object -First 1)
 }
 
-$menuPattern = '^(Fix PDF|Copy all|Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Linearize|Compact|Exit)'
+$menuPattern = '^(Fix PDF|Copy all|Text size:|Single page:|Line wrap:|Align right:|Line numbers:|Monospace:|Reorder pages|Rotate pages|Normalize|Exit)'
 
 function Test-MenuOpen {
     try {
