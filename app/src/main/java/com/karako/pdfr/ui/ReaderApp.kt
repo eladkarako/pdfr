@@ -720,7 +720,7 @@ private fun ReorderPagesDialog(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = query,
-                    onValueChange = { query = it.take(500) },
+                    onValueChange = { query = it.take(PageRanges.MAX_INPUT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(stringResource(R.string.reorder_hint)) },
@@ -795,7 +795,7 @@ private fun RotatePagesDialog(
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = query,
-                    onValueChange = { query = it.take(500) },
+                    onValueChange = { query = it.take(PageRanges.MAX_INPUT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     label = { Text(stringResource(R.string.rotate_hint)) },

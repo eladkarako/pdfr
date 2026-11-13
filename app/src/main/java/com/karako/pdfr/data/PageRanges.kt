@@ -29,7 +29,16 @@ object PageRanges {
         TOO_MANY,
     }
 
+    /** Largest selection the parser accepts, to bound memory and work. */
     private const val MAX_PAGES = 50_000
+
+    /**
+     * Longest text the page-range fields accept. It is generous enough for a
+     * full page list while keeping a paste of a huge document from freezing
+     * the dialog.
+     */
+    const val MAX_INPUT_LENGTH = 500
+
     private val tokenPattern = Regex("^(?:\\d+|[eE])(?:-(?:\\d+|[eE]))?$")
 
     fun parse(input: String, pageCount: Int): Result {
