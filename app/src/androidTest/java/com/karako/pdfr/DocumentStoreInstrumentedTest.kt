@@ -63,7 +63,11 @@ class DocumentStoreInstrumentedTest {
         assertTrue(imported.exists())
         assertEquals("My Report.txt", imported.name)
         assertEquals("hello pdfr", imported.readText())
-        assertEquals(1_700_000_000_000L, imported.lastModified())
+        // Some filesystems round the timestamp, so allow a small tolerance.
+        assertTrue(
+            "the source timestamp should be preserved",
+            kotlin.math.abs(imported.lastModified() - 1_700_000_000_000L) <= 2_000L,
+        )
         assertEquals(documentsRoot, imported.parentFile?.parentFile)
     }
 
