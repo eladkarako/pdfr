@@ -42,9 +42,6 @@ object StorageConfig {
     /** Shortest stem allowed after truncation, in UTF-8 bytes. */
     const val MIN_STEM_BYTES = 16
 
-    /** Longest extension considered part of the name when splitting a stem. */
-    const val MAX_EXTENSION_LENGTH = 8
-
     /**
      * Longest path segment accepted as a fallback display name when a provider
      * does not return `DISPLAY_NAME`.

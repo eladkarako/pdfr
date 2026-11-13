@@ -261,9 +261,7 @@ object DocumentStore {
             .trimStart('.')
             .ifBlank { StorageConfig.FALLBACK_NAME }
 
-        val extension = DocumentFormats.extensionOf(cleaned)
-            ?.lowercase()
-            ?.takeIf { it.length <= StorageConfig.MAX_EXTENSION_LENGTH }
+        val extension = DocumentFormats.extensionOf(cleaned)?.lowercase()
 
         val stem = if (extension != null) {
             cleaned.dropLast(extension.length + 1).trimEnd()

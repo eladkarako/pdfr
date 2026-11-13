@@ -208,9 +208,9 @@ class ReaderViewModel(
 
         val name = DocumentStore.displayName(app, uri)
         val mime = runCatching { app.contentResolver.getType(uri) }.getOrNull()
-            ?.takeIf { it.isNotBlank() && it != "application/octet-stream" }
+            ?.takeIf { it.isNotBlank() && it != DocumentFormats.OCTET_STREAM }
             ?: DocumentFormats.mimeTypeForName(name.orEmpty())
-            ?: "application/octet-stream"
+            ?: DocumentFormats.OCTET_STREAM
 
         _state.value = ReaderState.Loading(name)
 

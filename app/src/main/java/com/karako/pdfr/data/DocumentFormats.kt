@@ -47,6 +47,18 @@ object DocumentFormats {
     const val JAVASCRIPT = "application/javascript"
     const val SHELL = "application/x-sh"
 
+    /** Fallback MIME type for providers that cannot identify a file. */
+    const val OCTET_STREAM = "application/octet-stream"
+
+    /** Longest extension treated as a real suffix rather than an opaque id. */
+    const val MAX_EXTENSION_LENGTH = 8
+
+    /** Bytes sampled from an unknown file when deciding whether it is text. */
+    private const val TEXT_SAMPLE_BYTES = 64 * 1024
+
+    /** Control characters above this percentage mean the sample is binary. */
+    private const val MAX_CONTROL_PERCENT = 1
+
     /**
      * MIME types offered to the system document picker. `text/plain` and the
      * text wildcard cover source/configuration files; the image wildcard
@@ -93,7 +105,7 @@ object DocumentFormats {
         "application/x-tex",
         "application/x-properties",
         "image/*",
-        "application/octet-stream",
+        OCTET_STREAM,
     )
 
     /**
@@ -315,14 +327,14 @@ object DocumentFormats {
     }
 
     fun mimeTypeForFile(file: File): String =
-        mimeTypeForName(file.name) ?: "application/octet-stream"
+        mimeTypeForName(file.name) ?: OCTET_STREAM
 
     /**
      * Best-effort detection for files with an unknown suffix. MuPDF's `open`
      * has already failed by the time this is called, so binary magic numbers
      * are rejected and a text file is retried through a `.txt` copy.
      */
-    fun looksLikeText(file: File, maxBytes: Int = 64 * 1024): Boolean {
+    fun looksLikeText(file: File, maxBytes: Int = TEXT_SAMPLE_BYTES): Boolean {
         val sample = ByteArray(maxBytes.coerceAtLeast(1))
         val read = try {
             file.inputStream().use { stream ->
@@ -362,7 +374,7 @@ object DocumentFormats {
             val allowedControl = byte == 0x09 || byte == 0x0A || byte == 0x0D || byte == 0x0C
             if (byte < 0x20 && !allowedControl) controls++
         }
-        return controls * 100 <= read
+        return controls * 100 <= read * MAX_CONTROL_PERCENT
     }
 
     /**
@@ -371,7 +383,7 @@ object DocumentFormats {
      */
     fun extensionOf(name: String): String? {
         val extension = name.substringAfterLast('.', "")
-        if (extension.length !in 1..8) return null
+        if (extension.length !in 1..MAX_EXTENSION_LENGTH) return null
         if (!extension.all { it.isLetterOrDigit() }) return null
         return extension
     }

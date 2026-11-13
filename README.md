@@ -203,7 +203,7 @@ qpdf or libjpeg sources.
 
 <details><summary><h2>⚙️ Configuration</h2></summary>
 
-Tunable values live in one of four places, depending on who consumes them:
+Tunable values live in a handful of places, depending on who consumes them:
 
 | What | Where | Why there |
 | --- | --- | --- |
@@ -215,7 +215,7 @@ Tunable values live in one of four places, depending on who consumes them:
 
 Other central homes worth knowing:
 
-- `data/DocumentFormats.kt` - MIME types, extension sets and text/image detection.
+- `data/DocumentFormats.kt` - MIME types, extension sets, text-sample limits and text/image detection.
 - `data/MetadataFields.kt` - stable metadata keys, source prefixes and the dialog schema.
 - `data/MetadataTags.kt` - on-disk PDF Info keys, dictionary keys and XMP property names.
 - `data/PdfMetadata.kt` / `data/ImageMetadata.kt` - PDF Info/XMP and EXIF/XMP slot mappings.
