@@ -226,9 +226,9 @@ Other central homes worth knowing:
 - `ui/ZoomMath.kt` - zoom range and double-tap stops.
 
 When changing a default, change it at its central home rather than at a call
-site. `ReaderConfig`, `QpdfConfig`, `NormalizeOptions` and the metadata objects
-are intentionally plain Kotlin so unit tests can read them without an Android
-context.
+site. `ReaderConfig`, `QpdfConfig`, `MuPdfConfig`, `StorageConfig`,
+`NormalizeOptions`, `TextSettings` and the metadata objects are intentionally
+plain Kotlin so unit tests can read them without an Android context.
 
 </details>
 
