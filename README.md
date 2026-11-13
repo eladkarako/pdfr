@@ -208,6 +208,7 @@ Tunable values live in one of four places, depending on who consumes them:
 | --- | --- | --- |
 | User-visible text | `app/src/main/res/values/strings.xml` | Translatable, with plurals. Technical patterns such as the ISO date hint are marked `translatable="false"`. |
 | Colours and theme | `app/src/main/res/values/colors.xml`, `themes.xml` | Standard Android resource lookup. |
+| Semantic layout sizes | `app/src/main/res/values/dimens.xml` | Dialog heights, label columns, icon sizes and the selection outline. One-off spacing stays next to its composable. |
 | Reader timing, layout limits, saved-state keys and selection colours | `ui/ReaderConfig.kt` | Shared by composables and the view model; mostly floats, durations and opaque keys. |
 | qpdf bridge | `data/QpdfConfig.kt` and `app/src/main/cpp/qpdf_config.h` | Kotlin cannot read resources from the native thread, and the native header keeps option names, PDF/A identifiers, ICC values and diagnostics in one place. |
 

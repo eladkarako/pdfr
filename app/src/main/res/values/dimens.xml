@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Semantic layout sizes shared by the reader and its dialogs.
+        One-off spacing stays next to its composable; only values with a
+        meaning (minimum usable height, label column, icon size) live here.
+    -->
+
+    <!-- Info editor: smallest usable height and the fixed label column. -->
+    <dimen name="info_dialog_min_height">260dp</dimen>
+    <dimen name="info_label_width">112dp</dimen>
+
+    <!-- Normalize options scroll inside this height on small screens. -->
+    <dimen name="normalize_dialog_max_height">440dp</dimen>
+
+    <!-- Illustration on the empty and error screens. -->
+    <dimen name="empty_state_icon_size">64dp</dimen>
+
+    <!-- Outline around a selected PDF text block. -->
+    <dimen name="selection_outline_width">1.5dp</dimen>
+
+    <!-- Padding around the plain-text reader page. -->
+    <dimen name="plain_text_padding">10dp</dimen>
+</resources>

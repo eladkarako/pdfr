@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -111,7 +112,7 @@ internal fun PlainTextReader(
 
     val direction = if (alignRight) LayoutDirection.Rtl else LayoutDirection.Ltr
     val alignment = if (alignRight) TextAlign.Right else TextAlign.Left
-    val padding = 10.dp
+    val padding = dimensionResource(R.dimen.plain_text_padding)
     val context = LocalContext.current
     val copyAll = {
         // Copies the decoded document, never the selection: the lazy list only

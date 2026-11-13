@@ -91,6 +91,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -891,7 +892,7 @@ private fun NormalizeDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 440.dp)
+                    .heightIn(max = dimensionResource(R.dimen.normalize_dialog_max_height))
                     .verticalScroll(rememberScrollState()),
             ) {
                 Text(
@@ -1617,7 +1618,9 @@ private fun SelectionOverlay(
     if (bounds.width <= 0f || selection.quads.isEmpty() || pageWidthPx <= 0) return
 
     val density = LocalDensity.current
-    val outlineWidth = with(density) { 1.5.dp.toPx() }
+    val outlineWidth = with(density) {
+        dimensionResource(R.dimen.selection_outline_width).toPx()
+    }
     val scale = pageWidthPx.toFloat() / bounds.width
 
     Canvas(modifier = Modifier.fillMaxSize()) {
@@ -1860,7 +1863,7 @@ private fun MessagePane(
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(dimensionResource(R.dimen.empty_state_icon_size)),
             tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
         )
         Spacer(Modifier.height(20.dp))

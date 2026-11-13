@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -72,7 +73,7 @@ internal fun DocumentInfoDialog(
     val context = LocalContext.current
     val maxHeight = (
             LocalConfiguration.current.screenHeightDp.dp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION
-            ).coerceAtLeast(260.dp)
+            ).coerceAtLeast(dimensionResource(R.dimen.info_dialog_min_height))
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -177,7 +178,9 @@ internal fun DocumentInfoDialog(
                             onValueChange = {
                                 onDraftChange(draft.copy(extension = it.take(12)))
                             },
-                            modifier = Modifier.width(112.dp),
+                            modifier = Modifier.width(
+                                dimensionResource(R.dimen.info_label_width),
+                            ),
                             singleLine = true,
                             label = { Text(stringResource(R.string.file_extension)) },
                             isError = !draft.extensionValid,
