@@ -80,7 +80,7 @@ class MuPdfDocument private constructor(
         override fun sizeOf(key: Long, value: Bitmap): Int = value.byteCount
     }
 
-    private val textCache = object : LruCache<Int, StructuredText>(TEXT_CACHE_PAGES) {
+    private val textCache = object : LruCache<Int, StructuredText>(MuPdfConfig.TEXT_CACHE_PAGES) {
         override fun entryRemoved(
             evicted: Boolean,
             key: Int,
@@ -125,9 +125,9 @@ class MuPdfDocument private constructor(
         if (closed || !isReflowable) return false
         return runCatching {
             document.layout(
-                widthPt.coerceAtLeast(MIN_LAYOUT_PT),
-                heightPt.coerceAtLeast(MIN_LAYOUT_PT),
-                em.coerceIn(MIN_EM, MAX_EM),
+                widthPt.coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
+                heightPt.coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
+                em.coerceIn(MuPdfConfig.MIN_EM, MuPdfConfig.MAX_EM),
             )
             clearCaches()
             true
@@ -160,10 +160,10 @@ class MuPdfDocument private constructor(
     private fun applyReaderStyleLocked(): Boolean = runCatching {
         val font = when {
             !isPlainText -> ""
-            monospaceText == true -> MONOSPACE_CSS
-            else -> PROPORTIONAL_CSS
+            monospaceText == true -> MuPdfConfig.MONOSPACE_CSS
+            else -> MuPdfConfig.PROPORTIONAL_CSS
         }
-        document.style(true, READER_CSS + font)
+        document.style(true, MuPdfConfig.READER_CSS + font)
         clearCaches()
         true
     }.getOrDefault(false)
@@ -196,15 +196,15 @@ class MuPdfDocument private constructor(
         if (closed) return null
 
         val bounds = pageBounds(index) ?: return null
-        val width = targetWidthPx.coerceIn(MIN_RENDER_WIDTH, MAX_RENDER_WIDTH)
+        val width = targetWidthPx.coerceIn(MuPdfConfig.MIN_RENDER_WIDTH, MuPdfConfig.MAX_RENDER_WIDTH)
 
         // Very tall pages at 400% zoom could otherwise allocate a bitmap
         // large enough to exhaust the heap. Render above screen density but
         // cap the pixel budget and let the Image composable scale the result.
         val aspect = (bounds.height / bounds.width).coerceAtLeast(0.01f)
-        val pixelCappedWidth = kotlin.math.sqrt(MAX_RENDER_PIXELS / aspect).toInt()
+        val pixelCappedWidth = kotlin.math.sqrt(MuPdfConfig.MAX_RENDER_PIXELS / aspect).toInt()
         val renderWidth = width.coerceAtMost(pixelCappedWidth)
-            .coerceIn(MIN_RENDER_WIDTH, MAX_RENDER_WIDTH)
+            .coerceIn(MuPdfConfig.MIN_RENDER_WIDTH, MuPdfConfig.MAX_RENDER_WIDTH)
 
         val key = (index.toLong() shl 32) or renderWidth.toLong()
         bitmapCache.get(key)?.let { cached ->
@@ -221,7 +221,7 @@ class MuPdfDocument private constructor(
         val bitmapWidth = ibox.x1 - ibox.x0
         val bitmapHeight = ibox.y1 - ibox.y0
         if (bitmapWidth <= 0 || bitmapHeight <= 0) return null
-        if (bitmapWidth > MAX_BITMAP_DIMENSION || bitmapHeight > MAX_BITMAP_DIMENSION) return null
+        if (bitmapWidth > MuPdfConfig.MAX_BITMAP_DIMENSION || bitmapHeight > MuPdfConfig.MAX_BITMAP_DIMENSION) return null
 
         val page = runCatching { document.loadPage(index) }.getOrNull() ?: return null
         var bitmap: Bitmap? = null
@@ -364,35 +364,14 @@ class MuPdfDocument private constructor(
         ?.takeIf { it.isNotEmpty() && !it.equals("null", ignoreCase = true) }
 
     companion object {
-        private const val TEXT_CACHE_PAGES = 3
-        private const val MIN_LAYOUT_PT = 32f
-        private const val MIN_EM = 2f
-        private const val MAX_EM = 96f
-        private const val MIN_RENDER_WIDTH = 64
-        private const val MAX_RENDER_WIDTH = 8_192
-        private const val MAX_RENDER_PIXELS = 6_000_000
-        private const val MAX_BITMAP_DIMENSION = 16_384
-
-        private const val MONOSPACE_CSS = "pre { font-family: monospace; }"
-        private const val PROPORTIONAL_CSS = "pre { font-family: sans-serif; }"
-
         /**
-         * MuPDF's default HTML stylesheet leaves a wide body margin. Reflowable
-         * documents should use the whole reader width, so remove page and body
-         * margins before laying them out.
+         * Rewrite options used by reorder, rotate and metadata writes.
+         *
+         * Kept as a member so existing callers can pass
+         * `MuPdfDocument.PDF_REWRITE_OPTIONS`; the value itself is defined in
+         * [MuPdfConfig].
          */
-        private const val READER_CSS =
-            "@page { margin: 0; } html, body { margin: 0; padding: 0; }"
-
-        /**
-         * Rewrites the PDF without encryption, with unused objects removed and
-         * content streams, fonts and images compressed. MuPDF 1.28 cannot
-         * linearize, so reorder, rotate and metadata writes use this set while
-         * the qpdf-backed Normalize action handles linearization and fine
-         * tuning (see [Qpdf]).
-         */
-        const val PDF_REWRITE_OPTIONS =
-            "garbage=compact,compress=yes,compress-images=yes,compress-fonts=yes,objstms=yes,encrypt=none"
+        const val PDF_REWRITE_OPTIONS = MuPdfConfig.PDF_REWRITE_OPTIONS
 
         /**
          * Saves a reordered or rotated copy of [source] into
@@ -587,8 +566,8 @@ class MuPdfDocument private constructor(
 
         private fun bitmapCacheBytes(): Int {
             val heap = Runtime.getRuntime().maxMemory()
-            return (heap / 8L)
-                .coerceIn(24L * 1024 * 1024, 64L * 1024 * 1024)
+            return (heap / MuPdfConfig.CACHE_HEAP_DIVISOR)
+                .coerceIn(MuPdfConfig.CACHE_MIN_BYTES, MuPdfConfig.CACHE_MAX_BYTES)
                 .toInt()
         }
 
