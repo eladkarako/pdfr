@@ -11,6 +11,12 @@ tools\run-unit-tests.bat
 They deliberately avoid Android classes, so they need no emulator and no
 native MuPDF library.
 
+Where a test covers a default, it reads the same central object the app uses
+(`TextSettings`, `ZoomMath`, `NormalizeOptions`, `DocumentFormats`), so a
+configuration change does not require updating a duplicate value in a test.
+`ui/ReaderConfig.kt` is plain Kotlin for the same reason, even though no unit
+test reads it yet.
+
 | File                   | What it covers                                                                                                                                                                                                                                                                   |
 |------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `PageRangesTest`       | The `1-3,7,9-e,3` selection grammar: ranges, `e`, whitespace, order, duplicates, and every error reason.                                                                                                                                                                         |

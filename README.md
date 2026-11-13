@@ -161,15 +161,19 @@ app/src/main/java/com/karako/pdfr/
 │   ├── MuPdf.kt             # 🧵 one dedicated MuPDF thread
 │   ├── MuPdfDocument.kt     # 📂 open/auth/layout/render/select/rewrite
 │   ├── Qpdf.kt              # 🧵 one dedicated qpdf thread + JNI bridge
+│   ├── QpdfConfig.kt        # ⚙️ qpdf library/thread/temp values + diagnostics
 │   └── ShareSheet.kt        # 📤 ACTION_SEND via FileProvider
 ├── ui/
 │   ├── ReaderApp.kt         # 🖥️ Compose continuous-scroll reader + dialogs
 │   ├── ReaderViewModel.kt   # 🧠 reader state, viewport, selection, reflow
+│   ├── ReaderConfig.kt      # ⚙️ reader timings, saved-state keys and colours
 │   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
 │   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
 │   ├── TextSizeDialog.kt    # 🔠 reflowable text-size picker
 │   └── theme/Theme.kt       # 🎨 theme
 app/src/main/cpp/            # 🔌 JNI bridge to static libqpdf
+│   ├── qpdf_jni.cpp         # 🔌 JNI entry points and QDF repair
+│   └── qpdf_config.h        # ⚙️ native qpdf options, PDF/A and ICC values
 app/src/main/jniLibs/<abi>/  # 📦 stripped libqpdfjni.so per ABI
 app/src/test/                # 🧪 JVM tests (no device, no native code)
 app/src/androidTest/         # 🤖 MuPDF/qpdf integration tests + PDF writer
@@ -189,6 +193,35 @@ Android ABI and exposed through a tiny JNI function
 (`app/src/main/cpp/qpdf_jni.cpp`). The stripped `libqpdfjni.so` files are
 checked into `app/src/main/jniLibs/`, so a normal Gradle build never needs the
 qpdf or libjpeg sources.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>⚙️ Configuration</h2></summary>
+
+Tunable values live in one of four places, depending on who consumes them:
+
+| What | Where | Why there |
+| --- | --- | --- |
+| User-visible text | `app/src/main/res/values/strings.xml` | Translatable, with plurals. Technical patterns such as the ISO date hint are marked `translatable="false"`. |
+| Colours and theme | `app/src/main/res/values/colors.xml`, `themes.xml` | Standard Android resource lookup. |
+| Reader timing, layout limits, saved-state keys and selection colours | `ui/ReaderConfig.kt` | Shared by composables and the view model; mostly floats, durations and opaque keys. |
+| qpdf bridge | `data/QpdfConfig.kt` and `app/src/main/cpp/qpdf_config.h` | Kotlin cannot read resources from the native thread, and the native header keeps option names, PDF/A identifiers, ICC values and diagnostics in one place. |
+
+Other central homes worth knowing:
+
+- `data/DocumentFormats.kt` - MIME types, extension sets and text/image detection.
+- `data/MetadataFields.kt` - stable metadata keys, source prefixes and the dialog schema.
+- `data/PdfMetadata.kt` / `data/ImageMetadata.kt` - PDF Info/XMP and EXIF/XMP slot mappings.
+- `data/NormalizeOptions.kt` - Normalize defaults and JPEG-quality bounds.
+- `data/TextSettings.kt` - text-size range and default.
+- `ui/ZoomMath.kt` - zoom range and double-tap stops.
+
+When changing a default, change it at its central home rather than at a call
+site. `ReaderConfig`, `QpdfConfig`, `NormalizeOptions` and the metadata objects
+are intentionally plain Kotlin so unit tests can read them without an Android
+context.
 
 </details>
 
@@ -226,8 +259,12 @@ emulator).
 `build/qpdf/` holds the downloaded qpdf and libjpeg-turbo sources and the
 per-ABI build trees. `tools/build-qpdf-android.ps1` configures and builds all
 four ABIs with the Android NDK, strips the resulting `libqpdfjni.so`, and copies
-it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp` or the
-qpdf version changes; a normal clone builds from the checked-in libraries.
+it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp`,
+`qpdf_config.h` or the qpdf version changes; a normal clone builds from the
+checked-in libraries. `qpdf_config.h` holds the option strings, PDF/A
+identifiers, ICC profile values and error text used by the bridge, so it is
+edited alongside `qpdf_jni.cpp`, never inside the downloaded
+`build/qpdf/src` tree.
 
 </details>
 
