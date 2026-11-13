@@ -335,6 +335,16 @@ keyPassword=…
 with the debug key. Back up the real keystore and its password: losing either
 means future versions can no longer update an installed app.
 
+📦 Release builds are size-optimised without obfuscation: R8 full mode,
+resource shrinking, non-final resource IDs and the optimised resource
+shrinker are enabled, `BuildConfig` is not generated, and AndroidX/Material
+translations are filtered to English. `-dontobfuscate` stays, so class, method
+and field names remain readable in a decompiler; `Signature`, `InnerClasses`,
+`EnclosingMethod`, `Exceptions`, `SourceFile` and `LineNumberTable` are kept
+for the same reason. These settings only affect release builds and only add a
+little compile time, not runtime cost. On the arm64 APK they remove about
+540 KB (~3.1%), almost all of it unused `resources.arsc` entries.
+
 </details>
 
 <hr/>
