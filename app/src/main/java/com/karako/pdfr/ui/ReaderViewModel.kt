@@ -21,6 +21,7 @@ import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
+import com.karako.pdfr.data.QpdfMessages
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
 import com.karako.pdfr.data.TextSettings
@@ -1000,11 +1001,11 @@ class ReaderViewModel(
                 if (created == null) {
                     val message = when {
                         kind == RewriteKind.NORMALIZE &&
-                                failure?.contains("not available") == true ->
+                                failure == QpdfMessages.NOT_AVAILABLE ->
                             R.string.normalize_unavailable
 
                         kind == RewriteKind.FIX &&
-                                failure?.contains("not available") == true ->
+                                failure == QpdfMessages.NOT_AVAILABLE ->
                             R.string.fix_pdf_unavailable
 
                         else -> R.string.rewrite_failed

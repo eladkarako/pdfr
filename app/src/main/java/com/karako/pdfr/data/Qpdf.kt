@@ -14,7 +14,7 @@ import java.util.concurrent.Executors
 object Qpdf {
 
     private val executor = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "pdfr-qpdf").apply {
+        Thread(runnable, QpdfConfig.THREAD_NAME).apply {
             isDaemon = true
             priority = Thread.NORM_PRIORITY
         }
@@ -25,7 +25,7 @@ object Qpdf {
     /** Loaded lazily so a missing native library never blocks the reader. */
     private val loaded: Boolean by lazy {
         runCatching {
-            System.loadLibrary("qpdfjni")
+            System.loadLibrary(QpdfConfig.LIBRARY_NAME)
             true
         }.getOrDefault(false)
     }
@@ -72,7 +72,7 @@ object Qpdf {
                     pdfA = options.pdfA,
                 )
             },
-            failure = "qpdf could not normalize this PDF.",
+            failure = QpdfMessages.NORMALIZE_FAILED,
         )
 
     /**
@@ -91,7 +91,7 @@ object Qpdf {
             destination = destination,
             password = password,
             operation = ::nativeFixPdf,
-            failure = "qpdf could not fix this PDF.",
+            failure = QpdfMessages.FIX_FAILED,
         )
 
     private fun rewrite(
@@ -101,13 +101,13 @@ object Qpdf {
         operation: (String, String, String?) -> String?,
         failure: String,
     ): String? {
-        if (!loaded) return "qpdf is not available in this build."
+        if (!loaded) return QpdfMessages.NOT_AVAILABLE
         if (!source.isFile || source.length() <= 0L) {
-            return "The source PDF is missing or empty."
+            return QpdfMessages.SOURCE_MISSING
         }
 
         destination.parentFile?.mkdirs()
-        val temp = File(destination.parentFile, "${destination.name}.part")
+        val temp = File(destination.parentFile, destination.name + QpdfConfig.TEMP_SUFFIX)
         temp.delete()
 
         return try {
@@ -122,12 +122,12 @@ object Qpdf {
             }
             if (!temp.isFile || temp.length() <= 0L) {
                 temp.delete()
-                return "qpdf produced an empty file."
+                return QpdfMessages.EMPTY_OUTPUT
             }
 
             if (destination.exists() && !destination.delete()) {
                 temp.delete()
-                return "Couldn't replace the previous copy."
+                return QpdfMessages.REPLACE_FAILED
             }
             if (!temp.renameTo(destination)) {
                 temp.copyTo(destination, overwrite = true)
