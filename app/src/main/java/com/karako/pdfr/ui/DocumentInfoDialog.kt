@@ -47,8 +47,6 @@ import com.karako.pdfr.data.MetadataValueKind
 import java.util.Calendar
 import java.util.TimeZone
 
-private const val INFO_DIALOG_MAX_HEIGHT_FRACTION = 0.75f
-
 /**
  * The editable replacement for the old read-only info sheet.
  *
@@ -73,7 +71,7 @@ internal fun DocumentInfoDialog(
 ) {
     val context = LocalContext.current
     val maxHeight = (
-            LocalConfiguration.current.screenHeightDp.dp * INFO_DIALOG_MAX_HEIGHT_FRACTION
+            LocalConfiguration.current.screenHeightDp.dp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION
             ).coerceAtLeast(260.dp)
 
     Dialog(onDismissRequest = onDismiss) {

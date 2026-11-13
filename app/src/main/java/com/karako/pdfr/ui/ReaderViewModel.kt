@@ -141,11 +141,11 @@ class ReaderViewModel(
 
     // Text options are global: they stay in effect when the next document is
     // opened, and survive rotation/process death through SavedStateHandle.
-    private var textSizePt = TextSettings.sizePtOrDefault(savedState.get(KEY_TEXT_SIZE))
-    private var singlePage = savedState.get<Boolean>(KEY_SINGLE_PAGE) ?: true
-    private var lineWrap = savedState.get<Boolean>(KEY_LINE_WRAP) ?: true
-    private var alignRight = savedState.get<Boolean>(KEY_ALIGN_RIGHT) ?: false
-    private var lineNumbers = savedState.get<Boolean>(KEY_LINE_NUMBERS) ?: true
+    private var textSizePt = TextSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
+    private var singlePage = savedState.get<Boolean>(ReaderConfig.KEY_SINGLE_PAGE) ?: true
+    private var lineWrap = savedState.get<Boolean>(ReaderConfig.KEY_LINE_WRAP) ?: true
+    private var alignRight = savedState.get<Boolean>(ReaderConfig.KEY_ALIGN_RIGHT) ?: false
+    private var lineNumbers = savedState.get<Boolean>(ReaderConfig.KEY_LINE_NUMBERS) ?: true
 
     private data class Viewport(
         val widthPx: Int,
@@ -167,7 +167,7 @@ class ReaderViewModel(
     )
 
     init {
-        val savedPath = savedState.get<String>(KEY_PATH)
+        val savedPath = savedState.get<String>(ReaderConfig.KEY_PATH)
         val savedFile = savedPath?.let(::File)?.takeIf { it.isFile }
 
         viewModelScope.launch {
@@ -258,8 +258,8 @@ class ReaderViewModel(
                 displayName = locked.displayName,
                 mimeType = locked.mimeType,
                 password = password,
-                startPage = savedState.get<Int>(KEY_PAGE) ?: 0,
-                lastModified = savedState.get<Long>(KEY_MTIME)
+                startPage = savedState.get<Int>(ReaderConfig.KEY_PAGE) ?: 0,
+                lastModified = savedState.get<Long>(ReaderConfig.KEY_MTIME)
                     ?: locked.file.lastModified().takeIf { it > 0L },
             )
         }
@@ -293,7 +293,7 @@ class ReaderViewModel(
             // for the gesture to settle before dropping the old bitmaps.
             evictJob?.cancel()
             evictJob = viewModelScope.launch {
-                delay(BITMAP_EVICT_DEBOUNCE_MS)
+                delay(ReaderConfig.BITMAP_EVICT_DEBOUNCE_MS)
                 MuPdf.execute { doc.evictRenderedPages() }
             }
         }
@@ -302,7 +302,7 @@ class ReaderViewModel(
     fun onPageChanged(index: Int) {
         if (index < 0) return
         currentPage = index
-        savedState[KEY_PAGE] = index
+        savedState[ReaderConfig.KEY_PAGE] = index
     }
 
     suspend fun renderPage(index: Int, widthPx: Int): RenderedPage? {
@@ -368,15 +368,15 @@ class ReaderViewModel(
     private var selectionVersion = 0
 
     private fun restore(file: File) {
-        val name = savedState.get<String>(KEY_NAME)
+        val name = savedState.get<String>(ReaderConfig.KEY_NAME)
             ?.takeIf { it.isNotBlank() }
             ?: file.name
-        val mime = savedState.get<String>(KEY_MIME)
+        val mime = savedState.get<String>(ReaderConfig.KEY_MIME)
             ?: DocumentFormats.mimeTypeForName(name)
             ?: DocumentFormats.mimeTypeForFile(file)
 
-        monospace = savedState.get<Boolean>(KEY_MONO) ?: true
-        val lastModified = savedState.get<Long>(KEY_MTIME)
+        monospace = savedState.get<Boolean>(ReaderConfig.KEY_MONO) ?: true
+        val lastModified = savedState.get<Long>(ReaderConfig.KEY_MTIME)
             ?: file.lastModified().takeIf { it > 0L }
 
         _state.value = ReaderState.Loading(name)
@@ -386,7 +386,7 @@ class ReaderViewModel(
                 displayName = name,
                 mimeType = mime,
                 password = null,
-                startPage = savedState.get<Int>(KEY_PAGE) ?: 0,
+                startPage = savedState.get<Int>(ReaderConfig.KEY_PAGE) ?: 0,
                 lastModified = lastModified,
             )
         }
@@ -480,17 +480,17 @@ class ReaderViewModel(
             this.password = if (opened.needsPasswordToOpen) password else null
             monospace = opened.isPlainText && monospace
 
-            savedState[KEY_PATH] = file.absolutePath
-            savedState[KEY_NAME] = effectiveName
-            savedState[KEY_MIME] = mimeType
-            savedState[KEY_PAGE] = page
-            savedState[KEY_MONO] = monospace
-            savedState[KEY_MTIME] = effectiveModified
-            savedState[KEY_TEXT_SIZE] = textSizePt
-            savedState[KEY_SINGLE_PAGE] = singlePage
-            savedState[KEY_LINE_WRAP] = lineWrap
-            savedState[KEY_ALIGN_RIGHT] = alignRight
-            savedState[KEY_LINE_NUMBERS] = lineNumbers
+            savedState[ReaderConfig.KEY_PATH] = file.absolutePath
+            savedState[ReaderConfig.KEY_NAME] = effectiveName
+            savedState[ReaderConfig.KEY_MIME] = mimeType
+            savedState[ReaderConfig.KEY_PAGE] = page
+            savedState[ReaderConfig.KEY_MONO] = monospace
+            savedState[ReaderConfig.KEY_MTIME] = effectiveModified
+            savedState[ReaderConfig.KEY_TEXT_SIZE] = textSizePt
+            savedState[ReaderConfig.KEY_SINGLE_PAGE] = singlePage
+            savedState[ReaderConfig.KEY_LINE_WRAP] = lineWrap
+            savedState[ReaderConfig.KEY_ALIGN_RIGHT] = alignRight
+            savedState[ReaderConfig.KEY_LINE_NUMBERS] = lineNumbers
 
             _state.value = ReaderState.Ready(
                 file = file,
@@ -571,7 +571,7 @@ class ReaderViewModel(
         val version = generation
 
         layoutJob = viewModelScope.launch {
-            delay(REFLOW_DEBOUNCE_MS)
+            delay(ReaderConfig.REFLOW_DEBOUNCE_MS)
 
             val result = withContext(MuPdf.dispatcher) {
                 val mark = doc.makeBookmark(currentPage)
@@ -596,7 +596,7 @@ class ReaderViewModel(
 
             clearSelection()
             currentPage = result.page
-            savedState[KEY_PAGE] = currentPage
+            savedState[ReaderConfig.KEY_PAGE] = currentPage
 
             val ready = _state.value as? ReaderState.Ready ?: return@launch
             _state.value = ready.copy(
@@ -615,7 +615,7 @@ class ReaderViewModel(
         if (!ready.monospaceAvailable || ready.monospace == enabled) return
 
         monospace = enabled
-        savedState[KEY_MONO] = enabled
+        savedState[ReaderConfig.KEY_MONO] = enabled
         _state.value = ready.copy(monospace = enabled)
 
         // The custom plain-text view re-renders from the new state. Only fall
@@ -632,7 +632,7 @@ class ReaderViewModel(
         if (value == textSizePt) return
 
         textSizePt = value
-        savedState[KEY_TEXT_SIZE] = value
+        savedState[ReaderConfig.KEY_TEXT_SIZE] = value
         _state.value = ready.copy(textSizePt = value)
 
         if (!ready.reflowable || ready.plainText != null) return
@@ -644,7 +644,7 @@ class ReaderViewModel(
         val ready = _state.value as? ReaderState.Ready ?: return
         if (ready.singlePage == enabled) return
         singlePage = enabled
-        savedState[KEY_SINGLE_PAGE] = enabled
+        savedState[ReaderConfig.KEY_SINGLE_PAGE] = enabled
         _state.value = ready.copy(singlePage = enabled)
     }
 
@@ -652,7 +652,7 @@ class ReaderViewModel(
         val ready = _state.value as? ReaderState.Ready ?: return
         if (ready.lineWrap == enabled) return
         lineWrap = enabled
-        savedState[KEY_LINE_WRAP] = enabled
+        savedState[ReaderConfig.KEY_LINE_WRAP] = enabled
         _state.value = ready.copy(lineWrap = enabled)
     }
 
@@ -660,7 +660,7 @@ class ReaderViewModel(
         val ready = _state.value as? ReaderState.Ready ?: return
         if (ready.alignRight == enabled) return
         alignRight = enabled
-        savedState[KEY_ALIGN_RIGHT] = enabled
+        savedState[ReaderConfig.KEY_ALIGN_RIGHT] = enabled
         _state.value = ready.copy(alignRight = enabled)
     }
 
@@ -668,7 +668,7 @@ class ReaderViewModel(
         val ready = _state.value as? ReaderState.Ready ?: return
         if (ready.lineNumbers == enabled) return
         lineNumbers = enabled
-        savedState[KEY_LINE_NUMBERS] = enabled
+        savedState[ReaderConfig.KEY_LINE_NUMBERS] = enabled
         _state.value = ready.copy(lineNumbers = enabled)
     }
 
@@ -1097,10 +1097,10 @@ class ReaderViewModel(
         wrongPassword: Boolean,
         lastModified: Long?,
     ) {
-        savedState[KEY_PATH] = file.absolutePath
-        savedState[KEY_NAME] = displayName
-        savedState[KEY_MIME] = mimeType
-        savedState[KEY_MTIME] = lastModified
+        savedState[ReaderConfig.KEY_PATH] = file.absolutePath
+        savedState[ReaderConfig.KEY_NAME] = displayName
+        savedState[ReaderConfig.KEY_MIME] = mimeType
+        savedState[ReaderConfig.KEY_MTIME] = lastModified
 
         _selection.value = null
         _state.value = ReaderState.Locked(
@@ -1131,22 +1131,5 @@ class ReaderViewModel(
             MuPdf.execute { closing.close() }
         }
         super.onCleared()
-    }
-
-    internal companion object {
-        const val KEY_PATH = "document_path"
-        const val KEY_NAME = "document_name"
-        const val KEY_MIME = "document_mime"
-        const val KEY_PAGE = "document_page"
-        const val KEY_MONO = "document_monospace"
-        const val KEY_MTIME = "document_modified"
-        const val KEY_TEXT_SIZE = "reader_text_size_pt"
-        const val KEY_SINGLE_PAGE = "reader_single_page"
-        const val KEY_LINE_WRAP = "reader_line_wrap"
-        const val KEY_ALIGN_RIGHT = "reader_align_right"
-        const val KEY_LINE_NUMBERS = "reader_line_numbers"
-
-        const val REFLOW_DEBOUNCE_MS = 80L
-        const val BITMAP_EVICT_DEBOUNCE_MS = 240L
     }
 }

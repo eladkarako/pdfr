@@ -443,12 +443,12 @@ private fun PlainTextLine(
 
 @Composable
 private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
-    val alpha = remember { Animatable(PAGE_BADGE_START_ALPHA) }
+    val alpha = remember { Animatable(ReaderConfig.PAGE_BADGE_START_ALPHA) }
     LaunchedEffect(page, total) {
-        alpha.snapTo(PAGE_BADGE_START_ALPHA)
+        alpha.snapTo(ReaderConfig.PAGE_BADGE_START_ALPHA)
         alpha.animateTo(
-            targetValue = PAGE_BADGE_END_ALPHA,
-            animationSpec = tween(durationMillis = PAGE_BADGE_FADE_MS, easing = LinearEasing),
+            targetValue = ReaderConfig.PAGE_BADGE_END_ALPHA,
+            animationSpec = tween(durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS, easing = LinearEasing),
         )
     }
     Surface(

@@ -119,35 +119,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.system.exitProcess
 
-private const val DEFAULT_PAGE_ASPECT = 1.4142f
-private const val RENDER_SETTLE_MS = 120L
-private const val CONTENT_WIDTH_SETTLE_MS = 200L
-private const val ZOOM_ANIMATION_MS = 260
-private const val ANCHOR_LAYOUT_WAIT_MS = 120L
-private const val POST_PINCH_SETTLE_MS = 700L
-
-/**
- * After the deferred reflow lands, the scroll rack keeps old pages wide until
- * [CONTENT_WIDTH_SETTLE_MS] has passed and the replacement bitmaps have
- * rendered. The pinch anchor must stay alive through that second resize, or
- * the content jumps once more after the gesture.
- */
-private const val POST_PINCH_RENDER_MS = 420L
-private const val PINCH_START_DISTANCE = 8f
-
-// The page badge starts slightly transparent and quietly disappears while the
-// reader is idle. Any scroll, zoom or pan restores it immediately.
-internal const val PAGE_BADGE_START_ALPHA = 0.78f
-internal const val PAGE_BADGE_END_ALPHA = 0.05f
-internal const val PAGE_BADGE_FADE_MS = 5000
-
-// Menus and dialogs never cover more than this share of the screen.
-private const val DIALOG_MAX_HEIGHT_FRACTION = 0.75f
-
-// A fixed blue, rather than a theme colour: reader pages are always white, so
-// this stays visible even when the app's primary colour is very dark.
-internal val SELECTION_FILL = Color(0x992196F3)
-internal val SELECTION_OUTLINE = Color(0xE60D47A1)
+// Reader timings, layout limits and selection colours live in ReaderConfig.
 
 /**
  * A pinch session as seen from the reader's layout.
@@ -377,7 +349,7 @@ fun ReaderApp(
                                 expanded = showOverflowMenu,
                                 onDismissRequest = { showOverflowMenu = false },
                                 modifier = Modifier.heightIn(
-                                    max = screenHeightDp * DIALOG_MAX_HEIGHT_FRACTION,
+                                    max = screenHeightDp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
                                 ),
                             ) {
                                 val ready = state as? ReaderState.Ready
@@ -1125,7 +1097,7 @@ private fun DocumentReader(
     LaunchedEffect(state.file.absolutePath, interactiveZoom) {
         if (state.reflowable) return@LaunchedEffect
         if (interactiveZoom == renderZoom) return@LaunchedEffect
-        delay(RENDER_SETTLE_MS)
+        delay(ReaderConfig.RENDER_SETTLE_MS)
         renderZoom = interactiveZoom
     }
 
@@ -1137,7 +1109,7 @@ private fun DocumentReader(
     }
     LaunchedEffect(state.file.absolutePath, state.layoutVersion) {
         widthZoomFloor = minOf(widthZoomFloor, state.layoutZoom)
-        delay(CONTENT_WIDTH_SETTLE_MS)
+        delay(ReaderConfig.CONTENT_WIDTH_SETTLE_MS)
         widthZoomFloor = state.layoutZoom
     }
 
@@ -1153,7 +1125,7 @@ private fun DocumentReader(
 
     // The page badge is a quiet hint, not a permanent overlay: it wakes on any
     // navigation, scroll, zoom or pan and then fades to almost nothing.
-    val badgeAlpha = remember { Animatable(PAGE_BADGE_START_ALPHA) }
+    val badgeAlpha = remember { Animatable(ReaderConfig.PAGE_BADGE_START_ALPHA) }
 
     // Relative point inside the page that currently fills most of the
     // viewport, captured before a zoom reflow. It is the page the reader
@@ -1205,11 +1177,11 @@ private fun DocumentReader(
                 horizontalOffset = horizontalScroll.value,
             )
         }.collectLatest {
-            badgeAlpha.snapTo(PAGE_BADGE_START_ALPHA)
+            badgeAlpha.snapTo(ReaderConfig.PAGE_BADGE_START_ALPHA)
             badgeAlpha.animateTo(
-                targetValue = PAGE_BADGE_END_ALPHA,
+                targetValue = ReaderConfig.PAGE_BADGE_END_ALPHA,
                 animationSpec = tween(
-                    durationMillis = PAGE_BADGE_FADE_MS,
+                    durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS,
                     easing = LinearEasing,
                 ),
             )
@@ -1227,7 +1199,7 @@ private fun DocumentReader(
                 initialValue = latestZoom,
                 targetValue = target,
                 animationSpec = tween(
-                    durationMillis = ZOOM_ANIMATION_MS,
+                    durationMillis = ReaderConfig.ZOOM_ANIMATION_MS,
                     easing = FastOutSlowInEasing,
                 ),
             ) { value, _ -> onZoom(value) }
@@ -1380,13 +1352,13 @@ private fun DocumentReader(
             LaunchedEffect(activeAnchor.id, pinchActive) {
                 if (pinchActive) return@LaunchedEffect
                 val version = latestLayoutVersion
-                withTimeoutOrNull(POST_PINCH_SETTLE_MS) {
+                withTimeoutOrNull(ReaderConfig.POST_PINCH_SETTLE_MS) {
                     snapshotFlow { latestLayoutVersion }.first { it != version }
                 }
                 // New bitmaps and the rack width both change after the version
                 // bump. The anchor effect keeps correcting while this delay
                 // runs, so the page never drifts during the hand-off.
-                delay(POST_PINCH_RENDER_MS)
+                delay(ReaderConfig.POST_PINCH_RENDER_MS)
                 withFrameNanos { }
                 applyPinchAnchor(activeAnchor)
                 pinchLayoutVersion = latestLayoutVersion
@@ -1560,8 +1532,8 @@ private fun PageItem(
     }
 
     val bounds = rendered?.bounds
-    val aspect = bounds?.let { if (it.width > 0f) it.height / it.width else DEFAULT_PAGE_ASPECT }
-        ?: DEFAULT_PAGE_ASPECT
+    val aspect = bounds?.let { if (it.width > 0f) it.height / it.width else ReaderConfig.DEFAULT_PAGE_ASPECT }
+        ?: ReaderConfig.DEFAULT_PAGE_ASPECT
     val density = LocalDensity.current
     val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
     val pageHeightDp = with(density) { (pageWidthPx * aspect).toDp() }
@@ -1649,8 +1621,8 @@ private fun SelectionOverlay(
             path.lineTo((quad.llX - bounds.x0) * scale, (quad.llY - bounds.y0) * scale)
             path.close()
         }
-        drawPath(path, SELECTION_FILL)
-        drawPath(path, SELECTION_OUTLINE, style = Stroke(width = outlineWidth))
+        drawPath(path, ReaderConfig.SELECTION_FILL)
+        drawPath(path, ReaderConfig.SELECTION_OUTLINE, style = Stroke(width = outlineWidth))
     }
 }
 
@@ -1745,7 +1717,7 @@ private fun Modifier.twoFingerPinchZoom(
                 val focus = (first + second) / 2f
 
                 if (!pinching) {
-                    if (distance > PINCH_START_DISTANCE) {
+                    if (distance > ReaderConfig.PINCH_START_DISTANCE) {
                         pinching = true
                         startDistance = distance
                         startZoom = currentZoom()
