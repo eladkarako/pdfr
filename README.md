@@ -159,6 +159,7 @@ app/src/main/java/com/karako/pdfr/
 │   ├── MuPdfConfig.kt       # ⚙️ layout/render limits, CSS and rewrite options
 │   ├── PlainText.kt         # 📃 BOM-aware text decoding and line splitting
 │   ├── DocumentStore.kt     # 💾 copies an incoming URI into cache
+│   ├── StorageConfig.kt     # ⚙️ cache directory, name limits and sidecar names
 │   ├── PageRanges.kt        # 🔢 parses "1-3,7,9-e" page selections
 │   ├── MuPdf.kt             # 🧵 one dedicated MuPDF thread
 │   ├── MuPdfDocument.kt     # 📂 open/auth/layout/render/select/rewrite
@@ -219,6 +220,7 @@ Other central homes worth knowing:
 - `data/MetadataTags.kt` - on-disk PDF Info keys, dictionary keys and XMP property names.
 - `data/PdfMetadata.kt` / `data/ImageMetadata.kt` - PDF Info/XMP and EXIF/XMP slot mappings.
 - `data/MuPdfConfig.kt` - cache budget, layout/render limits, CSS and rewrite options.
+- `data/StorageConfig.kt` - cache directory, file-name limits, sidecar suffix and timestamp thresholds.
 - `data/NormalizeOptions.kt` - Normalize defaults and JPEG-quality bounds.
 - `data/TextSettings.kt` - text-size range and default.
 - `ui/ZoomMath.kt` - zoom range and double-tap stops.

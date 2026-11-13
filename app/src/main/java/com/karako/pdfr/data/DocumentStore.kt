@@ -21,10 +21,6 @@ import java.util.UUID
  */
 object DocumentStore {
 
-    private const val DIR = "documents"
-    private const val MAX_NAME_BYTES = 160
-    private const val SHARE_PREFIX = "share-"
-
     // Only characters that are illegal on Android's filesystems (or control
     // characters) are replaced. Everything else - Hebrew, Arabic, CJK, accents,
     // emoji - survives, so the cached file still has a readable name.
@@ -45,7 +41,10 @@ object DocumentStore {
         return runCatching { uri.lastPathSegment }.getOrNull()
             ?.substringAfterLast('/')
             ?.trim()
-            ?.takeIf { it.length <= 255 && DocumentFormats.extensionOf(it) != null }
+            ?.takeIf {
+                it.length <= StorageConfig.MAX_PATH_SEGMENT_LENGTH &&
+                    DocumentFormats.extensionOf(it) != null
+            }
     }
 
     /**
@@ -121,7 +120,7 @@ object DocumentStore {
             context.contentResolver.update(
                 uri,
                 ContentValues().apply {
-                    put(MediaStore.MediaColumns.DATE_MODIFIED, value / 1000L)
+                    put(MediaStore.MediaColumns.DATE_MODIFIED, value / StorageConfig.MILLIS_PER_SECOND)
                 },
                 null,
                 null,
@@ -131,8 +130,11 @@ object DocumentStore {
 
     private fun normaliseTimestamp(value: Long?): Long? {
         if (value == null || value <= 0L) return null
-        // Epoch milliseconds are ~1.7e12 today; seconds are ~1.7e9.
-        return if (value < 100_000_000_000L) value * 1000L else value
+        return if (value < StorageConfig.EPOCH_MILLIS_THRESHOLD) {
+            value * StorageConfig.MILLIS_PER_SECOND
+        } else {
+            value
+        }
     }
 
     suspend fun import(
@@ -142,14 +144,17 @@ object DocumentStore {
         lastModified: Long? = null,
     ): File =
         withContext(Dispatchers.IO) {
-            val root = File(context.cacheDir, DIR).apply { mkdirs() }
+            val root = File(context.cacheDir, StorageConfig.CACHE_DIR).apply { mkdirs() }
 
             // Every import gets its own directory. Re-importing a document with
             // the same display name therefore cannot overwrite - or truncate -
             // the file that is currently on screen.
             val dir = File(root, UUID.randomUUID().toString()).apply { mkdirs() }
-            val target = File(dir, safeFileName(displayName ?: "document"))
-            val staging = File(dir, "import.tmp")
+            val target = File(
+                dir,
+                safeFileName(displayName ?: StorageConfig.FALLBACK_NAME),
+            )
+            val staging = File(dir, StorageConfig.IMPORT_STAGING_NAME)
 
             try {
                 context.contentResolver.openInputStream(uri)?.use { input ->
@@ -181,7 +186,7 @@ object DocumentStore {
         }
 
     suspend fun cleanup(context: Context, keep: File?) = withContext(Dispatchers.IO) {
-        removeStaleFiles(File(context.cacheDir, DIR), keep = keep)
+        removeStaleFiles(File(context.cacheDir, StorageConfig.CACHE_DIR), keep = keep)
     }
 
     /**
@@ -190,7 +195,7 @@ object DocumentStore {
      * stay readable without colliding with the document it replaces.
      */
     fun derivedFile(context: Context, displayName: String): File {
-        val root = File(context.cacheDir, DIR).apply { mkdirs() }
+        val root = File(context.cacheDir, StorageConfig.CACHE_DIR).apply { mkdirs() }
         val dir = File(root, UUID.randomUUID().toString()).apply { mkdirs() }
         return File(dir, safeFileName(displayName))
     }
@@ -220,13 +225,16 @@ object DocumentStore {
         displayName: String,
         lastModified: Long? = null,
     ): File {
-        val root = File(context.cacheDir, DIR).apply { mkdirs() }
+        val root = File(context.cacheDir, StorageConfig.CACHE_DIR).apply { mkdirs() }
         // Sharing is rare, so old share directories are cleared here rather
         // than adding another cleanup hook.
         root.listFiles()
-            ?.filter { it.isDirectory && it.name.startsWith(SHARE_PREFIX) }
+            ?.filter {
+                it.isDirectory && it.name.startsWith(StorageConfig.SHARE_DIR_PREFIX)
+            }
             ?.forEach { it.deleteRecursively() }
-        val dir = File(root, SHARE_PREFIX + UUID.randomUUID()).apply { mkdirs() }
+        val dir = File(root, StorageConfig.SHARE_DIR_PREFIX + UUID.randomUUID())
+            .apply { mkdirs() }
         val target = File(dir, safeFileName(displayName))
         file.copyTo(target, overwrite = true)
         lastModified?.takeIf { it > 0L }?.let { target.setLastModified(it) }
@@ -251,23 +259,24 @@ object DocumentStore {
             .replace(Regex("\\s+"), " ")
             .trim()
             .trimStart('.')
-            .ifBlank { "document" }
+            .ifBlank { StorageConfig.FALLBACK_NAME }
 
         val extension = DocumentFormats.extensionOf(cleaned)
             ?.lowercase()
-            ?.takeIf { it.length <= 8 }
+            ?.takeIf { it.length <= StorageConfig.MAX_EXTENSION_LENGTH }
 
         val stem = if (extension != null) {
             cleaned.dropLast(extension.length + 1).trimEnd()
         } else {
             cleaned
-        }.ifBlank { "document" }
+        }.ifBlank { StorageConfig.FALLBACK_NAME }
 
         // Cap the stem by UTF-8 byte length (not character count) so a long
         // CJK name still fits Android's per-file name limit.
         val suffix = extension?.let { ".$it" }.orEmpty()
-        val maxStemBytes = (MAX_NAME_BYTES - suffix.toByteArray(Charsets.UTF_8).size)
-            .coerceAtLeast(16)
+        val maxStemBytes =
+            (StorageConfig.MAX_NAME_BYTES - suffix.toByteArray(Charsets.UTF_8).size)
+                .coerceAtLeast(StorageConfig.MIN_STEM_BYTES)
         return truncateUtf8(stem, maxStemBytes) + suffix
     }
 
@@ -285,6 +294,6 @@ object DocumentStore {
             bytes += size
             index += Character.charCount(codePoint)
         }
-        return out.toString().trimEnd().ifBlank { "document" }
+        return out.toString().trimEnd().ifBlank { StorageConfig.FALLBACK_NAME }
     }
 }

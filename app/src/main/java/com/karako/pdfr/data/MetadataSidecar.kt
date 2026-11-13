@@ -16,9 +16,8 @@ import java.util.Properties
  */
 object MetadataSidecar {
 
-    private const val SUFFIX = ".pdfr-meta"
-
-    fun fileFor(document: File): File = File(document.parentFile, ".${document.name}$SUFFIX")
+    fun fileFor(document: File): File =
+        File(document.parentFile, ".${document.name}${StorageConfig.SIDECAR_SUFFIX}")
 
     fun read(document: File): Map<String, String>? {
         val file = fileFor(document)
@@ -41,7 +40,10 @@ object MetadataSidecar {
         file.parentFile?.mkdirs()
         val properties = Properties()
         values.forEach { (key, value) -> properties.setProperty(key, value) }
-        val staging = File(file.parentFile, "${file.name}.tmp")
+        val staging = File(
+            file.parentFile,
+            file.name + StorageConfig.SIDECAR_STAGING_SUFFIX,
+        )
         try {
             OutputStreamWriter(staging.outputStream(), Charsets.UTF_8).use { writer ->
                 properties.store(writer, null)
