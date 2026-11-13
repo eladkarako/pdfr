@@ -25,35 +25,14 @@ import javax.xml.transform.stream.StreamResult
  */
 object Xmp {
 
-    private const val RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-    private const val XML_NS = "http://www.w3.org/XML/1998/namespace"
-    private const val XMLNS_NS = "http://www.w3.org/2000/xmlns/"
-    private const val ADOBE_NS = "adobe:ns:meta/"
-    private const val DC_NS = "http://purl.org/dc/elements/1.1/"
-    private const val XMP_NS = "http://ns.adobe.com/xap/1.0/"
-    private const val PDF_NS = "http://ns.adobe.com/pdf/1.3/"
-    private const val PHOTOSHOP_NS = "http://ns.adobe.com/photoshop/1.0/"
-    private const val XMP_MM_NS = "http://ns.adobe.com/xap/1.0/mm/"
-    private const val XMP_RIGHTS_NS = "http://ns.adobe.com/xap/1.0/rights/"
-    private const val TIFF_NS = "http://ns.adobe.com/tiff/1.0/"
-    private const val EXIF_NS = "http://ns.adobe.com/exif/1.0/"
-    private const val AUX_NS = "http://ns.adobe.com/exif/1.0/aux/"
-    private const val EXIF_EX_NS = "http://cipa.jp/exif/1.0/"
-    private const val IPTC_NS = "http://iptc.org/std/Iptc4xmpCore/1.0/xmlns/"
+    // Namespace URIs and the prefix table are shared with the metadata
+    // writers, so they live in XmpNamespaces.
+    private const val RDF_NS = XmpNamespaces.RDF
+    private const val XML_NS = XmpNamespaces.XML
+    private const val XMLNS_NS = XmpNamespaces.XMLNS
+    private const val ADOBE_NS = XmpNamespaces.ADOBE
 
-    private val namespaces = linkedMapOf(
-        "dc" to DC_NS,
-        "xmp" to XMP_NS,
-        "pdf" to PDF_NS,
-        "photoshop" to PHOTOSHOP_NS,
-        "xmpMM" to XMP_MM_NS,
-        "xmpRights" to XMP_RIGHTS_NS,
-        "tiff" to TIFF_NS,
-        "exif" to EXIF_NS,
-        "aux" to AUX_NS,
-        "exifEX" to EXIF_EX_NS,
-        "Iptc4xmpCore" to IPTC_NS,
-    )
+    private val namespaces = XmpNamespaces.PREFIXES
 
     /** Reads every simple property, keyed by qualified name such as `dc:title`. */
     fun read(text: String): Map<String, String> {
@@ -116,9 +95,13 @@ object Xmp {
 
     private fun setProperty(xml: XmlDocument, description: Element, qname: String, value: String) {
         when (qname) {
-            "dc:title", "dc:description", "dc:rights" -> setAlt(xml, description, qname, value)
-            "dc:creator" -> setSeq(xml, description, qname, value)
-            "dc:subject" -> setBag(xml, description, qname, value)
+            XmpProperties.DC_TITLE,
+            XmpProperties.DC_DESCRIPTION,
+            XmpProperties.DC_RIGHTS,
+            -> setAlt(xml, description, qname, value)
+
+            XmpProperties.DC_CREATOR -> setSeq(xml, description, qname, value)
+            XmpProperties.DC_SUBJECT -> setBag(xml, description, qname, value)
             else -> setSimple(xml, description, qname, value)
         }
     }

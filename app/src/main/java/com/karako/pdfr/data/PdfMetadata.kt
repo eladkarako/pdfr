@@ -17,22 +17,22 @@ data class StandardPdfField(
 /** The requested title/author/... slots and the keys they map to in a PDF. */
 object PdfMetadataInfo {
     val STANDARD = listOf(
-        StandardPdfField(MetadataKeys.TITLE, "Title", "dc:title"),
-        StandardPdfField(MetadataKeys.AUTHOR, "Author", "dc:creator"),
-        StandardPdfField(MetadataKeys.SUBJECT, "Subject", "dc:description"),
-        StandardPdfField(MetadataKeys.KEYWORDS, "Keywords", "pdf:Keywords"),
-        StandardPdfField(MetadataKeys.CREATOR, "Creator", "xmp:CreatorTool"),
-        StandardPdfField(MetadataKeys.PRODUCER, "Producer", "pdf:Producer"),
+        StandardPdfField(MetadataKeys.TITLE, PdfInfoKeys.TITLE, XmpProperties.DC_TITLE),
+        StandardPdfField(MetadataKeys.AUTHOR, PdfInfoKeys.AUTHOR, XmpProperties.DC_CREATOR),
+        StandardPdfField(MetadataKeys.SUBJECT, PdfInfoKeys.SUBJECT, XmpProperties.DC_DESCRIPTION),
+        StandardPdfField(MetadataKeys.KEYWORDS, PdfInfoKeys.KEYWORDS, XmpProperties.PDF_KEYWORDS),
+        StandardPdfField(MetadataKeys.CREATOR, PdfInfoKeys.CREATOR, XmpProperties.XMP_CREATOR_TOOL),
+        StandardPdfField(MetadataKeys.PRODUCER, PdfInfoKeys.PRODUCER, XmpProperties.PDF_PRODUCER),
         StandardPdfField(
             MetadataKeys.CREATION_DATE,
-            "CreationDate",
-            "xmp:CreateDate",
+            PdfInfoKeys.CREATION_DATE,
+            XmpProperties.XMP_CREATE_DATE,
             isDate = true,
         ),
         StandardPdfField(
             MetadataKeys.MODIFIED_DATE,
-            "ModDate",
-            "xmp:ModifyDate",
+            PdfInfoKeys.MODIFIED_DATE,
+            XmpProperties.XMP_MODIFY_DATE,
             isDate = true,
         ),
     )
@@ -107,7 +107,7 @@ object PdfMetadata {
     }
 
     private fun readInfo(pdf: PDFDocument): Map<String, String> {
-        val info = pdf.trailer?.get("Info")?.resolve() ?: return emptyMap()
+        val info = pdf.trailer?.get(PdfDictionaryKeys.INFO)?.resolve() ?: return emptyMap()
         if (!info.isDictionary) return emptyMap()
 
         val values = linkedMapOf<String, String>()
@@ -130,11 +130,11 @@ object PdfMetadata {
     private fun applyInfo(pdf: PDFDocument, values: Map<String, String?>) {
         if (values.isEmpty()) return
         val trailer = pdf.trailer
-        var info = trailer.get("Info")?.resolve()
+        var info = trailer.get(PdfDictionaryKeys.INFO)?.resolve()
         if (info == null || !info.isDictionary) {
             if (values.values.all { it.isNullOrEmpty() }) return
             info = pdf.newDictionary()
-            trailer.put("Info", info)
+            trailer.put(PdfDictionaryKeys.INFO, info)
         }
 
         values.forEach { (key, value) ->
@@ -146,13 +146,13 @@ object PdfMetadata {
         }
 
         if (info.isDictionary && info.size() == 0) {
-            trailer.delete("Info")
+            trailer.delete(PdfDictionaryKeys.INFO)
         }
     }
 
     private fun readXmp(pdf: PDFDocument): Map<String, String> {
-        val root = pdf.trailer.get("Root")?.resolve() ?: return emptyMap()
-        val metadata = root.get("Metadata") ?: return emptyMap()
+        val root = pdf.trailer.get(PdfDictionaryKeys.ROOT)?.resolve() ?: return emptyMap()
+        val metadata = root.get(PdfDictionaryKeys.METADATA) ?: return emptyMap()
         val bytes = runCatching { metadata.readStream() }.getOrNull() ?: return emptyMap()
         return Xmp.read(bytes.toString(Charsets.UTF_8))
     }
@@ -160,24 +160,24 @@ object PdfMetadata {
     private fun applyXmp(pdf: PDFDocument, values: Map<String, String?>) {
         if (values.isEmpty()) return
         val trailer = pdf.trailer
-        val root = trailer.get("Root")?.resolve() ?: return
-        val existing = root.get("Metadata")
+        val root = trailer.get(PdfDictionaryKeys.ROOT)?.resolve() ?: return
+        val existing = root.get(PdfDictionaryKeys.METADATA)
         val text = runCatching {
             existing?.readStream()?.toString(Charsets.UTF_8)
         }.getOrNull()
 
         val updated = Xmp.update(text, values)
         if (updated == null) {
-            root.delete("Metadata")
+            root.delete(PdfDictionaryKeys.METADATA)
             return
         }
         if (updated == text) return
 
         val dictionary = pdf.newDictionary()
-        dictionary.put("Type", pdf.newName("Metadata"))
-        dictionary.put("Subtype", pdf.newName("XML"))
+        dictionary.put(PdfDictionaryKeys.TYPE, pdf.newName(PdfDictionaryKeys.METADATA))
+        dictionary.put(PdfDictionaryKeys.SUBTYPE, pdf.newName(PdfDictionaryKeys.XML))
         val stream = pdf.addStream(Buffer().apply { writeBytes(updated.toByteArray()) }, dictionary)
-        root.put("Metadata", stream)
+        root.put(PdfDictionaryKeys.METADATA, stream)
     }
 
     private fun dictionaryKeys(dictionary: PDFObject): List<String> {

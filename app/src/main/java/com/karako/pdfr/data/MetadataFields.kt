@@ -20,14 +20,16 @@ data class MetadataField(
 
 /** Stable keys shared by the draft, the PDF writer and the sidecar. */
 object MetadataKeys {
-    const val TITLE = "Title"
-    const val AUTHOR = "Author"
-    const val SUBJECT = "Subject"
-    const val KEYWORDS = "Keywords"
-    const val CREATOR = "Creator"
-    const val PRODUCER = "Producer"
-    const val CREATION_DATE = "CreationDate"
-    const val MODIFIED_DATE = "ModDate"
+    // The standard PDF slots double as Info dictionary names, so both sides
+    // read from the same constants in [PdfInfoKeys].
+    const val TITLE = PdfInfoKeys.TITLE
+    const val AUTHOR = PdfInfoKeys.AUTHOR
+    const val SUBJECT = PdfInfoKeys.SUBJECT
+    const val KEYWORDS = PdfInfoKeys.KEYWORDS
+    const val CREATOR = PdfInfoKeys.CREATOR
+    const val PRODUCER = PdfInfoKeys.PRODUCER
+    const val CREATION_DATE = PdfInfoKeys.CREATION_DATE
+    const val MODIFIED_DATE = PdfInfoKeys.MODIFIED_DATE
 
     const val INFO_PREFIX = "info:"
     const val XMP_PREFIX = "xmp:"
