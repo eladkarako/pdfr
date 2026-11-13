@@ -36,12 +36,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -99,12 +99,13 @@ internal fun PlainTextReader(
             fontFamily = if (monospace) FontFamily.Monospace else FontFamily.SansSerif,
         )
     }
-    val numberStyle = remember(textSizePt) {
+    val mutedColor = colorResource(R.color.reader_text_muted)
+    val numberStyle = remember(textSizePt, mutedColor) {
         TextStyle(
             fontSize = ptToSp(textSizePt),
             lineHeight = ptToSp(textSizePt) * 1.4f,
             fontFamily = FontFamily.Monospace,
-            color = Color.Gray,
+            color = mutedColor,
         )
     }
 

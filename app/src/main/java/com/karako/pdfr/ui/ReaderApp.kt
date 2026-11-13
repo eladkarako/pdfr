@@ -81,7 +81,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -91,6 +90,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -1547,7 +1547,15 @@ private fun PageItem(
         modifier = Modifier
             .width(pageWidthDp)
             .height(pageHeightDp)
-            .background(if (rendered == null) Color(0xFFF4F4F4) else Color.White)
+            .background(
+                colorResource(
+                    if (rendered == null) {
+                        R.color.reader_page_placeholder
+                    } else {
+                        R.color.reader_page_background
+                    },
+                ),
+            )
             .pointerInput(documentKey, index) {
                 awaitPointerEventScope {
                     while (true) {

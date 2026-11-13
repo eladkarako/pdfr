@@ -2,4 +2,11 @@
 <resources>
     <color name="window_background">#FFFBFE</color>
     <color name="ic_launcher_background">#1F4D42</color>
+
+    <!-- Reader pages stay white so PDFs and images keep their own colours. -->
+    <color name="reader_page_background">#FFFFFFFF</color>
+    <!-- Placeholder shown while the first page bitmap is still rendering. -->
+    <color name="reader_page_placeholder">#FFF4F4F4</color>
+    <!-- Line numbers and other secondary plain-text chrome. -->
+    <color name="reader_text_muted">#FF888888</color>
 </resources>
