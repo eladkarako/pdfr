@@ -196,7 +196,14 @@ data class DocumentMetadataDraft(
         /** Prefix for extra, format-specific fields in the sidecar. */
         const val EXTRA_FIELD_PREFIX = "field:"
 
-        private val extensionPattern = Regex("[A-Za-z0-9]{0,8}")
+        /** Longest display-name stem the info editor accepts. */
+        const val MAX_FILE_NAME_LENGTH = 200
+
+        /** Longest metadata value the info editor accepts. */
+        const val MAX_FIELD_VALUE_LENGTH = 2_000
+
+        private val extensionPattern =
+            Regex("[A-Za-z0-9]{0,${DocumentFormats.MAX_EXTENSION_LENGTH}}")
 
         fun from(
             info: DocumentInfo,

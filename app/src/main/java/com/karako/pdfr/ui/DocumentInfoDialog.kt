@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentDates
+import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.DocumentInfo
 import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.MetadataKeys
@@ -161,7 +162,13 @@ internal fun DocumentInfoDialog(
                         OutlinedTextField(
                             value = draft.fileName,
                             onValueChange = {
-                                onDraftChange(draft.copy(fileName = it.take(200)))
+                                onDraftChange(
+                                    draft.copy(
+                                        fileName = it.take(
+                                            DocumentMetadataDraft.MAX_FILE_NAME_LENGTH,
+                                        ),
+                                    ),
+                                )
                             },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
@@ -176,7 +183,13 @@ internal fun DocumentInfoDialog(
                         OutlinedTextField(
                             value = draft.extension,
                             onValueChange = {
-                                onDraftChange(draft.copy(extension = it.take(12)))
+                                onDraftChange(
+                                    draft.copy(
+                                        extension = it.take(
+                                            DocumentFormats.MAX_EXTENSION_LENGTH,
+                                        ),
+                                    ),
+                                )
                             },
                             modifier = Modifier.width(
                                 dimensionResource(R.dimen.info_label_width),
@@ -351,7 +364,7 @@ private fun MetadataTextField(
 ) {
     OutlinedTextField(
         value = value,
-        onValueChange = { onChange(it.take(2000)) },
+        onValueChange = { onChange(it.take(DocumentMetadataDraft.MAX_FIELD_VALUE_LENGTH)) },
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
@@ -382,7 +395,7 @@ private fun DateTimeField(
         // the picker buttons sit on their own row underneath.
         OutlinedTextField(
             value = value,
-            onValueChange = { onChange(it.take(19)) },
+            onValueChange = { onChange(it.take(DocumentDates.ISO_PATTERN.length)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text(label) },
