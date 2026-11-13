@@ -11,7 +11,10 @@ package com.karako.pdfr.data
  */
 object StorageConfig {
 
-    /** Cache directory under `cacheDir` that holds every imported document. */
+    /**
+     * Cache directory under `cacheDir` that holds every imported document.
+     * Keep in sync with the `<cache-path>` in `res/xml/file_paths.xml`.
+     */
     const val CACHE_DIR = "documents"
 
     /** Name used when a provider gives no usable display name. */

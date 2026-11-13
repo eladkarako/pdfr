@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
+    <!-- Keep the path in sync with StorageConfig.CACHE_DIR. -->
     <cache-path
         name="shared_documents"
         path="documents/" />

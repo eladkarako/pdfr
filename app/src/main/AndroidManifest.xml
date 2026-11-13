@@ -31,7 +31,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- "Open with" a document from a content provider. -->
+            <!-- "Open with" a document from a content provider.
+                 Keep these MIME types in sync with DocumentFormats. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
