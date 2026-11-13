@@ -75,6 +75,22 @@ internal object ReaderConfig {
     val SELECTION_OUTLINE = Color(0xE60D47A1)
 
     // -----------------------------------------------------------------------
+    // Text defaults
+    // -----------------------------------------------------------------------
+
+    /**
+     * Defaults for the reflowable text options. The view model reads the same
+     * values when restoring saved state, so a default is changed in one place.
+     */
+    const val DEFAULT_SINGLE_PAGE = true
+    const val DEFAULT_LINE_WRAP = true
+    const val DEFAULT_ALIGN_RIGHT = false
+    const val DEFAULT_LINE_NUMBERS = true
+
+    /** Plain text starts monospace; other formats reset this in `load()`. */
+    const val DEFAULT_MONOSPACE = true
+
+    // -----------------------------------------------------------------------
     // Saved-state keys
     // -----------------------------------------------------------------------
 

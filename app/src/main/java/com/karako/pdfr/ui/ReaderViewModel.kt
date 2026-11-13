@@ -57,11 +57,11 @@ sealed interface ReaderState {
         val monospaceAvailable: Boolean = false,
         /** Decoded text for the custom plain-text reader; null for other formats. */
         val plainText: String? = null,
-        val textSizePt: Int = 12,
-        val singlePage: Boolean = true,
-        val lineWrap: Boolean = true,
-        val alignRight: Boolean = false,
-        val lineNumbers: Boolean = true,
+        val textSizePt: Int = TextSettings.DEFAULT_SIZE_PT,
+        val singlePage: Boolean = ReaderConfig.DEFAULT_SINGLE_PAGE,
+        val lineWrap: Boolean = ReaderConfig.DEFAULT_LINE_WRAP,
+        val alignRight: Boolean = ReaderConfig.DEFAULT_ALIGN_RIGHT,
+        val lineNumbers: Boolean = ReaderConfig.DEFAULT_LINE_NUMBERS,
         val layoutVersion: Int = 0,
         val anchorPage: Int = 0,
         /**
@@ -142,10 +142,18 @@ class ReaderViewModel(
     // Text options are global: they stay in effect when the next document is
     // opened, and survive rotation/process death through SavedStateHandle.
     private var textSizePt = TextSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
-    private var singlePage = savedState.get<Boolean>(ReaderConfig.KEY_SINGLE_PAGE) ?: true
-    private var lineWrap = savedState.get<Boolean>(ReaderConfig.KEY_LINE_WRAP) ?: true
-    private var alignRight = savedState.get<Boolean>(ReaderConfig.KEY_ALIGN_RIGHT) ?: false
-    private var lineNumbers = savedState.get<Boolean>(ReaderConfig.KEY_LINE_NUMBERS) ?: true
+    private var singlePage =
+        savedState.get<Boolean>(ReaderConfig.KEY_SINGLE_PAGE)
+            ?: ReaderConfig.DEFAULT_SINGLE_PAGE
+    private var lineWrap =
+        savedState.get<Boolean>(ReaderConfig.KEY_LINE_WRAP)
+            ?: ReaderConfig.DEFAULT_LINE_WRAP
+    private var alignRight =
+        savedState.get<Boolean>(ReaderConfig.KEY_ALIGN_RIGHT)
+            ?: ReaderConfig.DEFAULT_ALIGN_RIGHT
+    private var lineNumbers =
+        savedState.get<Boolean>(ReaderConfig.KEY_LINE_NUMBERS)
+            ?: ReaderConfig.DEFAULT_LINE_NUMBERS
 
     private data class Viewport(
         val widthPx: Int,
@@ -196,7 +204,7 @@ class ReaderViewModel(
         password = null
         // Plain text is monospace by default; non-text documents reset this in
         // load(). Starting true makes the text override visible immediately.
-        monospace = true
+        monospace = ReaderConfig.DEFAULT_MONOSPACE
 
         val name = DocumentStore.displayName(app, uri)
         val mime = runCatching { app.contentResolver.getType(uri) }.getOrNull()
@@ -375,7 +383,8 @@ class ReaderViewModel(
             ?: DocumentFormats.mimeTypeForName(name)
             ?: DocumentFormats.mimeTypeForFile(file)
 
-        monospace = savedState.get<Boolean>(ReaderConfig.KEY_MONO) ?: true
+        monospace =
+            savedState.get<Boolean>(ReaderConfig.KEY_MONO) ?: ReaderConfig.DEFAULT_MONOSPACE
         val lastModified = savedState.get<Long>(ReaderConfig.KEY_MTIME)
             ?: file.lastModified().takeIf { it > 0L }
 
