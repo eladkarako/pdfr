@@ -46,7 +46,7 @@ data class DocumentInfo(
 
     /** True for PDF documents; the page-rewrite actions are PDF-only. */
     val isPdf: Boolean
-        get() = kind.equals("PDF", ignoreCase = true) ||
+        get() = kind.equals(DocumentFormats.PDF_KIND, ignoreCase = true) ||
                 format?.trim()?.uppercase()?.startsWith("PDF") == true
 
     /** True for still images, which show their own EXIF/XMP/PNG slots. */

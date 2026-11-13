@@ -292,8 +292,8 @@ class MuPdfDocument private constructor(
             ?.takeUnless { it.equals("none", ignoreCase = true) }
         val pageCount = runCatching { document.countPages() }.getOrDefault(0)
         val kind = kindOf(format, file.name)
-        val pdfMetadata = if (kind == "PDF") PdfMetadata.read(document) else null
-        val isImage = kind != "PDF" &&
+        val pdfMetadata = if (kind == DocumentFormats.PDF_KIND) PdfMetadata.read(document) else null
+        val isImage = kind != DocumentFormats.PDF_KIND &&
             (DocumentFormats.isImageName(file.name) || DocumentFormats.isImageKind(kind))
         val imageFields = if (isImage) ImageMetadata.read(file) else emptyList()
 
@@ -574,12 +574,14 @@ class MuPdfDocument private constructor(
         private fun kindOf(format: String?, fileName: String): String {
             val value = format?.uppercase().orEmpty()
             return when {
-                value.startsWith("PDF") -> "PDF"
-                value.contains("EPUB") -> "EPUB"
-                value.contains("XPS") -> "XPS"
-                value.contains("CBZ") || value.contains("COMIC") -> "CBZ"
+                value.startsWith(DocumentFormats.PDF_KIND) -> DocumentFormats.PDF_KIND
+                value.contains(DocumentFormats.EPUB_KIND) -> DocumentFormats.EPUB_KIND
+                value.contains(DocumentFormats.XPS_KIND) -> DocumentFormats.XPS_KIND
+                value.contains(DocumentFormats.CBZ_KIND) || value.contains("COMIC") ->
+                    DocumentFormats.CBZ_KIND
                 format != null -> format.substringBefore(' ').uppercase()
-                else -> DocumentFormats.extensionOf(fileName)?.uppercase() ?: "DOCUMENT"
+                else -> DocumentFormats.extensionOf(fileName)?.uppercase()
+                    ?: DocumentFormats.DOCUMENT_KIND
             }
         }
 

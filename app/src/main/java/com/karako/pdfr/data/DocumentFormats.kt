@@ -18,6 +18,13 @@ import java.io.IOException
  */
 object DocumentFormats {
 
+    /** MuPDF's reported format families, used by the info dialog and the reader. */
+    const val PDF_KIND = "PDF"
+    const val EPUB_KIND = "EPUB"
+    const val XPS_KIND = "XPS"
+    const val CBZ_KIND = "CBZ"
+    const val DOCUMENT_KIND = "DOCUMENT"
+
     const val PDF = "application/pdf"
     const val EPUB = "application/epub+zip"
     const val XPS = "application/vnd.ms-xpsdocument"
