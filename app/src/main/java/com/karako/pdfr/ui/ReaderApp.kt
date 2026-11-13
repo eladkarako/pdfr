@@ -774,7 +774,7 @@ private fun RotatePagesDialog(
     onDismiss: () -> Unit,
     onApply: (IntArray) -> Unit,
 ) {
-    var query by rememberSaveable { mutableStateOf("1-e") }
+    var query by rememberSaveable { mutableStateOf(PageRanges.ALL_PAGES) }
     val result = remember(query, pageCount) { PageRanges.parse(query, pageCount) }
     val pages = (result as? PageRanges.Result.Ok)?.pages
     val error = result as? PageRanges.Result.Error

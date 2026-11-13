@@ -39,6 +39,9 @@ object PageRanges {
      */
     const val MAX_INPUT_LENGTH = 500
 
+    /** Default text that selects every page, used by the rotate dialog. */
+    const val ALL_PAGES = "1-e"
+
     private val tokenPattern = Regex("^(?:\\d+|[eE])(?:-(?:\\d+|[eE]))?$")
 
     fun parse(input: String, pageCount: Int): Result {
