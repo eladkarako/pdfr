@@ -16,6 +16,7 @@ import com.karako.pdfr.data.DocumentWrongPasswordException
 import com.karako.pdfr.data.ImageMetadata
 import com.karako.pdfr.data.MetadataSidecar
 import com.karako.pdfr.data.MuPdf
+import com.karako.pdfr.data.MuPdfConfig
 import com.karako.pdfr.data.MuPdfDocument
 import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
@@ -1082,11 +1083,13 @@ class ReaderViewModel(
     }
 
     private fun layoutSpec(viewport: Viewport): LayoutSpec {
-        val pointsPerPixel = 72f / viewport.densityDpi
+        val pointsPerPixel = ReaderConfig.POINTS_PER_INCH / viewport.densityDpi
         val zoom = ZoomMath.clamp(viewport.zoom)
         return LayoutSpec(
-            widthPt = (viewport.widthPx * pointsPerPixel / zoom).coerceAtLeast(32f),
-            heightPt = (viewport.heightPx * pointsPerPixel / zoom).coerceAtLeast(32f),
+            widthPt = (viewport.widthPx * pointsPerPixel / zoom)
+                .coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
+            heightPt = (viewport.heightPx * pointsPerPixel / zoom)
+                .coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
             em = textSizePt.toFloat(),
         )
     }
@@ -1094,8 +1097,8 @@ class ReaderViewModel(
     private fun defaultViewport(): Viewport {
         val metrics = getApplication<Application>().resources.displayMetrics
         return Viewport(
-            widthPx = metrics.widthPixels.coerceAtLeast(200),
-            heightPx = metrics.heightPixels.coerceAtLeast(300),
+            widthPx = metrics.widthPixels.coerceAtLeast(ReaderConfig.MIN_VIEWPORT_WIDTH_PX),
+            heightPx = metrics.heightPixels.coerceAtLeast(ReaderConfig.MIN_VIEWPORT_HEIGHT_PX),
             densityDpi = metrics.densityDpi,
             zoom = 1f,
         )

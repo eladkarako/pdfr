@@ -22,6 +22,16 @@ internal object ReaderConfig {
     /** Fallback page ratio (A4) used until MuPDF reports real page bounds. */
     const val DEFAULT_PAGE_ASPECT = 1.4142f
 
+    /** PDF points per inch, used to convert screen pixels into layout points. */
+    const val POINTS_PER_INCH = 72f
+
+    /**
+     * Viewport used before the first real measurement, in pixels. Kept large
+     * enough that the initial layout is not degenerate on small screens.
+     */
+    const val MIN_VIEWPORT_WIDTH_PX = 200
+    const val MIN_VIEWPORT_HEIGHT_PX = 300
+
     /** Menus and dialogs never cover more than this share of the screen. */
     const val DIALOG_MAX_HEIGHT_FRACTION = 0.75f
 
