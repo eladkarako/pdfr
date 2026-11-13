@@ -16,3 +16,15 @@
 
 # I do not need to obfuscate or rename the classes since this is an opensource code, I want to make reverse engineering from APK to source easier for inspection.
 -dontobfuscate
+
+# Keep generic signatures, nested-class links and checked exceptions in the
+# dex. Without these attributes a decompiler sees erased types and synthetic
+# names, which makes the un-obfuscated build much harder to read. The cost is a
+# few kilobytes, not runtime performance.
+-keepattributes Signature,InnerClasses,EnclosingMethod,Exceptions
+
+# Keep source file names and line numbers so stack traces and decompiled
+# output point back to the original Kotlin file. This is a deliberate
+# readability trade-off; remove these two attributes if APK size matters more
+# than crash diagnostics.
+-keepattributes SourceFile,LineNumberTable

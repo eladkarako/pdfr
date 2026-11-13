@@ -257,9 +257,11 @@ android {
             isMinifyEnabled = true
             println("[BUILD] Minification enabled")
 
-            //noinspection NotShrinkingResources
-            isShrinkResources = false
-            println("[BUILD] Resource shrinking disabled (ProGuard handles minification)")
+            // Resource shrinking removes strings, colours, dimensions and
+            // drawables that no reachable code references. It needs R8's
+            // minification pass above, so the two always travel together.
+            isShrinkResources = true
+            println("[BUILD] Resource shrinking enabled")
 
             if (keystore_config != null) {
                 println("[BUILD] Using release signing config")
@@ -290,12 +292,22 @@ android {
 
     buildFeatures {
         compose = true
-        println("[BUILD] Jetpack Compose enabled")
+        // PDFr does not read BuildConfig at runtime, so do not generate it.
+        buildConfig = false
+        println("[BUILD] Jetpack Compose enabled, BuildConfig disabled")
     }
 
     androidResources {
         println("[RESOURCES] Optimizing resources...")
+        // The app and its libraries ship English only. Keeping one locale
+        // strips the other ~80 translations bundled by AndroidX and Material,
+        // which are never shown by PDFr.
+        localeFilters += listOf("en")
+        println("[RESOURCES] Locale filter: en")
         println("[RESOURCES] Storing binary files uncompressed (already compressed)")
+        // These formats are already compressed, so deflating them again costs
+        // install time without making the APK meaningfully smaller. The native
+        // libraries are handled separately by the Android packaging step.
         noCompress += listOf("png", "jpg", "jpeg", "webp", "m4a", "mp4", "flac", "ogg")
     }
 
