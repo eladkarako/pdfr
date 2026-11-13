@@ -873,7 +873,9 @@ private fun NormalizeDialog(
     }
 
     fun updateQuality(text: String) {
-        qualityText = text.filter(Char::isDigit).take(3)
+        qualityText = text
+            .filter(Char::isDigit)
+            .take(NormalizeOptions.MAX_JPEG_QUALITY.toString().length)
         qualityText.toIntOrNull()?.let { quality ->
             options = options.copy(jpegQuality = quality)
         }
