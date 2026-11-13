@@ -333,6 +333,28 @@ class DocumentMetadataTest {
         }
     }
 
+    @Test
+    fun editorLimitsStayGenerousButBounded() {
+        assertTrue(DocumentMetadataDraft.MAX_FILE_NAME_LENGTH in 64..512)
+        assertTrue(DocumentMetadataDraft.MAX_FIELD_VALUE_LENGTH >= 255)
+        assertTrue(
+            "a file name must have room for an extension",
+            DocumentMetadataDraft.MAX_FILE_NAME_LENGTH > DocumentFormats.MAX_EXTENSION_LENGTH,
+        )
+    }
+
+    @Test
+    fun extensionValidationSharesTheDocumentFormatBoundary() {
+        val atLimit = "a".repeat(DocumentFormats.MAX_EXTENSION_LENGTH)
+        val overLimit = "a".repeat(DocumentFormats.MAX_EXTENSION_LENGTH + 1)
+
+        assertTrue(DocumentMetadataDraft("book", atLimit).extensionValid)
+        assertFalse(DocumentMetadataDraft("book", overLimit).extensionValid)
+        // No extension at all is valid; the document keeps its provider name.
+        assertTrue(DocumentMetadataDraft("book", "").extensionValid)
+        assertFalse(DocumentMetadataDraft("book", "p df").extensionValid)
+    }
+
     private fun createTempDir(): File =
         File(System.getProperty("java.io.tmpdir"), "pdfr-meta-${System.nanoTime()}")
             .apply { mkdirs() }

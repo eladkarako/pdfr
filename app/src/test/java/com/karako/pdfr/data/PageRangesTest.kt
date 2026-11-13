@@ -3,6 +3,7 @@ package com.karako.pdfr.data
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PageRangesTest {
@@ -112,5 +113,19 @@ class PageRangesTest {
     @Test
     fun errorTokenIsNullForUnknownNumbers() {
         assertNull(error("nope").page)
+    }
+
+    @Test
+    fun allPagesDefaultSelectsEveryPage() {
+        assertArrayEquals(
+            intArrayOf(1, 2, 3, 4),
+            pages(PageRanges.ALL_PAGES, pageCount = 4).toIntArray(),
+        )
+    }
+
+    @Test
+    fun theInputLimitIsGenerousButBounded() {
+        assertTrue(PageRanges.MAX_INPUT_LENGTH in 100..10_000)
+        assertTrue(PageRanges.ALL_PAGES.length <= PageRanges.MAX_INPUT_LENGTH)
     }
 }

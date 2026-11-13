@@ -25,6 +25,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 | `TestPdfWriter.kt`                 | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`.                                                                                                                                                                  |
 | `MuPdfDocumentInstrumentedTest.kt` | Opens, renders, selects text, reorders/rotates/normalizes/fixes, edits PDF metadata, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
 | `ImageMetadataInstrumentedTest.kt` | Reads and writes JPEG/PNG/WebP metadata through the real Android `ExifInterface`, checks XMP/IPTC/ICC fallbacks and sidecar behaviour, and verifies that unsupported formats stay read-only. |
+| `DocumentStoreInstrumentedTest.kt` | Imports a document through `ContentResolver`, checks the cache layout, safe names and timestamps, stale-document cleanup, empty-file rejection, derived rewrite files, share copies and discard (including the metadata sidecar). |
 
 ## What is covered
 
@@ -62,6 +63,10 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 - Reflow zoom: halving the layout width at the same em reflows long text onto
   more pages without losing the first or last paragraph.
 - PDFs reject the text-only monospace override.
+- `DocumentStore`: importing copies into `cache/documents/<uuid>/<name>`, keeps
+  the source timestamp, sanitises illegal characters, rejects empty files,
+  removes the previous document, allocates unique rewrite directories, clears
+  old share copies and deletes the sidecar with a discarded document.
 
 The gesture itself (live resize under the fingers, anchored centroid, deferred
 reflow, two-finger pan) cannot be driven through `am instrument`, because it

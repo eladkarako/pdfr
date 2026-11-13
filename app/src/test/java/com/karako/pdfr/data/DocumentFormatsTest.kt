@@ -231,4 +231,35 @@ class DocumentFormatsTest {
         assertNull(DocumentFormats.extensionOf("trailing."))
         assertNull(DocumentFormats.extensionOf("weird.longextension"))
     }
+
+    @Test
+    fun octetStreamFallbackIsSharedByTheStoreAndPicker() {
+        assertEquals("application/octet-stream", DocumentFormats.OCTET_STREAM)
+        assertTrue(DocumentFormats.PICKER_MIME_TYPES.contains(DocumentFormats.OCTET_STREAM))
+        assertEquals(
+            DocumentFormats.OCTET_STREAM,
+            DocumentFormats.mimeTypeForFile(File("no-extension")),
+        )
+    }
+
+    @Test
+    fun extensionLimitAcceptsTheBoundaryAndRejectsLongerSuffixes() {
+        val atLimit = "a".repeat(DocumentFormats.MAX_EXTENSION_LENGTH)
+        val overLimit = "a".repeat(DocumentFormats.MAX_EXTENSION_LENGTH + 1)
+
+        assertEquals(atLimit, DocumentFormats.extensionOf("file.$atLimit"))
+        assertNull(DocumentFormats.extensionOf("file.$overLimit"))
+    }
+
+    @Test
+    fun textSamplingHonoursTheRequestedByteLimit() {
+        val bytes = byteArrayOf(0x00, 'h'.code.toByte(), 'i'.code.toByte())
+        val file = tempFile(bytes)
+
+        // A NUL in the sampled prefix is treated as binary...
+        assertFalse(DocumentFormats.looksLikeText(file, maxBytes = 1))
+        // ...but sampling only the text after it is accepted.
+        val tail = tempFile(bytes.copyOfRange(1, bytes.size))
+        assertTrue(DocumentFormats.looksLikeText(tail, maxBytes = 2))
+    }
 }
