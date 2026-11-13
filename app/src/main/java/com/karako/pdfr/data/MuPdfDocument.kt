@@ -196,7 +196,8 @@ class MuPdfDocument private constructor(
         if (closed) return null
 
         val bounds = pageBounds(index) ?: return null
-        val width = targetWidthPx.coerceIn(MuPdfConfig.MIN_RENDER_WIDTH, MuPdfConfig.MAX_RENDER_WIDTH)
+        val width =
+            targetWidthPx.coerceIn(MuPdfConfig.MIN_RENDER_WIDTH, MuPdfConfig.MAX_RENDER_WIDTH)
 
         // Very tall pages at 400% zoom could otherwise allocate a bitmap
         // large enough to exhaust the heap. Render above screen density but
@@ -294,7 +295,7 @@ class MuPdfDocument private constructor(
         val kind = kindOf(format, file.name)
         val pdfMetadata = if (kind == DocumentFormats.PDF_KIND) PdfMetadata.read(document) else null
         val isImage = kind != DocumentFormats.PDF_KIND &&
-            (DocumentFormats.isImageName(file.name) || DocumentFormats.isImageKind(kind))
+                (DocumentFormats.isImageName(file.name) || DocumentFormats.isImageKind(kind))
         val imageFields = if (isImage) ImageMetadata.read(file) else emptyList()
 
         DocumentInfo(
@@ -579,6 +580,7 @@ class MuPdfDocument private constructor(
                 value.contains(DocumentFormats.XPS_KIND) -> DocumentFormats.XPS_KIND
                 value.contains(DocumentFormats.CBZ_KIND) || value.contains("COMIC") ->
                     DocumentFormats.CBZ_KIND
+
                 format != null -> format.substringBefore(' ').uppercase()
                 else -> DocumentFormats.extensionOf(fileName)?.uppercase()
                     ?: DocumentFormats.DOCUMENT_KIND

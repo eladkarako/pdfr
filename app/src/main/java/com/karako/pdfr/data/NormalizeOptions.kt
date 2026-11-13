@@ -41,8 +41,8 @@ data class NormalizeOptions(
     /** True when at least one option would change the output. */
     val hasWork: Boolean
         get() = compressStreams || decodeAllStreams || recompressFlate ||
-            compressionLevel9 || optimizeImages || newlineBeforeEndstream ||
-            removeUnreferencedResources || externalizeInlineImages || linearize || pdfA
+                compressionLevel9 || optimizeImages || newlineBeforeEndstream ||
+                removeUnreferencedResources || externalizeInlineImages || linearize || pdfA
 
     /** JPEG quality is only meaningful when qpdf is re-encoding images. */
     val jpegQualityValid: Boolean

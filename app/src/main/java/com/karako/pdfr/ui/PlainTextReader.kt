@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -450,7 +449,10 @@ private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
         alpha.snapTo(ReaderConfig.PAGE_BADGE_START_ALPHA)
         alpha.animateTo(
             targetValue = ReaderConfig.PAGE_BADGE_END_ALPHA,
-            animationSpec = tween(durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS, easing = LinearEasing),
+            animationSpec = tween(
+                durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS,
+                easing = LinearEasing
+            ),
         )
     }
     Surface(

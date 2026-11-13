@@ -43,7 +43,7 @@ object DocumentStore {
             ?.trim()
             ?.takeIf {
                 it.length <= StorageConfig.MAX_PATH_SEGMENT_LENGTH &&
-                    DocumentFormats.extensionOf(it) != null
+                        DocumentFormats.extensionOf(it) != null
             }
     }
 
@@ -120,7 +120,10 @@ object DocumentStore {
             context.contentResolver.update(
                 uri,
                 ContentValues().apply {
-                    put(MediaStore.MediaColumns.DATE_MODIFIED, value / StorageConfig.MILLIS_PER_SECOND)
+                    put(
+                        MediaStore.MediaColumns.DATE_MODIFIED,
+                        value / StorageConfig.MILLIS_PER_SECOND
+                    )
                 },
                 null,
                 null,

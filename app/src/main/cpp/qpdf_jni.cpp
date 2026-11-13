@@ -105,16 +105,16 @@ namespace {
         qpdf_offset_t offset{0};
         qpdf_offset_t last_offset{0};
         int last_obj{0};
-        std::vector<QPDFXRefEntry> xref;
+        std::vector <QPDFXRefEntry> xref;
         qpdf_offset_t stream_start{0};
         size_t stream_length{0};
         qpdf_offset_t xref_offset{0};
         size_t xref_f1_nbytes{0};
         size_t xref_f2_nbytes{0};
         size_t xref_size{0};
-        std::vector<std::string_view> ostream;
-        std::vector<qpdf_offset_t> ostream_offsets;
-        std::vector<std::string_view> ostream_discarded;
+        std::vector <std::string_view> ostream;
+        std::vector <qpdf_offset_t> ostream_offsets;
+        std::vector <std::string_view> ostream_discarded;
         size_t ostream_idx{0};
         int ostream_id{0};
         std::string ostream_extends;
@@ -484,16 +484,16 @@ namespace {
             std::string data;
         };
 
-        const std::vector<Tag> tags = {
-            {"desc", iccDescTag(std::string(SRGB_PROFILE_NAME))},
-            {"cprt", iccTextTag(std::string(SRGB_COPYRIGHT))},
-            {"wtpt", iccXyzTag(ICC_ILLUMINANT_X, ICC_ILLUMINANT_Y, ICC_ILLUMINANT_Z)},
-            {"rXYZ", iccXyzTag(0.4360747, 0.2225045, 0.0139322)},
-            {"gXYZ", iccXyzTag(0.3850649, 0.7168786, 0.0971045)},
-            {"bXYZ", iccXyzTag(0.1430804, 0.0606169, 0.7141733)},
-            {"rTRC", iccCurveTag()},
-            {"gTRC", iccCurveTag()},
-            {"bTRC", iccCurveTag()},
+        const std::vector <Tag> tags = {
+                {"desc", iccDescTag(std::string(SRGB_PROFILE_NAME))},
+                {"cprt", iccTextTag(std::string(SRGB_COPYRIGHT))},
+                {"wtpt", iccXyzTag(ICC_ILLUMINANT_X, ICC_ILLUMINANT_Y, ICC_ILLUMINANT_Z)},
+                {"rXYZ", iccXyzTag(0.4360747, 0.2225045, 0.0139322)},
+                {"gXYZ", iccXyzTag(0.3850649, 0.7168786, 0.0971045)},
+                {"bXYZ", iccXyzTag(0.1430804, 0.0606169, 0.7141733)},
+                {"rTRC", iccCurveTag()},
+                {"gTRC", iccCurveTag()},
+                {"bTRC", iccCurveTag()},
         };
 
         const auto padding = [](size_t size) { return (size + 3) & ~size_t(3); };
@@ -701,7 +701,7 @@ Java_com_karako_pdfr_data_Qpdf_nativeNormalize(
         return failure(env, std::string(ERROR_MISSING_PATHS));
     }
 
-    std::vector<std::string> args;
+    std::vector <std::string> args;
     args.emplace_back(PROGRAM_NAME);
     args.push_back(input);
     args.push_back(output);
@@ -751,7 +751,7 @@ Java_com_karako_pdfr_data_Qpdf_nativeNormalize(
 
     // initializeFromArgv may reorder or otherwise touch the argument array,
     // so give it writable, NUL-terminated copies rather than string internals.
-    std::vector<std::vector<char>> buffers;
+    std::vector <std::vector<char>> buffers;
     buffers.reserve(args.size());
     for (auto const &arg: args) {
         buffers.emplace_back(arg.c_str(), arg.c_str() + arg.size() + 1);

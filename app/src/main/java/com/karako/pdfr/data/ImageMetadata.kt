@@ -43,8 +43,16 @@ object ImageMetadata {
 
     /** Ordered exactly as the info dialog shows image metadata. */
     val SLOTS = listOf(
-        ImageFieldSpec(MetadataKeys.EXIF_PREFIX + "Make", ExifInterface.TAG_MAKE, XmpProperties.TIFF_MAKE),
-        ImageFieldSpec(MetadataKeys.EXIF_PREFIX + "Model", ExifInterface.TAG_MODEL, XmpProperties.TIFF_MODEL),
+        ImageFieldSpec(
+            MetadataKeys.EXIF_PREFIX + "Make",
+            ExifInterface.TAG_MAKE,
+            XmpProperties.TIFF_MAKE
+        ),
+        ImageFieldSpec(
+            MetadataKeys.EXIF_PREFIX + "Model",
+            ExifInterface.TAG_MODEL,
+            XmpProperties.TIFF_MODEL
+        ),
         ImageFieldSpec(
             MetadataKeys.EXIF_PREFIX + "LensModel",
             ExifInterface.TAG_LENS_MODEL,
@@ -67,7 +75,11 @@ object ImageMetadata {
             ExifInterface.TAG_EXPOSURE_TIME,
             XmpProperties.EXIF_EXPOSURE_TIME,
         ),
-        ImageFieldSpec(MetadataKeys.EXIF_PREFIX + "FNumber", ExifInterface.TAG_F_NUMBER, XmpProperties.EXIF_F_NUMBER),
+        ImageFieldSpec(
+            MetadataKeys.EXIF_PREFIX + "FNumber",
+            ExifInterface.TAG_F_NUMBER,
+            XmpProperties.EXIF_F_NUMBER
+        ),
         ImageFieldSpec(
             MetadataKeys.EXIF_PREFIX + "ISOSpeedRatings",
             ExifInterface.TAG_ISO_SPEED_RATINGS,
@@ -108,7 +120,11 @@ object ImageMetadata {
             ExifInterface.TAG_COLOR_SPACE,
             XmpProperties.EXIF_COLOR_SPACE,
         ),
-        ImageFieldSpec(MetadataKeys.EXIF_PREFIX + "Software", ExifInterface.TAG_SOFTWARE, XmpProperties.XMP_CREATOR_TOOL),
+        ImageFieldSpec(
+            MetadataKeys.EXIF_PREFIX + "Software",
+            ExifInterface.TAG_SOFTWARE,
+            XmpProperties.XMP_CREATOR_TOOL
+        ),
         ImageFieldSpec(GPS_LATITUDE, ExifInterface.TAG_GPS_LATITUDE),
         ImageFieldSpec(GPS_LONGITUDE, ExifInterface.TAG_GPS_LONGITUDE),
         ImageFieldSpec(GPS_ALTITUDE, ExifInterface.TAG_GPS_ALTITUDE),
@@ -150,7 +166,10 @@ object ImageMetadata {
             xmpKey = XmpProperties.PHOTOSHOP_COUNTRY,
             iptcDataset = 101,
         ),
-        ImageFieldSpec(MetadataKeys.XMP_PREFIX + XmpProperties.XMP_RATING, xmpKey = XmpProperties.XMP_RATING),
+        ImageFieldSpec(
+            MetadataKeys.XMP_PREFIX + XmpProperties.XMP_RATING,
+            xmpKey = XmpProperties.XMP_RATING
+        ),
         ImageFieldSpec(ICC_KEY),
     )
 
@@ -468,7 +487,7 @@ object ImageMetadata {
             val head = ByteArray(12)
             if (stream.read(head) != head.size) return@use false
             String(head, 0, 4, Charsets.ISO_8859_1) == "RIFF" &&
-                String(head, 8, 4, Charsets.ISO_8859_1) == "WEBP"
+                    String(head, 8, 4, Charsets.ISO_8859_1) == "WEBP"
         }
     }.getOrDefault(false)
 

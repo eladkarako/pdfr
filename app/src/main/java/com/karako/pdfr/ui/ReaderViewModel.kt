@@ -142,7 +142,8 @@ class ReaderViewModel(
 
     // Text options are global: they stay in effect when the next document is
     // opened, and survive rotation/process death through SavedStateHandle.
-    private var textSizePt = TextSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
+    private var textSizePt =
+        TextSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
     private var singlePage =
         savedState.get<Boolean>(ReaderConfig.KEY_SINGLE_PAGE)
             ?: ReaderConfig.DEFAULT_SINGLE_PAGE
@@ -229,7 +230,7 @@ class ReaderViewModel(
                             imported,
                             mapOf(
                                 DocumentMetadataDraft.KEY_FILE_CREATED to
-                                    DocumentDates.formatIso(created),
+                                        DocumentDates.formatIso(created),
                             ),
                         )
                     }

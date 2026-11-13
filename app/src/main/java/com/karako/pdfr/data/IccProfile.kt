@@ -29,20 +29,20 @@ object IccProfile {
 
     private fun isJpeg(bytes: ByteArray): Boolean =
         bytes.size >= 2 &&
-            (bytes[0].toInt() and 0xFF) == 0xFF &&
-            (bytes[1].toInt() and 0xFF) == 0xD8
+                (bytes[0].toInt() and 0xFF) == 0xFF &&
+                (bytes[1].toInt() and 0xFF) == 0xD8
 
     private fun isPng(bytes: ByteArray): Boolean =
         bytes.size >= 8 &&
-            (bytes[0].toInt() and 0xFF) == 0x89 &&
-            bytes[1] == 'P'.code.toByte() &&
-            bytes[2] == 'N'.code.toByte() &&
-            bytes[3] == 'G'.code.toByte()
+                (bytes[0].toInt() and 0xFF) == 0x89 &&
+                bytes[1] == 'P'.code.toByte() &&
+                bytes[2] == 'N'.code.toByte() &&
+                bytes[3] == 'G'.code.toByte()
 
     private fun isWebp(bytes: ByteArray): Boolean =
         bytes.size >= 12 &&
-            String(bytes, 0, 4, Charsets.ISO_8859_1) == "RIFF" &&
-            String(bytes, 8, 4, Charsets.ISO_8859_1) == "WEBP"
+                String(bytes, 0, 4, Charsets.ISO_8859_1) == "RIFF" &&
+                String(bytes, 8, 4, Charsets.ISO_8859_1) == "WEBP"
 
     private fun jpegProfile(bytes: ByteArray): ByteArray? {
         val chunks = mutableMapOf<Int, ByteArray>()
@@ -200,23 +200,23 @@ object IccProfile {
     private fun int(bytes: ByteArray, index: Int): Int {
         if (index + 4 > bytes.size) return -1
         return ((bytes[index].toInt() and 0xFF) shl 24) or
-            ((bytes[index + 1].toInt() and 0xFF) shl 16) or
-            ((bytes[index + 2].toInt() and 0xFF) shl 8) or
-            (bytes[index + 3].toInt() and 0xFF)
+                ((bytes[index + 1].toInt() and 0xFF) shl 16) or
+                ((bytes[index + 2].toInt() and 0xFF) shl 8) or
+                (bytes[index + 3].toInt() and 0xFF)
     }
 
     private fun littleInt(bytes: ByteArray, index: Int): Int {
         if (index + 4 > bytes.size) return -1
         return (bytes[index].toInt() and 0xFF) or
-            ((bytes[index + 1].toInt() and 0xFF) shl 8) or
-            ((bytes[index + 2].toInt() and 0xFF) shl 16) or
-            ((bytes[index + 3].toInt() and 0xFF) shl 24)
+                ((bytes[index + 1].toInt() and 0xFF) shl 8) or
+                ((bytes[index + 2].toInt() and 0xFF) shl 16) or
+                ((bytes[index + 3].toInt() and 0xFF) shl 24)
     }
 
     private fun uint16(bytes: ByteArray, index: Int): Int {
         if (index + 2 > bytes.size) return 0
         return ((bytes[index].toInt() and 0xFF) shl 8) or
-            (bytes[index + 1].toInt() and 0xFF)
+                (bytes[index + 1].toInt() and 0xFF)
     }
 
     private fun start(index: Int) = index + 8

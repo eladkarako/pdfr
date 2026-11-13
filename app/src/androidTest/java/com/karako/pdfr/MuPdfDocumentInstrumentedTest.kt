@@ -7,9 +7,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.artifex.mupdf.fitz.Context
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.PDFPage
+import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.DocumentPasswordRequiredException
 import com.karako.pdfr.data.DocumentWrongPasswordException
-import com.karako.pdfr.data.DocumentMetadataDraft
 import com.karako.pdfr.data.MuPdf
 import com.karako.pdfr.data.MuPdfDocument
 import com.karako.pdfr.data.NormalizeOptions

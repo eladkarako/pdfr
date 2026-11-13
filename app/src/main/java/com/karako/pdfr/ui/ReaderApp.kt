@@ -360,7 +360,7 @@ fun ReaderApp(
                                 // is chosen. It never appears for non-PDFs.
                                 val canFixPdf =
                                     (ready?.info?.isPdf == true) ||
-                                        state is ReaderState.Empty
+                                            state is ReaderState.Empty
                                 if (canFixPdf) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.fix_pdf)) },
@@ -883,7 +883,7 @@ private fun NormalizeDialog(
 
     val quality = qualityText.toIntOrNull()
     val qualityValid = quality != null &&
-        quality in NormalizeOptions.MIN_JPEG_QUALITY..NormalizeOptions.MAX_JPEG_QUALITY
+            quality in NormalizeOptions.MIN_JPEG_QUALITY..NormalizeOptions.MAX_JPEG_QUALITY
     val needsQuality = options.optimizeImages
     val canApply = options.hasWork && (!needsQuality || qualityValid)
 
@@ -1535,8 +1535,9 @@ private fun PageItem(
     }
 
     val bounds = rendered?.bounds
-    val aspect = bounds?.let { if (it.width > 0f) it.height / it.width else ReaderConfig.DEFAULT_PAGE_ASPECT }
-        ?: ReaderConfig.DEFAULT_PAGE_ASPECT
+    val aspect =
+        bounds?.let { if (it.width > 0f) it.height / it.width else ReaderConfig.DEFAULT_PAGE_ASPECT }
+            ?: ReaderConfig.DEFAULT_PAGE_ASPECT
     val density = LocalDensity.current
     val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
     val pageHeightDp = with(density) { (pageWidthPx * aspect).toDp() }

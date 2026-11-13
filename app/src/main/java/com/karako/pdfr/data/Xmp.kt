@@ -1,7 +1,6 @@
 package com.karako.pdfr.data
 
 import org.w3c.dom.Attr
-import org.w3c.dom.Document as XmlDocument
 import org.w3c.dom.Element
 import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
@@ -9,6 +8,7 @@ import javax.xml.transform.OutputKeys
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
+import org.w3c.dom.Document as XmlDocument
 
 /**
  * A small XMP reader and writer shared by PDF and image metadata.
@@ -44,7 +44,8 @@ object Xmp {
                 val attribute = attributes.item(i) ?: continue
                 val prefix = attribute.prefix ?: continue
                 if (prefix == "xmlns" || prefix == "xml" || prefix == "rdf") continue
-                val qname = "$prefix:${attribute.localName ?: attribute.nodeName.substringAfter(':')}"
+                val qname =
+                    "$prefix:${attribute.localName ?: attribute.nodeName.substringAfter(':')}"
                 val value = attribute.nodeValue?.trim().orEmpty()
                 if (value.isNotEmpty()) values[qname] = value
             }
@@ -98,7 +99,7 @@ object Xmp {
             XmpProperties.DC_TITLE,
             XmpProperties.DC_DESCRIPTION,
             XmpProperties.DC_RIGHTS,
-            -> setAlt(xml, description, qname, value)
+                -> setAlt(xml, description, qname, value)
 
             XmpProperties.DC_CREATOR -> setSeq(xml, description, qname, value)
             XmpProperties.DC_SUBJECT -> setBag(xml, description, qname, value)
@@ -188,7 +189,15 @@ object Xmp {
         val attributes = description.attributes
         for (i in 0 until attributes.length) {
             val attribute = attributes.item(i) as? Attr ?: continue
-            if (matches(attribute.nodeName, attribute.localName, attribute.namespaceURI, qname, local, namespace)) {
+            if (matches(
+                    attribute.nodeName,
+                    attribute.localName,
+                    attribute.namespaceURI,
+                    qname,
+                    local,
+                    namespace
+                )
+            ) {
                 return true
             }
         }
@@ -196,7 +205,15 @@ object Xmp {
         val children = description.childNodes
         for (i in 0 until children.length) {
             val element = children.item(i) as? Element ?: continue
-            if (matches(element.nodeName, element.localName, element.namespaceURI, qname, local, namespace)) {
+            if (matches(
+                    element.nodeName,
+                    element.localName,
+                    element.namespaceURI,
+                    qname,
+                    local,
+                    namespace
+                )
+            ) {
                 return true
             }
         }
@@ -211,7 +228,7 @@ object Xmp {
         local: String,
         namespace: String?,
     ): Boolean = name == qname ||
-        (localName == local && (namespace == null || namespaceUri == namespace))
+            (localName == local && (namespace == null || namespaceUri == namespace))
 
     private fun removeProperty(description: Element, qname: String) {
         val prefix = qname.substringBefore(':', "")
@@ -221,7 +238,15 @@ object Xmp {
         val attributes = description.attributes
         for (i in attributes.length - 1 downTo 0) {
             val attribute = attributes.item(i) as? Attr ?: continue
-            if (matches(attribute.nodeName, attribute.localName, attribute.namespaceURI, qname, local, namespace)) {
+            if (matches(
+                    attribute.nodeName,
+                    attribute.localName,
+                    attribute.namespaceURI,
+                    qname,
+                    local,
+                    namespace
+                )
+            ) {
                 description.removeAttributeNode(attribute)
             }
         }
@@ -229,7 +254,15 @@ object Xmp {
         val children = description.childNodes
         for (i in children.length - 1 downTo 0) {
             val element = children.item(i) as? Element ?: continue
-            if (matches(element.nodeName, element.localName, element.namespaceURI, qname, local, namespace)) {
+            if (matches(
+                    element.nodeName,
+                    element.localName,
+                    element.namespaceURI,
+                    qname,
+                    local,
+                    namespace
+                )
+            ) {
                 description.removeChild(element)
             }
         }

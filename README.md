@@ -2,6 +2,8 @@
 
 📱 PDF reader for Android.
 
+Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/qpdf/qpdf).
+
 ## 👀 Privacy
 
 - 🚫 no network permission.
@@ -237,7 +239,7 @@ plain Kotlin so unit tests can read them without an Android context.
 <details><summary><h2>📦 Build</h2></summary>
 
 - ☕ JDK 17
-- 🤖 Android SDK 36
+- 🤖 Android SDK 37
 - 🐘 Gradle 9.8.2
 - 🧩 The official prebuilt MuPDF AAR `com.artifex.mupdf:fitz:1.28.5` is resolved
   from `https://maven.ghostscript.com`.
@@ -469,15 +471,6 @@ If the app works fully offline, it does not need the internet. If it fails to lo
 1. 📴 Remove the proxy from the Wi-Fi network settings.
 2. 🗑️ Remove the Burp CA certificate from **Settings > Security > Encryption & credentials > User credentials**.
 3. ⏹️ Stop Burp Suite and delete the temporary project if you no longer need the logs.
-
-</details>
-
-<hr/>
-
-<details><summary><h2>⚙️ engines</h2></summary>
-
-- 🧩 [MuPDF](https://mupdf.com/)
-- 🔧 [qPDF](https://github.com/qpdf/qpdf)
 
 </details>
 

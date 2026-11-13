@@ -32,8 +32,8 @@ data class DocumentMetadataDraft(
             value.isNullOrBlank() || DocumentDates.parseIso(value) != null
         } && fields.all { field ->
             field.kind != MetadataValueKind.DATE_TIME ||
-                field.value.isBlank() ||
-                DocumentDates.parseFlexible(field.value) != null
+                    field.value.isBlank() ||
+                    DocumentDates.parseFlexible(field.value) != null
         }
 
     val isValid: Boolean

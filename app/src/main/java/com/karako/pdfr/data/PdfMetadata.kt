@@ -63,7 +63,10 @@ object PdfMetadata {
     }
 
     /** The eight standard values, already normalised to the editor's shape. */
-    fun standardFields(snapshot: Snapshot, timeZone: TimeZone = TimeZone.getDefault()): Map<String, String> {
+    fun standardFields(
+        snapshot: Snapshot,
+        timeZone: TimeZone = TimeZone.getDefault()
+    ): Map<String, String> {
         val values = linkedMapOf<String, String>()
         PdfMetadataInfo.STANDARD.forEach { standard ->
             val raw = snapshot.info[standard.infoKey] ?: snapshot.xmp[standard.xmpKey]

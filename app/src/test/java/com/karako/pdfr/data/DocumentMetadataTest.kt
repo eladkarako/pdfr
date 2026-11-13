@@ -269,7 +269,11 @@ class DocumentMetadataTest {
                 MetadataField("info:Company", "ACME"),
                 MetadataField("xmp:photoshop:City", "Haifa"),
                 MetadataField("xmp:xmp:Label", ""),
-                MetadataField("info:CustomDate", "2026-01-02T03:04:05", MetadataValueKind.DATE_TIME),
+                MetadataField(
+                    "info:CustomDate",
+                    "2026-01-02T03:04:05",
+                    MetadataValueKind.DATE_TIME
+                ),
             ),
         )
 
@@ -293,7 +297,13 @@ class DocumentMetadataTest {
             DocumentMetadataDraft(
                 "book",
                 "pdf",
-                fields = listOf(MetadataField("info:Date", "yesterday", MetadataValueKind.DATE_TIME)),
+                fields = listOf(
+                    MetadataField(
+                        "info:Date",
+                        "yesterday",
+                        MetadataValueKind.DATE_TIME
+                    )
+                ),
             ).isValid,
         )
         assertTrue(

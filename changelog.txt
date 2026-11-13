@@ -1,3 +1,5 @@
+26.11.13
+
 26.11.11
 + replaced **Linearize** and **Compact** with **Normalize**: a qpdf-driven dialog with individually selectable stream compression, decode-all/recompress-Flate, compression level 9, image optimisation with a 0-100 JPEG quality, newline-before-endstream, unreferenced-resource removal, inline-image externalisation, linearization and best-effort PDF/A-2b.
 + Normalize runs the selected transformations in a single qpdf pass, so decoding, image optimisation, compression and linearization feed each other without intermediate PDFs.

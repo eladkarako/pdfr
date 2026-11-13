@@ -1,7 +1,6 @@
 package com.karako.pdfr.data
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,7 +18,8 @@ class ImageMetadataFormatsTest {
     private val directory: File = createTempDir()
 
     private fun createTempDir(): File {
-        val dir = File(System.getProperty("java.io.tmpdir"), "pdfr-image-tests-${System.nanoTime()}")
+        val dir =
+            File(System.getProperty("java.io.tmpdir"), "pdfr-image-tests-${System.nanoTime()}")
         dir.mkdirs()
         return dir
     }
@@ -199,7 +199,14 @@ class ImageMetadataFormatsTest {
             }.toByteArray(),
         )
 
-    private fun timeChunk(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): ByteArray =
+    private fun timeChunk(
+        year: Int,
+        month: Int,
+        day: Int,
+        hour: Int,
+        minute: Int,
+        second: Int
+    ): ByteArray =
         pngChunk(
             "tIME",
             ByteArrayOutputStream().apply {
@@ -297,7 +304,8 @@ class ImageMetadataFormatsTest {
         ByteArrayOutputStream().apply { writeInt(144) }.toByteArray().copyInto(profile, 136)
         ByteArrayOutputStream().apply { writeInt(descTagSize) }.toByteArray().copyInto(profile, 140)
         "desc".toByteArray(Charsets.ISO_8859_1).copyInto(profile, 144)
-        ByteArrayOutputStream().apply { writeInt(text.size + 1) }.toByteArray().copyInto(profile, 152)
+        ByteArrayOutputStream().apply { writeInt(text.size + 1) }.toByteArray()
+            .copyInto(profile, 152)
         text.copyInto(profile, 156)
         return profile
     }

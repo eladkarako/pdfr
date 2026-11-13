@@ -56,7 +56,10 @@ object PngMetadata {
                     if (terminator > dataStart) {
                         val keyword = text(bytes, dataStart, terminator - dataStart)
                         val value = text(bytes, terminator + 1, dataStart + length - terminator - 1)
-                        if (keyword.isNotEmpty()) fields += MetadataField(TEXT_PREFIX + keyword, value)
+                        if (keyword.isNotEmpty()) fields += MetadataField(
+                            TEXT_PREFIX + keyword,
+                            value
+                        )
                     }
                 }
 
@@ -103,7 +106,11 @@ object PngMetadata {
     }
 
     /** Applies the `png:` fields, returning false when the file is not a PNG. */
-    fun write(file: File, fields: List<MetadataField>, timeZone: TimeZone = TimeZone.getDefault()): Boolean {
+    fun write(
+        file: File,
+        fields: List<MetadataField>,
+        timeZone: TimeZone = TimeZone.getDefault()
+    ): Boolean {
         val updates = fields
             .filter { it.key.startsWith(MetadataKeys.PNG_PREFIX) }
             .associate { it.key to it.value.trim() }
@@ -182,21 +189,26 @@ object PngMetadata {
         }
     }
 
-    private fun fieldKey(type: String, bytes: ByteArray, start: Int, length: Int): String? = when (type) {
-        "tEXt" -> {
-            val terminator = indexOfNull(bytes, start, start + length)
-            if (terminator > start) TEXT_PREFIX + text(bytes, start, terminator - start) else null
+    private fun fieldKey(type: String, bytes: ByteArray, start: Int, length: Int): String? =
+        when (type) {
+            "tEXt" -> {
+                val terminator = indexOfNull(bytes, start, start + length)
+                if (terminator > start) TEXT_PREFIX + text(
+                    bytes,
+                    start,
+                    terminator - start
+                ) else null
+            }
+
+            "iTXt" -> parseITxt(bytes, start, length)?.first
+                ?.takeIf { it.isNotEmpty() && it != XMP_KEYWORD }
+                ?.let { ITXT_PREFIX + it }
+
+            "pHYs" -> PHYS_KEY
+            "gAMA" -> GAMA_KEY
+            "tIME" -> TIME_KEY
+            else -> null
         }
-
-        "iTXt" -> parseITxt(bytes, start, length)?.first
-            ?.takeIf { it.isNotEmpty() && it != XMP_KEYWORD }
-            ?.let { ITXT_PREFIX + it }
-
-        "pHYs" -> PHYS_KEY
-        "gAMA" -> GAMA_KEY
-        "tIME" -> TIME_KEY
-        else -> null
-    }
 
     private fun encode(
         type: String,
@@ -325,20 +337,20 @@ object PngMetadata {
 
     private fun isPng(bytes: ByteArray): Boolean =
         bytes.size >= pngSignature.size &&
-            bytes.copyOfRange(0, pngSignature.size).contentEquals(pngSignature)
+                bytes.copyOfRange(0, pngSignature.size).contentEquals(pngSignature)
 
     private fun intAt(bytes: ByteArray, index: Int): Int {
         if (index + 4 > bytes.size) return -1
         return ((bytes[index].toInt() and 0xFF) shl 24) or
-            ((bytes[index + 1].toInt() and 0xFF) shl 16) or
-            ((bytes[index + 2].toInt() and 0xFF) shl 8) or
-            (bytes[index + 3].toInt() and 0xFF)
+                ((bytes[index + 1].toInt() and 0xFF) shl 16) or
+                ((bytes[index + 2].toInt() and 0xFF) shl 8) or
+                (bytes[index + 3].toInt() and 0xFF)
     }
 
     private fun uint16At(bytes: ByteArray, index: Int): Int {
         if (index + 2 > bytes.size) return 0
         return ((bytes[index].toInt() and 0xFF) shl 8) or
-            (bytes[index + 1].toInt() and 0xFF)
+                (bytes[index + 1].toInt() and 0xFF)
     }
 
     private fun ByteArrayOutputStream.writeInt(value: Int) {

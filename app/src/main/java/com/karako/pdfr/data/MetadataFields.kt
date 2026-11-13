@@ -83,7 +83,11 @@ object MetadataSchema {
 
     fun looksLikeDate(key: String): Boolean = dateName.containsMatchIn(key)
 
-    fun kindFor(key: String, value: String, timeZone: java.util.TimeZone = java.util.TimeZone.getDefault()): MetadataValueKind {
+    fun kindFor(
+        key: String,
+        value: String,
+        timeZone: java.util.TimeZone = java.util.TimeZone.getDefault()
+    ): MetadataValueKind {
         if (!looksLikeDate(key)) return MetadataValueKind.TEXT
         // A date-like key with text that is not a date probably came from an
         // unusual producer; keep it as text so it stays editable instead of
