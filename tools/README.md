@@ -36,7 +36,7 @@ tools\manual-testing.bat
 | `stop-emulator.bat` | `adb emu kill`. |
 | `install-debug.bat [abi]` | Builds `:app:assembleDebug`, detects the device ABI and installs the matching split APK. |
 | `run-unit-tests.bat [class]` | Runs the JVM tests (`:app:testDebugUnitTest`) and prints the report path. An optional class or `Class#method` filter runs just one test. |
-| `run-instrumented-tests.bat [class] [--start-emulator]` | Builds app + test APKs, installs both, and runs `AndroidJUnitRunner` on the device. Optional class/`Class#method` filter; `--start-emulator` starts the AVD first when no device is connected. Fails early with a hint instead of installing into nothing. |
+| `run-instrumented-tests.bat [class] [--start-emulator]` | Builds app + test APKs first, then installs both and runs `AndroidJUnitRunner` on the device. Optional class/`Class#method` filter; `--start-emulator` starts the AVD only after the build, so Gradle and the emulator do not compete for RAM. Fails early with a hint instead of installing into nothing. |
 | `push-fixtures.bat` | Generates the fixtures and downloads a few public-domain Project Gutenberg books (EPUB/TXT/HTML) into `gutenberg/`. Then pushes everything to `/sdcard/Download/pdfr-fixtures/`. |
 | `open-fixture.bat <name> [mime]` | Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then sends the app its own FileProvider URI. Needs the debug build. Falls back to a MediaStore `ACTION_VIEW` if the app is not debuggable. |
 | `manual-testing.bat` | Interactive menu for the scenarios below. |

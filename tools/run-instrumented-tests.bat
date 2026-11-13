@@ -26,6 +26,16 @@ if not exist "%ADB%" (
   exit /b 1
 )
 
+rem Build first: Gradle and the emulator are both memory-hungry, so the AVD is
+rem only started after the APKs exist. On a low-RAM machine this avoids the
+rem two competing for the same few gigabytes.
+echo [PDFr] Building app and test APKs...
+call "%PDFR_ROOT%\gradlew.bat" :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
+if errorlevel 1 (
+  echo [ERROR] Build failed.
+  exit /b 1
+)
+
 "%ADB%" start-server >nul 2>&1
 
 set "DEVICE="
@@ -44,13 +54,6 @@ if not defined DEVICE (
     echo         Or re-run this script with --start-emulator.
     exit /b 1
   )
-)
-
-echo [PDFr] Building app and test APKs...
-call "%PDFR_ROOT%\gradlew.bat" :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
-if errorlevel 1 (
-  echo [ERROR] Build failed.
-  exit /b 1
 )
 
 set "ABI="
