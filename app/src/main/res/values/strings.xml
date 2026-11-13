@@ -16,6 +16,9 @@
     <string name="error_title">Couldn\'t open that file</string>
     <string name="error_generic">Something went wrong while reading this file.</string>
     <string name="error_no_pages">That document has no readable pages.</string>
+    <string name="error_file_unreadable">Couldn\'t read that file. Try another copy of it.</string>
+    <string name="error_file_empty">That file is empty.</string>
+    <string name="error_location_not_writable">The selected location is not writable.</string>
     <string name="try_another">Try another file</string>
 
     <string name="document_info">Document info</string>

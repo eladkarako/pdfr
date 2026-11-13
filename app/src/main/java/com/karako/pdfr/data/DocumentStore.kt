@@ -6,6 +6,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import com.karako.pdfr.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -153,10 +154,12 @@ object DocumentStore {
             try {
                 context.contentResolver.openInputStream(uri)?.use { input ->
                     staging.outputStream().use { output -> input.copyTo(output) }
-                } ?: throw IOException("Couldn't read that file. Try another copy of it.")
+                } ?: throw IOException(
+                    context.getString(R.string.error_file_unreadable),
+                )
 
                 if (staging.length() == 0L) {
-                    throw IOException("That file is empty.")
+                    throw IOException(context.getString(R.string.error_file_empty))
                 }
 
                 if (!staging.renameTo(target)) {

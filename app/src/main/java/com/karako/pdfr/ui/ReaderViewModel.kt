@@ -907,7 +907,9 @@ class ReaderViewModel(
             try {
                 withContext(Dispatchers.IO) {
                     val output = app.contentResolver.openOutputStream(target, "wt")
-                        ?: throw IOException("The selected location is not writable.")
+                        ?: throw IOException(
+                            app.getString(R.string.error_location_not_writable),
+                        )
                     output.use { sink ->
                         ready.file.inputStream().use { source -> source.copyTo(sink) }
                     }
