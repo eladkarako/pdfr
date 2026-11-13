@@ -1,53 +1,78 @@
 @echo off
+setlocal
 chcp 65001 1>nul 2>nul
-pushd "%~dp0.."
+call "%~dp0_env.bat"
+pushd "%PDFR_ROOT%"
 if not exist "build\logs" mkdir "build\logs"
 
+set "LOG=build\logs\__verify_apk.log"
 set "LANG=en_US.UTF-8"
 set "LANGUAGE=en_US"
-set "LC_ADDRESS=en_US.UTF-8"
 set "LC_ALL=en_US.UTF-8"
 set "LC_COLLATE=en_US.UTF-8"
 set "LC_CTYPE=en_US.UTF-8"
-set "LC_IDENTIFICATION=en_US.UTF-8"
-set "LC_MEASUREMENT=en_US.UTF-8"
 set "LC_MESSAGES=en_US.UTF-8"
-set "LC_MONETARY=en_US.UTF-8"
-set "LC_NAME=en_US.UTF-8"
 set "LC_NUMERIC=en_US.UTF-8"
-set "LC_PAPER=en_US.UTF-8"
-set "LC_TELEPHONE=en_US.UTF-8"
 set "LC_TIME=en_US.UTF-8"
 set "TZ=UTC"
-
-call "taskkill.exe" /F /IM "java.exe"  /T
-call "taskkill.exe" /F /IM "javaw.exe" /T
-timeout /t 2
-call "taskkill.exe" /F /IM "java.exe"  /T
-call "taskkill.exe" /F /IM "javaw.exe" /T
-timeout /t 2
-
-echo.>"build\logs\__verify_apk.log"
-
 set "NO_COLOR=1"
 
-set "TARGET="
-if ["%~1"] neq [""] ( 
-  set "TARGET=%~1"
-) else ( 
-  set "TARGET=build\app\outputs\apk\release\app-arm64-v8a-release.apk"
+set "TARGET=%~1"
+if not defined TARGET set "TARGET=build\app\outputs\apk\release\app-arm64-v8a-release.apk"
+if not exist "%TARGET%" (
+  echo [ERROR] APK not found: "%TARGET%"
+  echo         Build it first, or pass the APK path as the first argument.
+  popd
+  exit /b 1
 )
 
-title verify signature (jarsigner)
-call "jarsigner.exe" -verify "-verbose:all" -certs "%TARGET%" 2>&1 | "tee.exe" --append "build\logs\__verify_apk.log"
+rem The SDK path can be customised with ANDROID_SDK_ROOT/ANDROID_HOME.
+set "APKSIGNER="
+for /f "delims=" %%D in ('dir /b /ad /o-n "%ANDROID_SDK_ROOT%\build-tools" 2^>nul') do (
+  if not defined APKSIGNER if exist "%ANDROID_SDK_ROOT%\build-tools\%%D\apksigner.bat" (
+    set "APKSIGNER=%ANDROID_SDK_ROOT%\build-tools\%%D\apksigner.bat"
+  )
+)
 
-echo.>>"build\logs\__verify_apk.log"
-echo.>>"build\logs\__verify_apk.log"
+set "JARSIGNER="
+where jarsigner.exe >nul 2>&1 && set "JARSIGNER=jarsigner.exe"
+if not defined JARSIGNER if defined JAVA_HOME if exist "%JAVA_HOME%\bin\jarsigner.exe" set "JARSIGNER=%JAVA_HOME%\bin\jarsigner.exe"
 
-title verify signature (apksigner)
-call "%LocalAppData%\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs --verbose "%TARGET%" 2>&1 | "tee.exe" --append "build\logs\__verify_apk.log"
+set "FAILED="
+echo.>"%LOG%"
 
-timeout /t 5
+echo [PDFr] Verifying "%TARGET%"...
+
+if defined JARSIGNER (
+  echo.>>"%LOG%"
+  echo == jarsigner ==>>"%LOG%"
+  "%JARSIGNER%" -verify -verbose:all -certs "%TARGET%" >>"%LOG%" 2>&1
+  if errorlevel 1 set "FAILED=1"
+) else (
+  echo [WARN] jarsigner not found; skipping the JAR signature check.
+  echo [WARN] jarsigner not found; skipping the JAR signature check.>>"%LOG%"
+)
+
+if defined APKSIGNER (
+  echo.>>"%LOG%"
+  echo == apksigner ==>>"%LOG%"
+  "%APKSIGNER%" verify --print-certs --verbose "%TARGET%" >>"%LOG%" 2>&1
+  if errorlevel 1 set "FAILED=1"
+) else (
+  echo [WARN] apksigner.bat not found under "%ANDROID_SDK_ROOT%\build-tools"; skipping the APK signature check.
+  echo [WARN] apksigner.bat not found; skipping the APK signature check.>>"%LOG%"
+)
+
+type "%LOG%"
+
+if defined FAILED (
+  echo.
+  echo [FAIL] Signature verification failed. See "%LOG%".
+  popd
+  exit /b 1
+)
+
+echo.
+echo [OK] Signature verification passed. Log: "%LOG%".
 popd
 exit /b 0
-:: for Windows tee - `winget install Microsoft.Coreutils` - https://learn.microsoft.com/en-us/windows/core-utils/overview  - (adds to the PATH C:\Program Files\coreutils\bin) \tee.exe

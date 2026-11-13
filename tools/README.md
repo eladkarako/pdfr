@@ -35,8 +35,8 @@ tools\manual-testing.bat
 | `start-emulator.bat [avd]` | Starts the AVD without a snapshot and waits until `sys.boot_completed`. |
 | `stop-emulator.bat` | `adb emu kill`. |
 | `install-debug.bat [abi]` | Builds `:app:assembleDebug`, detects the device ABI and installs the matching split APK. |
-| `run-unit-tests.bat` | Runs the JVM tests (`:app:testDebugUnitTest`) and prints the report path. |
-| `run-instrumented-tests.bat [class]` | Builds app + test APKs, installs both, and runs `AndroidJUnitRunner` on the device. Optional class filter. |
+| `run-unit-tests.bat [class]` | Runs the JVM tests (`:app:testDebugUnitTest`) and prints the report path. An optional class or `Class#method` filter runs just one test. |
+| `run-instrumented-tests.bat [class] [--start-emulator]` | Builds app + test APKs, installs both, and runs `AndroidJUnitRunner` on the device. Optional class/`Class#method` filter; `--start-emulator` starts the AVD first when no device is connected. Fails early with a hint instead of installing into nothing. |
 | `push-fixtures.bat` | Generates the fixtures and downloads a few public-domain Project Gutenberg books (EPUB/TXT/HTML) into `gutenberg/`. Then pushes everything to `/sdcard/Download/pdfr-fixtures/`. |
 | `open-fixture.bat <name> [mime]` | Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then sends the app its own FileProvider URI. Needs the debug build. Falls back to a MediaStore `ACTION_VIEW` if the app is not debuggable. |
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
@@ -54,7 +54,7 @@ tools\manual-testing.bat
 | `__build.cmd` | Stops Gradle, runs `clean assembleRelease`, and writes `build\logs\__build.log`. |
 | `__clean_hard.cmd` | Removes the project and user Gradle caches, then runs `gradlew clean`. Writes `build\logs\__clean_hard.log`. |
 | `__clear_logs.cmd` | Deletes the files in `build\logs` and any legacy root logs. |
-| `__verify_apk.cmd [apk]` | Verifies the signature with `jarsigner` and `apksigner`. Defaults to `build\app\outputs\apk\release\app-arm64-v8a-release.apk`. |
+| `__verify_apk.cmd [apk]` | Verifies the signature with `jarsigner` and `apksigner`. Defaults to `build\app\outputs\apk\release\app-arm64-v8a-release.apk`. Detects the newest installed `build-tools`, skips a checker with a warning when it is unavailable, and exits non-zero when verification fails. |
 | `__keystore_generate.cmd` | Runs `__keystore_generate.js` to create or verify `keystore.properties` and the keystore it points at. |
 
 Generated Gradle output lives under `<repo>\build\app`, and release APKs/AABs

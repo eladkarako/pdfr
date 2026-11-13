@@ -2,8 +2,49 @@
 setlocal
 call "%~dp0_env.bat"
 
-rem Usage: run-instrumented-tests.bat [fully.qualified.TestClass]
+rem Usage: run-instrumented-tests.bat [fully.qualified.TestClass[#method]] [--start-emulator]
 rem Example: run-instrumented-tests.bat com.karako.pdfr.MuPdfDocumentInstrumentedTest
+rem          run-instrumented-tests.bat --start-emulator
+
+set "CLASS_FILTER="
+set "START_EMULATOR="
+
+:parse
+if "%~1"=="" goto parsed
+if /i "%~1"=="--start-emulator" (
+  set "START_EMULATOR=1"
+) else (
+  set "CLASS_FILTER=%~1"
+)
+shift
+goto parse
+:parsed
+
+if not exist "%ADB%" (
+  echo [ERROR] adb not found at "%ADB%".
+  echo         Set ANDROID_SDK_ROOT or ADB and try again.
+  exit /b 1
+)
+
+"%ADB%" start-server >nul 2>&1
+
+set "DEVICE="
+for /f "skip=1 tokens=1,2" %%A in ('"%ADB%" devices') do (
+  if "%%B"=="device" if not defined DEVICE set "DEVICE=%%A"
+)
+
+if not defined DEVICE (
+  if defined START_EMULATOR (
+    echo [PDFr] No device connected, starting the emulator...
+    call "%~dp0start-emulator.bat"
+    if errorlevel 1 exit /b 1
+  ) else (
+    echo [ERROR] No device or emulator is connected.
+    echo         Start one with: tools\start-emulator.bat
+    echo         Or re-run this script with --start-emulator.
+    exit /b 1
+  )
+)
 
 echo [PDFr] Building app and test APKs...
 call "%PDFR_ROOT%\gradlew.bat" :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
@@ -34,19 +75,19 @@ if not defined TEST_APK (
 )
 
 echo [PDFr] Installing %ABI% app APK...
-"%ADB%" install -r "%APP_APK%"
+"%ADB%" install -r -t "%APP_APK%"
 if errorlevel 1 exit /b 1
 
 echo [PDFr] Installing test APK...
-"%ADB%" install -r "%TEST_APK%"
+"%ADB%" install -r -t "%TEST_APK%"
 if errorlevel 1 exit /b 1
 
-set "CLASS_FILTER="
-if not "%~1"=="" set "CLASS_FILTER=-e class %~1"
+set "CLASS_ARG="
+if defined CLASS_FILTER set CLASS_ARG=-e class %CLASS_FILTER%
 
 echo [PDFr] Running instrumentation...
 set "OUT=%TEMP%\pdfr-instrument-%RANDOM%.txt"
-"%ADB%" shell am instrument -w %CLASS_FILTER% com.karako.pdfr.test/androidx.test.runner.AndroidJUnitRunner > "%OUT%" 2>&1
+"%ADB%" shell am instrument -w %CLASS_ARG% com.karako.pdfr.test/androidx.test.runner.AndroidJUnitRunner > "%OUT%" 2>&1
 set "RC=%ErrorLevel%"
 type "%OUT%"
 
