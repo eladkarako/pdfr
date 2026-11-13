@@ -383,7 +383,7 @@ private fun DateTimeField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             label = { Text(label) },
-            placeholder = { Text("yyyy-MM-ddThh:mm:ss") },
+            placeholder = { Text(stringResource(R.string.date_hint)) },
             isError = invalid,
             supportingText = if (invalid) {
                 { Text(stringResource(R.string.date_invalid)) }

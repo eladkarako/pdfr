@@ -88,6 +88,8 @@
     <string name="clear_value">Clear</string>
     <string name="time_picker_title">Choose time</string>
     <string name="date_invalid">Use yyyy-MM-ddThh:mm:ss.</string>
+    <!-- ISO-8601 shape shown inside empty date fields; identical in every language. -->
+    <string name="date_hint" translatable="false">yyyy-MM-ddThh:mm:ss</string>
 
     <string name="text_size_menu">Text size: %1$d pt</string>
     <string name="text_size_title">Text size</string>
