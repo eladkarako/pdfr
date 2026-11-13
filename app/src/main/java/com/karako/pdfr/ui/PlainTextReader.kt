@@ -96,7 +96,7 @@ internal fun PlainTextReader(
     val lineStyle = remember(textSizePt, monospace) {
         TextStyle(
             fontSize = ptToSp(textSizePt),
-            lineHeight = ptToSp(textSizePt) * 1.4f,
+            lineHeight = ptToSp(textSizePt) * ReaderConfig.TEXT_LINE_HEIGHT,
             fontFamily = if (monospace) FontFamily.Monospace else FontFamily.SansSerif,
         )
     }
@@ -104,7 +104,7 @@ internal fun PlainTextReader(
     val numberStyle = remember(textSizePt, mutedColor) {
         TextStyle(
             fontSize = ptToSp(textSizePt),
-            lineHeight = ptToSp(textSizePt) * 1.4f,
+            lineHeight = ptToSp(textSizePt) * ReaderConfig.TEXT_LINE_HEIGHT,
             fontFamily = FontFamily.Monospace,
             color = mutedColor,
         )
@@ -471,7 +471,8 @@ private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
 private val CopyAllMenuKey = Any()
 
 /** 1 pt is 1/72 inch; Android's scaled pixel is 1/160 inch at font scale 1. */
-private fun ptToSp(points: Int): TextUnit = (points * (160f / 72f)).sp
+private fun ptToSp(points: Int): TextUnit =
+    (points * (ReaderConfig.SCALED_PIXELS_PER_INCH / ReaderConfig.POINTS_PER_INCH)).sp
 
 /**
  * The plain-text reader has no pinch zoom or two-finger pan. Consume a second

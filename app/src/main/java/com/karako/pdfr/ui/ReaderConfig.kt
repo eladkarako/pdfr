@@ -25,6 +25,12 @@ internal object ReaderConfig {
     /** PDF points per inch, used to convert screen pixels into layout points. */
     const val POINTS_PER_INCH = 72f
 
+    /** Android's scaled pixels per inch at font scale 1, used for point sizes. */
+    const val SCALED_PIXELS_PER_INCH = 160f
+
+    /** Line height multiplier for the plain-text reader. */
+    const val TEXT_LINE_HEIGHT = 1.4f
+
     /**
      * Viewport used before the first real measurement, in pixels. Kept large
      * enough that the initial layout is not degenerate on small screens.
