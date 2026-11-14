@@ -1,3 +1,8 @@
+26.11.14
++ added **Print** to the right of **Share**: PDFs go to the system print service, where Android's spooler renders the preview and pagination; encrypted PDFs are decrypted into a temporary cache copy first and that copy is deleted once the spooler has read it.
++ every overflow-menu entry now has a leading icon.
++ PDFs gain **Copy all** beside **Copy** in the page menu and as the first overflow entry: Copy takes the current page's selection, Copy all extracts every page's text, so no cross-page selection is needed.
+
 26.11.13
 
 26.11.11

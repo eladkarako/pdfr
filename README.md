@@ -78,16 +78,19 @@ intact wherever the target provider allows its timestamp to be updated.
 - 💾 **Save as** next to **Open**: choose a destination and keep the current
   format, filename, extension and, where the provider supports it, the original
   modification time.
+- 🖨️ **Print** next to **Share** (PDF only): the file goes to the system print
+  service, where Android's spooler renders the preview and pagination. An
+  encrypted PDF is decrypted into a temporary cache copy first; the copy is
+  deleted once the spooler has read it.
 - ✂️ **Text selection and copying** - long-press a PDF page to open the page
   menu, then choose **Select all** to highlight every text block on that page
-  and expose **Copy**. Plain text selects natively across paragraphs and shows
-  **Copy** and **Copy all** in its touch menu: Copy takes the current
-  selection, while Copy all takes the whole document, including lines outside
-  the viewport; line numbers are never included. There are no drag handles:
-  PDF selection is intentionally page-wide for now.
-- 📋 **Copy all** is also the first plain-text overflow entry, above a divider:
-  it is the only action there, while the entries below it only change how the
-  text is shown.
+  and expose **Copy** and **Copy all**. Copy takes the current page's selection;
+  Copy all extracts every page of the document. Plain text selects natively
+  across paragraphs and shows the same two actions in its touch menu, including
+  lines outside the viewport; line numbers are never included. There are no drag
+  handles: PDF selection is intentionally page-wide for now.
+- 📋 **Copy all** is also the first overflow entry for plain text and PDFs, above
+  a divider: the entries below it only change how the document is shown.
 - 🔍 **Zoom** from 100% to 600% for fixed-layout documents with a two-finger
   pinch (any intermediate value) or a smooth double-tap glide (2x, 4x, 6x, back
   to 1x). The content resizes and pans under the fingers around the midpoint
@@ -171,6 +174,7 @@ app/src/main/java/com/karako/pdfr/
 ├── ui/
 │   ├── ReaderApp.kt         # 🖥️ Compose continuous-scroll reader + dialogs
 │   ├── ReaderViewModel.kt   # 🧠 reader state, viewport, selection, reflow
+│   ├── DocumentPrinter.kt   # 🖨️ PDF hand-off to the system print spooler
 │   ├── ReaderConfig.kt      # ⚙️ reader timings, saved-state keys and colours
 │   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
 │   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
