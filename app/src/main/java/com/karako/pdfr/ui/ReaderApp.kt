@@ -165,6 +165,7 @@ fun ReaderApp(
 ) {
     val context = LocalContext.current
     val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val scope = rememberCoroutineScope()
 
     // Fix PDF can start from the empty screen: remember that the next document
     // should be repaired as soon as it has been opened.
@@ -264,31 +265,57 @@ fun ReaderApp(
             // are without pretending there is a file to act on.
             TopAppBar(
                 title = {
-                    // Share on the left; info, open and save together in
-                    // the middle; menu on the right. The app is forced to
+                    // Share and print on the left; info, open and save together
+                    // in the middle; menu on the right. The app is forced to
                     // LTR so this order never flips in an RTL locale.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        IconButton(
-                            onClick = {
-                                val ready = state as? ReaderState.Ready ?: return@IconButton
-                                ShareSheet.shareDocument(
-                                    context = context,
-                                    file = ready.file,
-                                    mimeType = ready.mimeType,
-                                    displayName = ready.displayName,
-                                    lastModified = ready.lastModified,
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = {
+                                    val ready = state as? ReaderState.Ready ?: return@IconButton
+                                    ShareSheet.shareDocument(
+                                        context = context,
+                                        file = ready.file,
+                                        mimeType = ready.mimeType,
+                                        displayName = ready.displayName,
+                                        lastModified = ready.lastModified,
+                                    )
+                                },
+                                enabled = state is ReaderState.Ready && !busy,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_share),
+                                    contentDescription = stringResource(R.string.share_document),
                                 )
-                            },
-                            enabled = state is ReaderState.Ready && !busy,
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_share),
-                                contentDescription = stringResource(R.string.share_document),
-                            )
+                            }
+                            IconButton(
+                                onClick = {
+                                    val activity = context.findActivity() ?: return@IconButton
+                                    scope.launch {
+                                        val source = viewModel.printSource()
+                                        val shown = source != null &&
+                                                DocumentPrinter.print(activity, source)
+                                        if (!shown) {
+                                            Toast.makeText(
+                                                context,
+                                                R.string.print_prepare_failed,
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                    }
+                                },
+                                enabled = (state as? ReaderState.Ready)?.info?.isPdf == true &&
+                                        !busy,
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_print),
+                                    contentDescription = stringResource(R.string.print_document),
+                                )
+                            }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
@@ -364,6 +391,7 @@ fun ReaderApp(
                                 if (canFixPdf) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.fix_pdf)) },
+                                        leadingIcon = { MenuIcon(R.drawable.ic_build) },
                                         onClick = {
                                             showOverflowMenu = false
                                             if (ready != null) {
@@ -378,22 +406,45 @@ fun ReaderApp(
                                 }
                                 // Copy all is the only action here; everything
                                 // below changes how the document is shown, so
-                                // the divider keeps the two groups apart.
-                                if (plainText != null) {
+                                // the divider keeps the two groups apart. PDFs
+                                // get the same entry because their selection is
+                                // limited to the current page as well.
+                                val canCopyAll = plainText != null || ready?.info?.isPdf == true
+                                if (canCopyAll) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.copy_all)) },
+                                        leadingIcon = { MenuIcon(R.drawable.ic_copy) },
                                         onClick = {
                                             showOverflowMenu = false
-                                            // Copy the decoded document, not a
-                                            // selection: the lazy list only
-                                            // composes the lines near the
-                                            // viewport, so Select all would
-                                            // miss everything above or below.
-                                            copyToClipboard(
-                                                context,
-                                                PlainText.copyText(plainText),
-                                                R.string.copied_all,
-                                            )
+                                            if (plainText != null) {
+                                                // Copy the decoded document, not
+                                                // a selection: the lazy list only
+                                                // composes the lines near the
+                                                // viewport, so Select all would
+                                                // miss everything above or below.
+                                                copyToClipboard(
+                                                    context,
+                                                    PlainText.copyText(plainText),
+                                                    R.string.copied_all,
+                                                )
+                                            } else {
+                                                scope.launch {
+                                                    val text = viewModel.allText()
+                                                    if (text.isNullOrBlank()) {
+                                                        Toast.makeText(
+                                                            context,
+                                                            R.string.no_text_to_copy,
+                                                            Toast.LENGTH_SHORT,
+                                                        ).show()
+                                                    } else {
+                                                        copyToClipboard(
+                                                            context,
+                                                            text,
+                                                            R.string.copied_all,
+                                                        )
+                                                    }
+                                                }
+                                            }
                                         },
                                     )
                                     HorizontalDivider()
@@ -402,6 +453,7 @@ fun ReaderApp(
                                     if (ready.info.isPdf) {
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.reorder_pages)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_reorder) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 showReorderDialog = true
@@ -409,6 +461,7 @@ fun ReaderApp(
                                         )
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.rotate_pages)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_rotate_right) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 showRotateDialog = true
@@ -416,6 +469,7 @@ fun ReaderApp(
                                         )
                                         DropdownMenuItem(
                                             text = { Text(stringResource(R.string.normalize)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_tune) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 showNormalizeDialog = true
@@ -432,6 +486,7 @@ fun ReaderApp(
                                                     ),
                                                 )
                                             },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_format_size) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 showTextSizeDialog = true
@@ -451,6 +506,7 @@ fun ReaderApp(
                                                     ),
                                                 )
                                             },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_description) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 viewModel.setSinglePage(!ready.singlePage)
@@ -468,6 +524,7 @@ fun ReaderApp(
                                                     ),
                                                 )
                                             },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_wrap_text) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 viewModel.setLineWrap(!ready.lineWrap)
@@ -485,6 +542,9 @@ fun ReaderApp(
                                                     ),
                                                 )
                                             },
+                                            leadingIcon = {
+                                                MenuIcon(R.drawable.ic_format_align_right)
+                                            },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 viewModel.setAlignRight(!ready.alignRight)
@@ -501,6 +561,9 @@ fun ReaderApp(
                                                         },
                                                     ),
                                                 )
+                                            },
+                                            leadingIcon = {
+                                                MenuIcon(R.drawable.ic_format_list_numbered)
                                             },
                                             onClick = {
                                                 showOverflowMenu = false
@@ -521,6 +584,7 @@ fun ReaderApp(
                                                     ),
                                                 )
                                             },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_code) },
                                             onClick = {
                                                 showOverflowMenu = false
                                                 viewModel.setMonospace(!ready.monospace)
@@ -534,6 +598,7 @@ fun ReaderApp(
                                 HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.exit)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_exit_to_app) },
                                     onClick = {
                                         showOverflowMenu = false
                                         // Remove the task first so the
@@ -1456,6 +1521,21 @@ private fun DocumentReader(
                     copyToClipboard(context, selection.text)
                     viewModel.clearSelection()
                 },
+                onCopyAll = {
+                    scope.launch {
+                        val text = viewModel.allText()
+                        if (text.isNullOrBlank()) {
+                            Toast.makeText(
+                                context,
+                                R.string.no_text_to_copy,
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        } else {
+                            copyToClipboard(context, text, R.string.copied_all)
+                            viewModel.clearSelection()
+                        }
+                    }
+                },
                 onSelectAll = { viewModel.selectAll(selection.page) },
             )
         } else if (state.pageCount > 0) {
@@ -1640,11 +1720,21 @@ private fun SelectionOverlay(
     }
 }
 
+/** Leading icon for an overflow-menu entry; the label already names it. */
+@Composable
+private fun MenuIcon(iconRes: Int) {
+    Icon(
+        painter = painterResource(iconRes),
+        contentDescription = null,
+    )
+}
+
 @Composable
 private fun SelectionBar(
     selection: SelectionState,
     modifier: Modifier,
     onCopy: () -> Unit,
+    onCopyAll: () -> Unit,
     onSelectAll: () -> Unit,
 ) {
     Surface(
@@ -1665,6 +1755,9 @@ private fun SelectionBar(
                 TextButton(onClick = onSelectAll) {
                     Text(stringResource(R.string.select_all))
                 }
+            }
+            TextButton(onClick = onCopyAll) {
+                Text(stringResource(R.string.copy_all))
             }
         }
     }

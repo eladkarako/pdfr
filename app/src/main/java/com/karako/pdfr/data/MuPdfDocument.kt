@@ -260,30 +260,51 @@ class MuPdfDocument private constructor(
         val text = structuredText(index) ?: return null
 
         return runCatching {
-            val blocks = text.getBlocks() ?: return null
             val quads = ArrayList<SelectionQuad>()
-            val copy = StringBuilder()
+            val copy = readTextBlocks(text, quads)
+            if (quads.isEmpty()) null else TextSelection(quads, copy.trim())
+        }.getOrNull()
+    }
 
-            for (block in blocks) {
-                for (line in block.lines) {
-                    // MuPDF already computes the line box. Per-character quads
-                    // can be infinite for synthetic glyphs (for example the
-                    // newline at the end of a line), which would turn the
-                    // highlight into a page-sized rectangle.
-                    val bbox = line.bbox
-                    if (bbox != null && !bbox.isEmpty() && bbox.isValid()) {
-                        quads.add(bbox.toSelectionQuad())
-                    }
-                    for (ch in line.chars) {
-                        if (Character.isValidCodePoint(ch.c)) copy.appendCodePoint(ch.c)
-                    }
-                    copy.append('\n')
+    /**
+     * Extracts the text of [index] in reading order without building highlight
+     * quads. Copy all only needs the characters, so this avoids one quad per
+     * line on every page of the document.
+     */
+    fun pageText(index: Int): String? = synchronized(this) {
+        val text = structuredText(index) ?: return null
+
+        return runCatching {
+            readTextBlocks(text, quads = null).trim()
+        }.getOrNull()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun readTextBlocks(
+        text: StructuredText,
+        quads: MutableList<SelectionQuad>?,
+    ): String {
+        val blocks = text.getBlocks() ?: return ""
+        val copy = StringBuilder()
+
+        for (block in blocks) {
+            for (line in block.lines) {
+                // MuPDF already computes the line box. Per-character quads
+                // can be infinite for synthetic glyphs (for example the
+                // newline at the end of a line), which would turn the
+                // highlight into a page-sized rectangle.
+                val bbox = line.bbox
+                if (quads != null && bbox != null && !bbox.isEmpty() && bbox.isValid()) {
+                    quads.add(bbox.toSelectionQuad())
+                }
+                for (ch in line.chars) {
+                    if (Character.isValidCodePoint(ch.c)) copy.appendCodePoint(ch.c)
                 }
                 copy.append('\n')
             }
+            copy.append('\n')
+        }
 
-            if (quads.isEmpty()) null else TextSelection(quads, copy.toString().trim())
-        }.getOrNull()
+        return copy.toString()
     }
 
     fun info(): DocumentInfo = synchronized(this) {

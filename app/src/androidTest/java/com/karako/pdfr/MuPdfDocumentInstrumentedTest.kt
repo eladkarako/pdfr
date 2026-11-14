@@ -190,6 +190,23 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun pageTextMatchesSelectAllWithoutQuads() {
+        val doc = open(pdf("copy-all.pdf", 3))
+        try {
+            for (index in 0 until 3) {
+                val text = onMuPdf { doc.pageText(index) }
+                assertNotNull(text)
+                // Copy all only needs the characters, so the text must be the
+                // same the selection menu would produce.
+                assertEquals(textOf(doc, index), text)
+                assertTrue(text!!.contains("Fixture page ${index + 1}"))
+            }
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
     fun reorderKeepsRequestedOrderAndDuplicates() {
         val source = pdf("reorder-source.pdf", 4)
         val target = File(dir, "reordered.pdf")

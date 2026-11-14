@@ -375,6 +375,74 @@ class ReaderViewModel(
         _selection.value = null
     }
 
+    /**
+     * Collects the text of every page in reading order.
+     *
+     * Selection is deliberately limited to the current page, so Copy all is
+     * the way to get the whole document without a cross-page selection model.
+     */
+    suspend fun allText(): String? {
+        val doc = document ?: return null
+        if (_busy.value) return null
+
+        _busy.value = true
+        return try {
+            withContext(MuPdf.dispatcher) {
+                val builder = StringBuilder()
+                for (index in 0 until doc.countPages()) {
+                    val page = doc.pageText(index) ?: continue
+                    if (page.isBlank()) continue
+                    if (builder.isNotEmpty()) builder.append("\n\n")
+                    builder.append(page)
+                }
+                builder.toString().takeIf { it.isNotBlank() }
+            }
+        } finally {
+            _busy.value = false
+        }
+    }
+
+    /**
+     * Prepares the current document for the print spooler.
+     *
+     * Encrypted PDFs are decrypted into a temporary cache file first: the
+     * spooler opens the file on its own and cannot ask for the password.
+     * Returns null for non-PDFs or when the copy could not be written.
+     */
+    suspend fun printSource(): PrintSource? {
+        val ready = _state.value as? ReaderState.Ready ?: return null
+        if (!ready.info.isPdf || _busy.value) return null
+
+        if (!ready.info.encrypted) {
+            return PrintSource(ready.file, ready.displayName, ready.pageCount)
+        }
+
+        _busy.value = true
+        return try {
+            val app = getApplication<Application>()
+            val target = withContext(Dispatchers.IO) {
+                DocumentStore.derivedFile(app, "print.pdf")
+            }
+            val saved = withContext(MuPdf.dispatcher) {
+                MuPdfDocument.savePdfCopy(
+                    source = ready.file,
+                    password = password,
+                    destination = target,
+                    pageIndices = null,
+                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
+                )
+            }
+            if (saved) {
+                PrintSource(target, ready.displayName, ready.pageCount, temporary = true)
+            } else {
+                withContext(Dispatchers.IO) { DocumentStore.discard(target) }
+                null
+            }
+        } finally {
+            _busy.value = false
+        }
+    }
+
     private var selectionVersion = 0
 
     private fun restore(file: File) {

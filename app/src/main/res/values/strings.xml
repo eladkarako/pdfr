@@ -198,6 +198,10 @@
     <string name="fix_pdf_unavailable">qpdf is not available in this build.</string>
     <string name="fix_pdf_only_pdf">Only PDF files can be fixed.</string>
 
+    <string name="print_document">Print document</string>
+    <string name="print_prepare_failed">Couldn’t prepare the document for printing.</string>
+    <string name="no_text_to_copy">No text to copy.</string>
+
     <string name="rewrite_failed">Couldn’t create the new PDF.</string>
     <string name="working">Working…</string>
     <string name="working_body">Working on the document…</string>
