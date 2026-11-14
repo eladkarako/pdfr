@@ -1,6 +1,9 @@
 @echo off
 setlocal
 call "%~dp0_env.bat"
+rem `shift` also moves %0, so %~dp0 no longer points at this script after
+rem parsing arguments. Capture the directory before the loop.
+set "TOOLS_DIR=%~dp0"
 
 rem Usage: run-instrumented-tests.bat [fully.qualified.TestClass[#method]] [--start-emulator]
 rem Example: run-instrumented-tests.bat com.karako.pdfr.MuPdfDocumentInstrumentedTest
@@ -46,7 +49,7 @@ for /f "skip=1 tokens=1,2" %%A in ('"%ADB%" devices') do (
 if not defined DEVICE (
   if defined START_EMULATOR (
     echo [PDFr] No device connected, starting the emulator...
-    call "%~dp0start-emulator.bat"
+    call "%TOOLS_DIR%start-emulator.bat"
     if errorlevel 1 exit /b 1
   ) else (
     echo [ERROR] No device or emulator is connected.
