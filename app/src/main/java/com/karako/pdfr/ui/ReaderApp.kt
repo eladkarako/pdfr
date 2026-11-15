@@ -195,11 +195,61 @@ fun ReaderApp(
     var showReorderDialog by rememberSaveable { mutableStateOf(false) }
     var showRotateDialog by rememberSaveable { mutableStateOf(false) }
     var showNormalizeDialog by rememberSaveable { mutableStateOf(false) }
+    var showPageSizeDialog by rememberSaveable { mutableStateOf(false) }
     var showTextSizeDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
+
+    // Toolbar and overflow menu share these actions so both always agree on
+    // what each entry does. Their enabled state is decided by the callers.
+    val shareDocument = {
+        val ready = state as? ReaderState.Ready
+        if (ready != null) {
+            ShareSheet.shareDocument(
+                context = context,
+                file = ready.file,
+                mimeType = ready.mimeType,
+                displayName = ready.displayName,
+                lastModified = ready.lastModified,
+            )
+        }
+    }
+    val printDocument = {
+        val activity = context.findActivity()
+        if (activity != null) {
+            scope.launch {
+                val source = viewModel.printSource()
+                val shown = source != null && DocumentPrinter.print(activity, source)
+                if (!shown) {
+                    Toast.makeText(
+                        context,
+                        R.string.print_prepare_failed,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                }
+            }
+        }
+    }
+    val editInfo = {
+        if (state is ReaderState.Ready) {
+            viewModel.beginInfoEdit()
+            showInfo = true
+        }
+    }
+    val saveDocumentAs = {
+        val ready = state as? ReaderState.Ready
+        if (ready != null) {
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = DocumentFormats.mimeTypeForName(ready.displayName)
+                    ?: ready.mimeType
+                putExtra(Intent.EXTRA_TITLE, ready.displayName)
+            }
+            savePicker.launch(intent)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.messages.collect { message ->
@@ -221,6 +271,7 @@ fun ReaderApp(
             showReorderDialog = false
             showRotateDialog = false
             showNormalizeDialog = false
+            showPageSizeDialog = false
             showTextSizeDialog = false
             viewModel.cancelInfoEdit()
         }
@@ -275,16 +326,7 @@ fun ReaderApp(
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
-                                onClick = {
-                                    val ready = state as? ReaderState.Ready ?: return@IconButton
-                                    ShareSheet.shareDocument(
-                                        context = context,
-                                        file = ready.file,
-                                        mimeType = ready.mimeType,
-                                        displayName = ready.displayName,
-                                        lastModified = ready.lastModified,
-                                    )
-                                },
+                                onClick = shareDocument,
                                 enabled = state is ReaderState.Ready && !busy,
                             ) {
                                 Icon(
@@ -293,23 +335,8 @@ fun ReaderApp(
                                 )
                             }
                             IconButton(
-                                onClick = {
-                                    val activity = context.findActivity() ?: return@IconButton
-                                    scope.launch {
-                                        val source = viewModel.printSource()
-                                        val shown = source != null &&
-                                                DocumentPrinter.print(activity, source)
-                                        if (!shown) {
-                                            Toast.makeText(
-                                                context,
-                                                R.string.print_prepare_failed,
-                                                Toast.LENGTH_SHORT,
-                                            ).show()
-                                        }
-                                    }
-                                },
-                                enabled = (state as? ReaderState.Ready)?.info?.isPdf == true &&
-                                        !busy,
+                                onClick = printDocument,
+                                enabled = state is ReaderState.Ready && !busy,
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_print),
@@ -319,12 +346,7 @@ fun ReaderApp(
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(
-                                onClick = {
-                                    if (state is ReaderState.Ready) {
-                                        viewModel.beginInfoEdit()
-                                        showInfo = true
-                                    }
-                                },
+                                onClick = editInfo,
                                 enabled = state is ReaderState.Ready && !busy,
                             ) {
                                 Icon(
@@ -342,16 +364,7 @@ fun ReaderApp(
                                 )
                             }
                             IconButton(
-                                onClick = {
-                                    val ready = state as? ReaderState.Ready ?: return@IconButton
-                                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                        addCategory(Intent.CATEGORY_OPENABLE)
-                                        type = DocumentFormats.mimeTypeForName(ready.displayName)
-                                            ?: ready.mimeType
-                                        putExtra(Intent.EXTRA_TITLE, ready.displayName)
-                                    }
-                                    savePicker.launch(intent)
-                                },
+                                onClick = saveDocumentAs,
                                 enabled = state is ReaderState.Ready && !busy,
                             ) {
                                 Icon(
@@ -382,12 +395,76 @@ fun ReaderApp(
                             ) {
                                 val ready = state as? ReaderState.Ready
                                 val plainText = ready?.plainText
+                                val canAct = ready != null && !busy
+
+                                // Mirror the toolbar first, in the same
+                                // left-to-right order. These entries stay
+                                // visible without a document so the menu and
+                                // toolbar never disagree; only Open remains
+                                // available with nothing loaded.
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.share_document)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_share) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        shareDocument()
+                                    },
+                                    enabled = canAct,
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.print_document)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_print) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        printDocument()
+                                    },
+                                    enabled = canAct,
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.document_info)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_info) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        editInfo()
+                                    },
+                                    enabled = canAct,
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.open_another)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_folder_open) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        openPicker()
+                                    },
+                                    enabled = !busy,
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.save_as)) },
+                                    leadingIcon = { MenuIcon(R.drawable.ic_save) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        saveDocumentAs()
+                                    },
+                                    enabled = canAct,
+                                )
+
                                 // Fix PDF stays available with no document:
                                 // it opens the picker and repairs the file that
                                 // is chosen. It never appears for non-PDFs.
                                 val canFixPdf =
                                     (ready?.info?.isPdf == true) ||
                                             state is ReaderState.Empty
+                                val canCopyAll = plainText != null || ready?.info?.isPdf == true
+                                val canPageSize =
+                                    ready?.info?.isPdf == true || ready?.info?.isImage == true
+                                // Keep the toolbar mirror apart from the rest,
+                                // but do not leave a divider dangling when a
+                                // format has no further document actions.
+                                val hasDocumentActions = canFixPdf || canCopyAll ||
+                                        canPageSize ||
+                                        ready?.reflowable == true ||
+                                        ready?.monospaceAvailable == true
+                                if (hasDocumentActions) HorizontalDivider()
                                 if (canFixPdf) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.fix_pdf)) },
@@ -409,7 +486,6 @@ fun ReaderApp(
                                 // the divider keeps the two groups apart. PDFs
                                 // get the same entry because their selection is
                                 // limited to the current page as well.
-                                val canCopyAll = plainText != null || ready?.info?.isPdf == true
                                 if (canCopyAll) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.copy_all)) },
@@ -473,6 +549,19 @@ fun ReaderApp(
                                             onClick = {
                                                 showOverflowMenu = false
                                                 showNormalizeDialog = true
+                                            },
+                                        )
+                                    }
+                                    // PDFs and single images can both be
+                                    // given a new page box; CBZ and other
+                                    // multi-page reflowable documents cannot.
+                                    if (canPageSize) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.page_size)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_page_size) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showPageSizeDialog = true
                                             },
                                         )
                                     }
@@ -731,6 +820,20 @@ fun ReaderApp(
         )
     }
 
+    if (showPageSizeDialog && state is ReaderState.Ready &&
+        (state.info.isPdf || state.info.isImage)
+    ) {
+        PageSizeDialog(
+            pageCount = state.pageCount,
+            onDismiss = { showPageSizeDialog = false },
+            onApply = { pages, widthPt, heightPt ->
+                showPageSizeDialog = false
+                // The dialog speaks in 1-based page numbers; MuPDF is 0-based.
+                viewModel.setPageSize(IntArray(pages.size) { pages[it] - 1 }, widthPt, heightPt)
+            },
+        )
+    }
+
     if (showTextSizeDialog && state is ReaderState.Ready) {
         TextSizeDialog(
             current = state.textSizePt,
@@ -908,7 +1011,7 @@ private fun RotatePagesDialog(
 }
 
 @Composable
-private fun pageRangeError(error: PageRanges.Result.Error, pageCount: Int): String =
+internal fun pageRangeError(error: PageRanges.Result.Error, pageCount: Int): String =
     when (error.reason) {
         PageRanges.Reason.EMPTY -> stringResource(R.string.page_error_empty)
         PageRanges.Reason.EMPTY_ENTRY -> stringResource(R.string.page_error_empty_entry)

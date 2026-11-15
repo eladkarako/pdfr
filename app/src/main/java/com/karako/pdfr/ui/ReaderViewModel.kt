@@ -20,6 +20,8 @@ import com.karako.pdfr.data.MuPdfConfig
 import com.karako.pdfr.data.MuPdfDocument
 import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
+import com.karako.pdfr.data.PageSize
+import com.karako.pdfr.data.PageSizeTarget
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
 import com.karako.pdfr.data.QpdfMessages
@@ -405,15 +407,18 @@ class ReaderViewModel(
     /**
      * Prepares the current document for the print spooler.
      *
-     * Encrypted PDFs are decrypted into a temporary cache file first: the
-     * spooler opens the file on its own and cannot ask for the password.
-     * Returns null for non-PDFs or when the copy could not be written.
+     * The spooler only accepts PDF. An unencrypted PDF is handed over as-is.
+     * Encrypted PDFs are decrypted into a temporary cache file (qpdf first,
+     * MuPDF as the fallback), and every other format is converted to PDF
+     * first, with reflowable documents laid out at A4. Temporary files are
+     * deleted once the spooler has read them. Returns null when the copy
+     * could not be written.
      */
     suspend fun printSource(): PrintSource? {
         val ready = _state.value as? ReaderState.Ready ?: return null
-        if (!ready.info.isPdf || _busy.value) return null
+        if (_busy.value) return null
 
-        if (!ready.info.encrypted) {
+        if (ready.info.isPdf && !ready.info.encrypted) {
             return PrintSource(ready.file, ready.displayName, ready.pageCount)
         }
 
@@ -423,7 +428,40 @@ class ReaderViewModel(
             val target = withContext(Dispatchers.IO) {
                 DocumentStore.derivedFile(app, "print.pdf")
             }
-            val saved = withContext(MuPdf.dispatcher) {
+            val pageCount = if (ready.info.isPdf) {
+                decryptForPrint(ready, target)
+            } else {
+                withContext(MuPdf.dispatcher) { convertToPdf(ready, target) }
+            }
+            if (pageCount != null && pageCount > 0) {
+                PrintSource(target, ready.displayName, pageCount, temporary = true)
+            } else {
+                withContext(Dispatchers.IO) { DocumentStore.discard(target) }
+                null
+            }
+        } finally {
+            _busy.value = false
+        }
+    }
+
+    /**
+     * Writes an unencrypted copy of [ready] for the print spooler.
+     *
+     * qpdf handles the usual encryption handlers and also clears
+     * digital-signature restrictions, without waking MuPDF's crypto code.
+     * MuPDF stays as the fallback for files qpdf rejects.
+     */
+    private suspend fun decryptForPrint(ready: ReaderState.Ready, target: File): Int? {
+        val decrypted = withContext(Qpdf.dispatcher) {
+            Qpdf.decrypt(ready.file, target, password) == null
+        }
+        if (decrypted) return ready.pageCount
+
+        target.delete()
+        return withContext(MuPdf.dispatcher) {
+            // The spooler opens the file on its own and cannot ask for the
+            // password, so write a decrypted copy.
+            if (
                 MuPdfDocument.savePdfCopy(
                     source = ready.file,
                     password = password,
@@ -431,15 +469,42 @@ class ReaderViewModel(
                     pageIndices = null,
                     options = MuPdfDocument.PDF_REWRITE_OPTIONS,
                 )
-            }
-            if (saved) {
-                PrintSource(target, ready.displayName, ready.pageCount, temporary = true)
+            ) {
+                ready.pageCount
             } else {
-                withContext(Dispatchers.IO) { DocumentStore.discard(target) }
                 null
             }
+        }
+    }
+
+    /**
+     * Reopens [ready] and writes it as a PDF, because the print spooler does
+     * not understand EPUB, CBZ, images or plain text. Reflowable formats are
+     * laid out at A4 so the printed pages do not inherit the phone-width
+     * reader layout. Must be called on [MuPdf.dispatcher].
+     */
+    private fun convertToPdf(
+        ready: ReaderState.Ready,
+        target: File,
+        widthPt: Float? = null,
+        heightPt: Float? = null,
+    ): Int? {
+        val doc = runCatching {
+            MuPdfDocument.open(ready.file, ready.displayName, password, ready.mimeType)
+        }.getOrNull() ?: return null
+
+        return try {
+            if (doc.isReflowable) {
+                doc.layout(
+                    widthPt ?: MuPdfConfig.PRINT_PAGE_WIDTH_PT,
+                    heightPt ?: MuPdfConfig.PRINT_PAGE_HEIGHT_PT,
+                    MuPdfConfig.PRINT_EM,
+                )
+            }
+            val pages = doc.countPages()
+            if (pages > 0 && doc.saveAsPdf(target, widthPt, heightPt)) pages else null
         } finally {
-            _busy.value = false
+            runCatching { doc.close() }
         }
     }
 
@@ -806,6 +871,31 @@ class ReaderViewModel(
         rewrite(ready, pages = null, rotate = null, kind = RewriteKind.FIX)
     }
 
+    /**
+     * Sets the page box of [pageIndices] to [widthPt] x [heightPt].
+     *
+     * PDF pages keep their content at its current size and position; the box
+     * only changes the paper they sit on. An image is a one-page document with
+     * no page box of its own, so it is fitted into the new page and written as
+     * a PDF.
+     */
+    fun setPageSize(pageIndices: IntArray, widthPt: Float, heightPt: Float) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (!ready.info.isPdf && !ready.info.isImage) return
+        if (pageIndices.isEmpty()) return
+        if (pageIndices.any { it < 0 || it >= ready.pageCount }) return
+        if (widthPt < PageSize.MIN_POINTS || widthPt > PageSize.MAX_POINTS) return
+        if (heightPt < PageSize.MIN_POINTS || heightPt > PageSize.MAX_POINTS) return
+
+        rewrite(
+            ready,
+            pages = null,
+            rotate = null,
+            kind = RewriteKind.PAGE_SIZE,
+            pageSize = PageSizeTarget(widthPt, heightPt, pageIndices.copyOf()),
+        )
+    }
+
     /** Explains why a file chosen for Fix PDF cannot be repaired. */
     fun reportFixNeedsPdf() {
         _messages.tryEmit(
@@ -1012,6 +1102,7 @@ class ReaderViewModel(
         rotate: IntArray?,
         kind: RewriteKind,
         normalizeOptions: NormalizeOptions? = null,
+        pageSize: PageSizeTarget? = null,
     ) {
         if (_busy.value) return
 
@@ -1057,6 +1148,30 @@ class ReaderViewModel(
                             )
                             failure = error
                             error == null
+                        }
+
+                        RewriteKind.PAGE_SIZE -> {
+                            val size = pageSize
+                            when {
+                                size == null -> false
+                                ready.info.isPdf -> MuPdfDocument.savePdfCopy(
+                                    source = ready.file,
+                                    password = password,
+                                    destination = target,
+                                    pageIndices = null,
+                                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
+                                    resizePages = size.pages,
+                                    pageWidthPt = size.widthPt,
+                                    pageHeightPt = size.heightPt,
+                                )
+
+                                else -> convertToPdf(
+                                    ready,
+                                    target,
+                                    size.widthPt,
+                                    size.heightPt,
+                                ) != null
+                            }
                         }
 
                         else -> MuPdfDocument.savePdfCopy(
@@ -1149,6 +1264,7 @@ class ReaderViewModel(
         ROTATE("rotated", R.string.rotate_done),
         NORMALIZE("normalized", R.string.normalize_done),
         FIX("fixed", R.string.fix_pdf_done),
+        PAGE_SIZE("page size", R.string.page_size_done),
     }
 
     private fun layoutSpec(viewport: Viewport): LayoutSpec {

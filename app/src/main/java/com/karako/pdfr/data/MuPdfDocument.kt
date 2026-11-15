@@ -5,7 +5,9 @@ import android.graphics.Color
 import android.util.LruCache
 import com.artifex.mupdf.fitz.Context
 import com.artifex.mupdf.fitz.Document
+import com.artifex.mupdf.fitz.DocumentWriter
 import com.artifex.mupdf.fitz.Matrix
+import com.artifex.mupdf.fitz.Page
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
 import com.artifex.mupdf.fitz.Rect
@@ -181,6 +183,103 @@ class MuPdfDocument private constructor(
             bounds
         } finally {
             runCatching { page.destroy() }
+        }
+    }
+
+    /**
+     * Writes the open document to [destination] as a PDF.
+     *
+     * Every page is replayed into MuPDF's PDF writer at its current page size,
+     * so text, images and vector art stay intact instead of being rasterised.
+     * Reflowable documents are converted at whatever layout was applied before
+     * this call. Must be called on [MuPdf.dispatcher].
+     *
+     * When [pageWidthPt] and [pageHeightPt] are given, every page is written at
+     * that size instead: the content is scaled down/up to fit (aspect ratio
+     * preserved) and centred. Images use this to become a page of the chosen
+     * paper size.
+     */
+    fun saveAsPdf(
+        destination: File,
+        pageWidthPt: Float? = null,
+        pageHeightPt: Float? = null,
+    ): Boolean = synchronized(this) {
+        if (closed) return false
+
+        val target = if (pageWidthPt != null && pageHeightPt != null &&
+            pageWidthPt > 0f && pageHeightPt > 0f
+        ) {
+            Rect(0f, 0f, pageWidthPt, pageHeightPt)
+        } else {
+            null
+        }
+
+        val temp = File(destination.parentFile, "${destination.name}.part")
+        var writer: DocumentWriter? = null
+        var success = false
+
+        try {
+            temp.delete()
+            val output = DocumentWriter(
+                temp.absolutePath,
+                "pdf",
+                MuPdfConfig.PRINT_WRITE_OPTIONS,
+            )
+            writer = output
+
+            for (index in 0 until countPages()) {
+                val bounds = pageBounds(index) ?: return false
+                val page = runCatching { document.loadPage(index) }.getOrNull()
+                    ?: return false
+                try {
+                    val frame = target ?: Rect(bounds.x0, bounds.y0, bounds.x1, bounds.y1)
+                    val matrix = if (target == null) {
+                        Matrix.Identity()
+                    } else {
+                        val scale = minOf(
+                            target.x1 / bounds.width,
+                            target.y1 / bounds.height,
+                        )
+                        Matrix(
+                            scale,
+                            0f,
+                            0f,
+                            scale,
+                            (target.x1 - bounds.width * scale) / 2f - bounds.x0 * scale,
+                            (target.y1 - bounds.height * scale) / 2f - bounds.y0 * scale,
+                        )
+                    }
+                    val device = output.beginPage(frame)
+                    try {
+                        page.run(device, matrix, null)
+                        device.close()
+                    } finally {
+                        runCatching { device.destroy() }
+                    }
+                    output.endPage()
+                } finally {
+                    runCatching { page.destroy() }
+                }
+            }
+
+            output.close()
+            writer = null
+
+            if (temp.length() <= 0L) return false
+            if (destination.exists() && !destination.delete()) return false
+            if (!temp.renameTo(destination)) {
+                temp.copyTo(destination, overwrite = true)
+                temp.delete()
+            }
+
+            success = destination.length() > 0L
+            success
+        } catch (_: Throwable) {
+            false
+        } finally {
+            runCatching { writer?.destroy() }
+            runCatching { temp.delete() }
+            if (!success) runCatching { destination.delete() }
         }
     }
 
@@ -396,7 +495,7 @@ class MuPdfDocument private constructor(
         const val PDF_REWRITE_OPTIONS = MuPdfConfig.PDF_REWRITE_OPTIONS
 
         /**
-         * Saves a reordered or rotated copy of [source] into
+         * Saves a reordered, rotated or resized copy of [source] into
          * [destination].
          *
          * [pageIndices] are zero-based source page numbers. They are passed to
@@ -405,6 +504,11 @@ class MuPdfDocument private constructor(
          *
          * [rotatePages] are zero-based source pages to turn upside down before
          * saving. They are applied before [pageIndices] is rearranged.
+         *
+         * [resizePages] are zero-based pages whose MediaBox and CropBox become
+         * [pageWidthPt] x [pageHeightPt]. The page content is not scaled; it
+         * keeps its position in page space, so a larger box adds space and a
+         * smaller one hides whatever falls outside it.
          *
          * Must be called on [MuPdf.dispatcher].
          */
@@ -417,6 +521,9 @@ class MuPdfDocument private constructor(
             options: String,
             metadata: Map<String, String>? = null,
             metadataUpdate: PdfMetadata.Update? = null,
+            resizePages: IntArray? = null,
+            pageWidthPt: Float = 0f,
+            pageHeightPt: Float = 0f,
         ): Boolean {
             Context.init()
 
@@ -453,6 +560,25 @@ class MuPdfDocument private constructor(
                             }.getOrDefault(0)
                             val rotated = ((current + 180) % 360 + 360) % 360
                             objectHandle.put("Rotate", rotated)
+                            pdfPage.update()
+                        } finally {
+                            runCatching { page.destroy() }
+                        }
+                    }
+                }
+
+                if (resizePages != null) {
+                    if (resizePages.isEmpty()) return false
+                    if (pageWidthPt <= 0f || pageHeightPt <= 0f) return false
+                    if (resizePages.any { it < 0 || it >= pageCount }) return false
+                    for (index in resizePages.toSortedSet()) {
+                        val page = runCatching { pdf.loadPage(index) }.getOrNull()
+                            ?: return false
+                        try {
+                            val pdfPage = page as? PDFPage ?: return false
+                            val box = Rect(0f, 0f, pageWidthPt, pageHeightPt)
+                            pdfPage.setPageBox(Page.MEDIA_BOX, box)
+                            pdfPage.setPageBox(Page.CROP_BOX, Rect(box))
                             pdfPage.update()
                         } finally {
                             runCatching { page.destroy() }
