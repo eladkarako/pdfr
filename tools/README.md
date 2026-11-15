@@ -42,7 +42,9 @@ tools\manual-testing.bat
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
 | `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
-| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
+| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
+| `capture-promo.ps1 [-StartEmulator] [-SkipBuild] [-SkipVideo] [-SkipPrint] [-KeepEmulator]` | Builds the debug APK first, generates fixtures, installs the app and captures the promo set: empty state, two colourful PDF pages, the overflow menu, the info editor, an EPUB, the print dialog, a short scrolling MP4 and a composed poster. Writes to `build\promo\`. `-StartEmulator` starts the AVD only after the build. |
+| `make-poster.ps1 [-OutDir DIR] [-Images a.png,b.png,...]` | Composes 3-4 screenshots into `poster.png` with a dark gradient, rounded cards and a title, using `System.Drawing` (no ImageMagick or ffmpeg). Defaults to `build\promo\` and picks `02-pdf-cover`, `03-pdf-colour`, `04-overflow` and `06-epub`. |
 | `reader-checks.bat [-Section ...]` | Automated on-device regression checks: disabled toolbar with no document, plain-text defaults and toggles, native selection plus the Copy/Copy all touch menu, the editable info dialog, and pinch behaviour. Copy all is checked through the clipboard against `long.txt`, which is taller than the viewport. Reads Compose through `uiautomator dump --windows` (the text context menu is its own popup window, so the app and popup hierarchies are merged), compares screenshots for the pixel-only checks, writes `build\reader-checks\results.txt`, and exits non-zero on any failure. Sections: `empty`, `text`, `selection`, `metadata`, `gestures`, `exit` (default `all`). |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
@@ -136,7 +138,32 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
 20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
-21. **Exit** - the overflow menu ends with a divider and **Exit**, with or
+21. **Print every format** - open `sample.pdf`, `alice.epub`, `notes.txt`,
+    `image.png` and `sample.cbz` in turn and choose **Print**. The toolbar
+    button and the overflow entry open the system print dialog with a PDF
+    preview in every case; reflowable documents print at A4. An encrypted
+    `dummy-encrypted.pdf` prints without asking for the password again (qpdf
+    decrypts it; MuPDF is the fallback). With no document open, Print is
+    disabled. `reader-actions.ps1 -Action print` opens the dialog from the
+    overflow menu.
+22. **Overflow mirror** - open any document and tap the overflow button. The
+    first five entries are the toolbar actions in the same left-to-right order:
+    **Share**, **Print**, **Document info**, **Open**, **Save as**, each with its
+    leading icon, followed by a divider and the document actions. With no
+    document open the mirrored entries are disabled except **Open**.
+    `reader-actions.ps1 -Action menu-mirror` captures the menu.
+23. **Promo capture** - `capture-promo.ps1` rebuilds, generates the colourful
+    Gutenberg sampler, records the screenshots and MP4, and composes the poster.
+    Check that `gutenberg-color.pdf` opens with six A4 pages of readable text
+    and that the poster shows the chosen screenshots without stretching.
+24. **Page size** - open `sample.pdf` and choose overflow -> **Page size…**.
+    Keep the default `1-e` and A4: the new `sample (page size).pdf` opens with
+    every page box at 595.28 x 841.89 pt while the text stays where it was.
+    Repeat with `2-3` and A5 to resize only those pages, and with a custom
+    size in each unit (mm, cm, in, pt, px, em) to check the point summary.
+    Open `image.png`, choose **Page size** and confirm the image is fitted and
+    centred on the chosen sheet. The entry is absent for EPUB, CBZ and text.
+25. **Exit** - the overflow menu ends with a divider and **Exit**, with or
     without a document open. Choosing it removes the task from recents and stops
     the process: `adb shell pidof com.karako.pdfr` prints nothing afterwards.
 
@@ -233,6 +260,8 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action copy -
 
 :: Overflow menu, document info, and the editable metadata dialog.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu-mirror -Prefix sample-menu
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action print -Prefix sample-print
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action metadata -Prefix sample-metadata
 
@@ -275,6 +304,49 @@ that:
   of the screen;
 - the page indicator starts dim and fades to nearly invisible after about five
   seconds, then returns on the next scroll.
+
+## Promo capture
+
+`capture-promo.ps1` produces the screenshots, the short MP4 and the poster used
+for release notes and store listings. It builds the debug APK before it touches
+the emulator, then generates fixtures, installs the app and drives the reader
+through a small tour:
+
+```bat
+:: Build, start the AVD, capture everything, stop the AVD.
+tools\capture-promo.ps1 -StartEmulator
+
+:: Reuse the current build and connected device, skip the video.
+tools\capture-promo.ps1 -SkipBuild -SkipVideo
+
+:: Re-compose the poster from screenshots you already have.
+tools\make-poster.ps1 -OutDir build\promo
+tools\make-poster.ps1 -OutDir build\promo -Images 02-pdf-cover.png,04-overflow.png,06-epub.png
+```
+
+The capture uses `gutenberg/gutenberg-color.pdf`, a six-page A4 sampler built by
+`make_test_files.js` from public-domain Gutenberg excerpts. Its large colour
+areas survive video compression and make the reading UI easy to see in a
+thumbnail. `SOURCES.txt` records the source eBooks.
+
+Output in `build\promo\`:
+
+| File | Contents |
+| --- | --- |
+| `01-empty.png` | Empty state with the document actions disabled. |
+| `02-pdf-cover.png`, `03-pdf-colour.png` | Two pages of the colour sampler. |
+| `04-overflow.png` | The overflow menu with the mirrored toolbar entries. |
+| `05-info.png` | The document-info editor. |
+| `06-epub.png` | A reflowable EPUB. |
+| `07-print.png` | The system print dialog, when the image has a print service. |
+| `pdfr-promo.mp4` | Scrolling and the overflow menu, scaled to 720 px wide. |
+| `poster.png` | 3-4 screenshots composed into a shareable poster. |
+| `README.txt` | A short index of the captured assets. |
+
+`make-poster.ps1` uses `System.Drawing`, so it needs no ImageMagick or ffmpeg.
+Pass `-Columns 1` for a vertical strip, `-Width` for a larger canvas, and
+`-Title`/`-Subtitle` to change the heading. The same steps are available from
+`manual-testing.bat` as options 14 and 15.
 
 ## Test-fixture generator
 
@@ -328,6 +400,7 @@ uses only the Python standard library.
 | `image.png` | A 480x320 solid-colour image, one page when opened. |
 | `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |
 | `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |
+| `gutenberg/gutenberg-color.pdf` | Six colourful A4 pages built from Project Gutenberg excerpts, used for screenshots and promo recordings. |
 
 The generated PDFs are real, text-extractable documents (base-14 Helvetica), so
 selection, reordering, rotation and qpdf linearization all work on them.

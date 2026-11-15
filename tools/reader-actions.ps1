@@ -46,6 +46,8 @@ param(
         'select-all',
         'copy',
         'menu',
+        'menu-mirror',
+        'print',
         'info',
         'metadata',
         'metadata-apply',
@@ -238,6 +240,18 @@ switch ($Action) {
         Invoke-Adb shell input tap $menuX $menuY
         Start-Sleep -Milliseconds $WaitMs
         Save-Shot 'menu'
+    }
+    'menu-mirror' {
+        Write-Host "[PDFr] Opening the overflow menu to check the toolbar mirror..."
+        Open-OverflowMenu
+        Save-Shot 'menu-mirror'
+    }
+    'print' {
+        Write-Host "[PDFr] Opening Print from the overflow menu..."
+        Open-OverflowMenu
+        Tap-Node '^Print document$'
+        Start-Sleep -Milliseconds 1500
+        Save-Shot 'print'
     }
     'info' {
         Write-Host "[PDFr] Opening document info from the toolbar..."

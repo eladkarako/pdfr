@@ -20,11 +20,19 @@ echo   8. Long-press and select text
 echo   9. Show PDFr cache documents
 echo  10. Show recent app logs / crashes
 echo  11. Record a zoom probe (pinch/pan screenshots)
+echo  12. Print the open document (PDF, EPUB, text, image)
+echo  13. Check the overflow-menu toolbar mirror
+echo  14. Capture promo screenshots + MP4
+echo  15. Compose the promo poster
 echo   0. Exit
 echo.
 set "ACTION="
 set /p "ACTION=Choose an action: "
 
+if "%ACTION%"=="15" goto poster
+if "%ACTION%"=="14" goto promo
+if "%ACTION%"=="13" goto menu-mirror
+if "%ACTION%"=="12" goto print
 if "%ACTION%"=="11" goto zoomprobe
 if "%ACTION%"=="10" goto logs
 if "%ACTION%"=="9" goto cache
@@ -114,6 +122,22 @@ goto pause
 
 :logs
 call "%~dp0logcat-app.bat"
+goto pause
+
+:print
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action print
+goto pause
+
+:menu-mirror
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action menu-mirror
+goto pause
+
+:promo
+call "%~dp0capture-promo.bat"
+goto pause
+
+:poster
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-poster.ps1"
 goto pause
 
 :pause

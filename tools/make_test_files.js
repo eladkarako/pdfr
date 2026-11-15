@@ -68,6 +68,235 @@ const GUTENBERG_BOOKS = [
 // PDF
 // ---------------------------------------------------------------------------
 
+/**
+ * A colourful A4 sampler whose words come from public-domain Project
+ * Gutenberg books. The app can open it as an ordinary PDF, and the promo
+ * capture script uses it because its large colour areas survive video
+ * compression better than a page of grey text.
+ */
+const COLOR_PAGES = [
+  {
+    background: '#FBF3E4',
+    band: '#1F3A5F',
+    accent: '#E0A526',
+    ink: '#24303D',
+    title: 'A Project Gutenberg Sampler',
+    subtitle: 'Public-domain words, in colour',
+    lines: [
+      "Alice's Adventures in Wonderland",
+      'Pride and Prejudice',
+      'The Adventures of Sherlock Holmes',
+      'The Yellow Wallpaper',
+      'Birds, Illustrated by Color Photography',
+    ],
+    footer: 'Text: Project Gutenberg  ·  Layout: PDFr',
+    swatches: ['#E0A526', '#D95D39', '#3E8E7E', '#5B6FB5', '#8E5BA6'],
+  },
+  {
+    background: '#E8F3F7',
+    band: '#2F6F7E',
+    accent: '#E07A5F',
+    ink: '#1F3038',
+    title: "Down the\nrabbit hole",
+    subtitle: "Alice's Adventures in Wonderland  ·  Lewis Carroll",
+    lines: [
+      'Alice was beginning to get very tired of sitting by',
+      'her sister on the bank, and of having nothing to do:',
+      'once or twice she had peeped into the book her sister',
+      'was reading, but it had no pictures or conversations',
+      'in it, "and what is the use of a book," thought Alice,',
+      '"without pictures or conversations?"',
+    ],
+    footer: 'Project Gutenberg eBook #11',
+  },
+  {
+    background: '#FBECEF',
+    band: '#7A2E3A',
+    accent: '#D98A9B',
+    ink: '#352126',
+    title: 'A truth\nuniversally acknowledged',
+    subtitle: 'Pride and Prejudice  ·  Jane Austen',
+    lines: [
+      'It is a truth universally acknowledged, that a single',
+      'man in possession of a good fortune, must be in want',
+      'of a wife.',
+      '',
+      'However little known the feelings or views of such a',
+      'man may be on his first entering a neighbourhood, this',
+      'truth is so well fixed in the minds of the surrounding',
+      'families, that he is considered as the rightful property',
+      'of some one or other of their daughters.',
+    ],
+    footer: 'Project Gutenberg eBook #1342',
+  },
+  {
+    background: '#EAF4EC',
+    band: '#2D5A44',
+    accent: '#84B082',
+    ink: '#1E2E26',
+    title: 'To Sherlock Holmes\nshe is always the woman',
+    subtitle: 'The Adventures of Sherlock Holmes  ·  Arthur Conan Doyle',
+    lines: [
+      'To Sherlock Holmes she is always the woman. I have',
+      'seldom heard him mention her under any other name.',
+      'In his eyes she eclipses and predominates the whole',
+      'of her sex. It was not that he felt any emotion akin',
+      'to love for Irene Adler. All emotions, and that one',
+      'particularly, were abhorrent to his cold, precise but',
+      'admirably balanced mind.',
+    ],
+    footer: 'Project Gutenberg eBook #1661',
+  },
+  {
+    background: '#FBF4D8',
+    band: '#8A6A1F',
+    accent: '#D4A72C',
+    ink: '#332B16',
+    title: 'The Yellow\nWallpaper',
+    subtitle: 'Charlotte Perkins Gilman',
+    lines: [
+      'It is very seldom that mere ordinary people like John',
+      'and myself secure ancestral halls for the summer.',
+      '',
+      'A colonial mansion, a hereditary estate, I would say a',
+      'haunted house, and reach the height of romantic',
+      'felicity, but that would be asking too much of fate!',
+      '',
+      'Still I will proudly declare that there is something',
+      'queer about it.',
+    ],
+    footer: 'Project Gutenberg eBook #1952',
+  },
+  {
+    background: '#F1EAF7',
+    band: '#55306E',
+    accent: '#B07CC6',
+    ink: '#2D1F38',
+    title: 'Birds, Illustrated\nby Color Photography',
+    subtitle: 'A monthly serial from 1897',
+    lines: [
+      'The text is prepared with the view of giving the',
+      'children as clear an idea as possible, of haunts,',
+      'habits, characteristics and such other information',
+      'as will lead them to love the birds and delight in',
+      'their study and acquaintance.',
+      '',
+      'Every page pairs a colour plate with a short,',
+      'affectionate description of the bird it shows.',
+    ],
+    footer: 'Project Gutenberg eBook #30221',
+  },
+];
+
+function pdfColor(hex) {
+  const value = hex.replace('#', '');
+  return [0, 2, 4]
+    .map((index) => (Number.parseInt(value.slice(index, index + 2), 16) / 255).toFixed(3))
+    .join(' ');
+}
+
+function colorPageStream(page, number, count) {
+  const body = page.lines
+    .map(
+      (line, index) =>
+        `BT /F1 15 Tf ${pdfColor(page.ink)} rg 72 ${612 - index * 26} Td (${escapePdfText(line)}) Tj ET`,
+    )
+    .join('\n');
+
+  const title = page.title
+    .split('\n')
+    .map(
+      (line, index) =>
+        `BT /F2 34 Tf 1 1 1 rg 72 ${770 - index * 38} Td (${escapePdfText(line)}) Tj ET`,
+    )
+    .join('\n');
+
+  const swatches = (page.swatches || [])
+    .map(
+      (color, index) =>
+        `q ${pdfColor(color)} rg ${72 + index * 96} 112 80 80 re f Q`,
+    )
+    .join('\n');
+
+  return Buffer.from(
+    `q ${pdfColor(page.background)} rg 0 0 595 842 re f Q
+q ${pdfColor(page.band)} rg 0 660 595 182 re f Q
+q ${pdfColor(page.accent)} rg 0 652 595 8 re f Q
+${title}
+BT /F1 13 Tf 0.92 0.94 0.96 rg 72 700 Td (${escapePdfText(page.subtitle)}) Tj ET
+q ${pdfColor(page.accent)} rg 72 636 451 2 re f Q
+${body}
+${swatches}
+BT /F1 10 Tf ${pdfColor(page.ink)} rg 72 72 Td (${escapePdfText(page.footer)}) Tj ET
+BT /F2 10 Tf ${pdfColor(page.accent)} rg 72 50 Td (PDFr  ·  ${number} / ${count}) Tj ET
+`,
+    'latin1',
+  );
+}
+
+/** Write a colourful, text-extractable A4 PDF. */
+function writeColorPdf(file, pages) {
+  if (pages.length === 0) {
+    throw new Error('a colour fixture needs at least one page');
+  }
+
+  const chunks = [];
+  const offsets = new Map();
+  let length = 0;
+
+  const emit = (data) => {
+    const buf = Buffer.isBuffer(data) ? data : Buffer.from(data, 'latin1');
+    chunks.push(buf);
+    length += buf.length;
+  };
+
+  const obj = (objectId, body) => {
+    offsets.set(objectId, length);
+    emit(`${objectId} 0 obj\n${body}\nendobj\n`);
+  };
+
+  emit('%PDF-1.4\n');
+  emit('%\u00e2\u00e3\u00cf\u00d3\n');
+
+  const firstPage = 5;
+  const kids = pages.map((_, index) => `${firstPage + index * 2} 0 R`).join(' ');
+
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Count ${pages.length} /Kids [${kids}] >>`);
+  obj(3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  obj(4, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+
+  pages.forEach((page, index) => {
+    const pageId = firstPage + index * 2;
+    const contentId = pageId + 1;
+    const stream = colorPageStream(page, index + 1, pages.length);
+
+    obj(
+      pageId,
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ' +
+        `/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`,
+    );
+
+    offsets.set(contentId, length);
+    emit(`${contentId} 0 obj\n<< /Length ${stream.length} >>\nstream\n`);
+    emit(stream);
+    emit('\nendstream\nendobj\n');
+  });
+
+  const size = firstPage + pages.length * 2;
+  const xref = length;
+
+  emit(`xref\n0 ${size}\n`);
+  emit('0000000000 65535 f \n');
+  for (let objectId = 1; objectId < size; objectId++) {
+    emit(`${String(offsets.get(objectId)).padStart(10, '0')} 00000 n \n`);
+  }
+  emit(`trailer\n<< /Size ${size} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, Buffer.concat(chunks));
+}
+
 function escapePdfText(text) {
   return text.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
 }
@@ -435,34 +664,37 @@ async function downloadGutenberg(destination, timeoutMs) {
     }
   }
 
-  if (downloaded.length > 0) {
-    const lines = [
-      'Project Gutenberg test fixtures',
-      '===============================',
-      '',
-      'These files are public-domain works downloaded from Project Gutenberg.',
-      'They are used only to exercise PDFr EPUB, HTML and plain-text reading.',
-      '',
-    ];
-    for (const book of downloaded) {
-      lines.push(
-        book.filename,
-        `  Title:  ${book.title}`,
-        `  Author: ${book.author}`,
-        `  Format: ${book.kind}`,
-        `  Source: ${book.url}`,
-        `  eBook:  https://www.gutenberg.org/ebooks/${book.ebookId}`,
-        '',
-      );
-    }
+  const lines = [
+    'Project Gutenberg test fixtures',
+    '===============================',
+    '',
+    'These files are public-domain works downloaded from Project Gutenberg.',
+    'They are used only to exercise PDFr EPUB, HTML and plain-text reading.',
+    '',
+  ];
+  for (const book of downloaded) {
     lines.push(
-      'Project Gutenberg: https://www.gutenberg.org/',
-      'Permission is granted to copy, distribute and modify these works',
-      'under the Project Gutenberg License included with each eBook.',
+      book.filename,
+      `  Title:  ${book.title}`,
+      `  Author: ${book.author}`,
+      `  Format: ${book.kind}`,
+      `  Source: ${book.url}`,
+      `  eBook:  https://www.gutenberg.org/ebooks/${book.ebookId}`,
       '',
     );
-    fs.writeFileSync(path.join(destination, 'SOURCES.txt'), lines.join('\n'), 'utf8');
   }
+  lines.push(
+    'gutenberg-color.pdf',
+    '  Title:  A Project Gutenberg Sampler (generated by PDFr)',
+    '  Format: colourful A4 PDF built from public-domain excerpts',
+    '  Source: Project Gutenberg eBooks #11, #1342, #1661, #1952 and #30221',
+    '',
+    'Project Gutenberg: https://www.gutenberg.org/',
+    'Permission is granted to copy, distribute and modify these works',
+    'under the Project Gutenberg License included with each eBook.',
+    '',
+  );
+  fs.writeFileSync(path.join(destination, 'SOURCES.txt'), lines.join('\n'), 'utf8');
 
   return downloaded.length;
 }
@@ -511,6 +743,11 @@ async function main() {
 
   const dummy = path.join(out, 'dummy.pdf');
   writePdf(dummy, ['Dummy PDF file']);
+
+  // A large, colourful PDF for screenshots and promo recordings. Its text is
+  // excerpted from public-domain Project Gutenberg books; SOURCES.txt records
+  // the source eBooks when the download step runs.
+  writeColorPdf(path.join(out, 'gutenberg', 'gutenberg-color.pdf'), COLOR_PAGES);
 
   const encrypted = path.join(out, 'dummy-encrypted.pdf');
   let encryptedOk = false;
