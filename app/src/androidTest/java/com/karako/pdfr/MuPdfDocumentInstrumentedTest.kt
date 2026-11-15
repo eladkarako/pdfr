@@ -511,6 +511,48 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
+    fun qpdfDecryptsEncryptedPdf() {
+        val plain = pdf("decrypt-source.pdf", 2)
+        val encrypted = File(dir, "decrypt-encrypted.pdf")
+        val decrypted = File(dir, "decrypted.pdf")
+
+        assertTrue(onMuPdf { encryptWithMuPdf(plain, encrypted, PASSWORD) })
+        assertTrue(Qpdf.isAvailable())
+
+        val error = runBlocking(Qpdf.dispatcher) {
+            Qpdf.decrypt(encrypted, decrypted, PASSWORD)
+        }
+        assertNull(error)
+        assertTrue(decrypted.length() > 0L)
+
+        // Opening without a password proves the output is unencrypted.
+        val doc = open(decrypted)
+        try {
+            assertEquals(2, onMuPdf { doc.countPages() })
+            assertFalse(onMuPdf { doc.info().encrypted })
+            assertTrue(textOf(doc, 0).contains("Fixture page 1"))
+        } finally {
+            close(doc)
+        }
+    }
+
+    @Test
+    fun qpdfDecryptRejectsWrongPassword() {
+        val plain = pdf("decrypt-wrong-source.pdf", 1)
+        val encrypted = File(dir, "decrypt-wrong.pdf")
+        val decrypted = File(dir, "decrypted-wrong.pdf")
+
+        assertTrue(onMuPdf { encryptWithMuPdf(plain, encrypted, PASSWORD) })
+        assertTrue(Qpdf.isAvailable())
+
+        val error = runBlocking(Qpdf.dispatcher) {
+            Qpdf.decrypt(encrypted, decrypted, "not-the-password")
+        }
+        assertNotNull(error)
+        assertFalse(decrypted.exists())
+    }
+
+    @Test
     fun encryptedPdfRequiresTheRightPassword() {
         val plain = pdf("plain-to-encrypt.pdf", 2)
         val encrypted = File(dir, "encrypted.pdf")
@@ -600,6 +642,49 @@ class MuPdfDocumentInstrumentedTest {
             assertTrue(onMuPdf { doc.layout(400f, 800f, 11f) })
         } finally {
             close(doc)
+        }
+    }
+
+    @Test
+    fun saveAsPdfConvertsReflowableTextAtA4() {
+        val source = File(dir, "print-fixture.txt").apply {
+            writeText(
+                """
+                Print conversion fixture
+                =======================
+
+                The quick brown fox jumps over the lazy dog.
+                Pack my box with five dozen liquor jugs.
+                """.trimIndent(),
+            )
+        }
+        val target = File(dir, "print-fixture.pdf")
+
+        val doc = open(source)
+        val pages = try {
+            assertTrue(doc.isReflowable)
+            assertTrue(onMuPdf { doc.layout(595f, 842f, 11f) })
+            val count = onMuPdf { doc.countPages() }
+            assertTrue(count >= 1)
+            assertTrue(onMuPdf { doc.saveAsPdf(target) })
+            count
+        } finally {
+            close(doc)
+        }
+
+        assertTrue(target.length() > 0L)
+        val converted = open(target)
+        try {
+            assertTrue(onMuPdf { converted.info().isPdf })
+            assertEquals(pages, onMuPdf { converted.countPages() })
+
+            val bounds = onMuPdf { converted.pageBounds(0) }
+            assertNotNull(bounds)
+            assertEquals(595f, bounds!!.width, 1f)
+            assertEquals(842f, bounds.height, 1f)
+            assertTrue(textOf(converted, 0).contains("Print conversion fixture"))
+        } finally {
+            close(converted)
         }
     }
 
@@ -735,6 +820,117 @@ class MuPdfDocumentInstrumentedTest {
             assertTrue(rendered!!.bitmap.width > 0)
         } finally {
             close(doc)
+        }
+    }
+
+    @Test
+    fun saveAsPdfConvertsImageToSinglePage() {
+        val source = File(dir, "print-image.png")
+        val bitmap = Bitmap.createBitmap(32, 24, Bitmap.Config.ARGB_8888)
+        try {
+            bitmap.eraseColor(Color.rgb(200, 90, 40))
+            source.outputStream().use { out ->
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out))
+            }
+        } finally {
+            bitmap.recycle()
+        }
+
+        val target = File(dir, "print-image.pdf")
+        val doc = open(source)
+        try {
+            assertEquals(1, onMuPdf { doc.countPages() })
+            assertTrue(onMuPdf { doc.saveAsPdf(target) })
+        } finally {
+            close(doc)
+        }
+
+        assertTrue(target.length() > 0L)
+        val converted = open(target)
+        try {
+            assertTrue(onMuPdf { converted.info().isPdf })
+            assertEquals(1, onMuPdf { converted.countPages() })
+            val bounds = onMuPdf { converted.pageBounds(0) }
+            assertNotNull(bounds)
+            assertTrue(bounds!!.width > 0f)
+            assertTrue(bounds.height > 0f)
+        } finally {
+            close(converted)
+        }
+    }
+
+    @Test
+    fun savePdfCopyResizesOnlyTheRequestedPages() {
+        val source = pdf("resize-source.pdf", 2)
+        val target = File(dir, "resize-target.pdf")
+
+        val saved = onMuPdf {
+            MuPdfDocument.savePdfCopy(
+                source = source,
+                password = null,
+                destination = target,
+                pageIndices = null,
+                options = MuPdfDocument.PDF_REWRITE_OPTIONS,
+                resizePages = intArrayOf(0),
+                pageWidthPt = 595f,
+                pageHeightPt = 842f,
+            )
+        }
+        assertTrue(saved)
+        assertTrue(target.length() > 0L)
+
+        val resized = open(target)
+        try {
+            assertEquals(2, onMuPdf { resized.countPages() })
+
+            val first = onMuPdf { resized.pageBounds(0) }
+            assertNotNull(first)
+            assertEquals(595f, first!!.width, 1f)
+            assertEquals(842f, first.height, 1f)
+
+            // Only page 1 was listed, so page 2 keeps the fixture's Letter box.
+            val second = onMuPdf { resized.pageBounds(1) }
+            assertNotNull(second)
+            assertEquals(612f, second!!.width, 1f)
+            assertEquals(792f, second.height, 1f)
+
+            // Resizing changes the paper, not the content.
+            assertTrue(textOf(resized, 0).contains("Fixture page 1"))
+        } finally {
+            close(resized)
+        }
+    }
+
+    @Test
+    fun saveAsPdfFitsImageIntoTheChosenPageSize() {
+        val source = File(dir, "sized-image.png")
+        val bitmap = Bitmap.createBitmap(48, 32, Bitmap.Config.ARGB_8888)
+        try {
+            bitmap.eraseColor(Color.rgb(40, 120, 200))
+            source.outputStream().use { out ->
+                assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, out))
+            }
+        } finally {
+            bitmap.recycle()
+        }
+
+        val target = File(dir, "sized-image.pdf")
+        val doc = open(source)
+        try {
+            assertTrue(onMuPdf { doc.saveAsPdf(target, 400f, 300f) })
+        } finally {
+            close(doc)
+        }
+
+        val converted = open(target)
+        try {
+            assertEquals(1, onMuPdf { converted.countPages() })
+            val bounds = onMuPdf { converted.pageBounds(0) }
+            assertNotNull(bounds)
+            assertEquals(400f, bounds!!.width, 1f)
+            assertEquals(300f, bounds.height, 1f)
+        } finally {
+            close(converted)
         }
     }
 
