@@ -671,6 +671,51 @@ namespace {
         }
     }
 
+    /**
+     * Runs one qpdf job and returns an empty string on success, or qpdf's
+     * message. [prepare] runs after the input is read and before it is
+     * written, which is where Normalize adds PDF/A metadata.
+     */
+    std::string runJob(std::vector <std::string> &args, void (*prepare)(QPDF &)) {
+        // initializeFromArgv may reorder or otherwise touch the argument array,
+        // so give it writable, NUL-terminated copies rather than string internals.
+        std::vector <std::vector<char>> buffers;
+        buffers.reserve(args.size());
+        for (auto const &arg: args) {
+            buffers.emplace_back(arg.c_str(), arg.c_str() + arg.size() + 1);
+        }
+        std::vector<char *> argv;
+        argv.reserve(buffers.size() + 1);
+        for (auto &buffer: buffers) {
+            argv.push_back(buffer.data());
+        }
+        argv.push_back(nullptr);
+
+        try {
+            QPDFJob job;
+            job.setMessagePrefix(std::string(MESSAGE_PREFIX));
+            job.initializeFromArgv(argv.data());
+
+            auto pdf = job.createQPDF();
+            if (!pdf) {
+                return std::string(ERROR_UNREADABLE_PDF);
+            }
+            if (prepare != nullptr) {
+                prepare(*pdf);
+            }
+            job.writeQPDF(*pdf);
+
+            if (job.getExitCode() == QPDFJob::EXIT_ERROR) {
+                return std::string(ERROR_REPORTED);
+            }
+            return {};
+        } catch (const std::exception &e) {
+            return e.what();
+        } catch (...) {
+            return std::string(ERROR_UNKNOWN);
+        }
+    }
+
 }  // namespace
 
 extern "C" JNIEXPORT jstring
@@ -749,43 +794,47 @@ Java_com_karako_pdfr_data_Qpdf_nativeNormalize(
         args.push_back(std::string(OPT_FORCE_VERSION) + std::string(VALUE_PDF_VERSION));
     }
 
-    // initializeFromArgv may reorder or otherwise touch the argument array,
-    // so give it writable, NUL-terminated copies rather than string internals.
-    std::vector <std::vector<char>> buffers;
-    buffers.reserve(args.size());
-    for (auto const &arg: args) {
-        buffers.emplace_back(arg.c_str(), arg.c_str() + arg.size() + 1);
+    const std::string error = runJob(args, pdfA ? applyPdfA : nullptr);
+    if (!error.empty()) {
+        return failure(env, error);
     }
-    std::vector<char *> argv;
-    argv.reserve(buffers.size() + 1);
-    for (auto &buffer: buffers) {
-        argv.push_back(buffer.data());
+    return nullptr;
+}
+
+extern "C" JNIEXPORT jstring
+
+JNICALL
+Java_com_karako_pdfr_data_Qpdf_nativeDecrypt(
+        JNIEnv *env,
+        jobject /* thiz */,
+        jstring inputPath,
+        jstring outputPath,
+        jstring password) {
+    const std::string input = fromJava(env, inputPath);
+    const std::string output = fromJava(env, outputPath);
+    const std::string secret = fromJava(env, password);
+
+    if (input.empty() || output.empty()) {
+        return failure(env, std::string(ERROR_MISSING_PATHS));
     }
-    argv.push_back(nullptr);
 
-    try {
-        QPDFJob job;
-        job.setMessagePrefix(std::string(MESSAGE_PREFIX));
-        job.initializeFromArgv(argv.data());
-
-        auto pdf = job.createQPDF();
-        if (!pdf) {
-            return failure(env, std::string(ERROR_UNREADABLE_PDF));
-        }
-        if (pdfA) {
-            applyPdfA(*pdf);
-        }
-        job.writeQPDF(*pdf);
-
-        if (job.getExitCode() == QPDFJob::EXIT_ERROR) {
-            return failure(env, std::string(ERROR_REPORTED));
-        }
-        return nullptr;
-    } catch (const std::exception &e) {
-        return failure(env, e.what());
-    } catch (...) {
-        return failure(env, std::string(ERROR_UNKNOWN));
+    std::vector <std::string> args;
+    args.emplace_back(PROGRAM_NAME);
+    args.push_back(input);
+    args.push_back(output);
+    if (!secret.empty()) {
+        args.push_back(std::string(OPT_PASSWORD) + secret);
     }
+    // --decrypt drops the password, and --remove-restrictions also clears the
+    // editing limits that a digital signature can impose on the document.
+    args.emplace_back(OPT_DECRYPT);
+    args.emplace_back(OPT_REMOVE_RESTRICTIONS);
+
+    const std::string error = runJob(args, nullptr);
+    if (!error.empty()) {
+        return failure(env, error);
+    }
+    return nullptr;
 }
 
 extern "C" JNIEXPORT jstring

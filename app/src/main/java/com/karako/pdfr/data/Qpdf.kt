@@ -94,6 +94,28 @@ object Qpdf {
             failure = QpdfMessages.FIX_FAILED,
         )
 
+    /**
+     * Writes a decrypted copy of [source] to [destination].
+     *
+     * The output is unencrypted and carries no digital-signature editing
+     * restrictions, so a spooler or another app can open it without the
+     * password. qpdf reads and rewrites the whole file, so it is also the
+     * first choice for printing an encrypted PDF without waking MuPDF's
+     * crypto code. Callers should fall back to [MuPdfDocument.savePdfCopy]
+     * when qpdf cannot handle the encryption handler.
+     *
+     * Must be called on [dispatcher]. Returns null on success, or a
+     * human-readable error. The destination is removed on failure.
+     */
+    fun decrypt(source: File, destination: File, password: String?): String? =
+        rewrite(
+            source = source,
+            destination = destination,
+            password = password,
+            operation = ::nativeDecrypt,
+            failure = QpdfMessages.DECRYPT_FAILED,
+        )
+
     private fun rewrite(
         source: File,
         destination: File,
@@ -158,6 +180,12 @@ object Qpdf {
     ): String?
 
     private external fun nativeFixPdf(
+        inputPath: String,
+        outputPath: String,
+        password: String?,
+    ): String?
+
+    private external fun nativeDecrypt(
         inputPath: String,
         outputPath: String,
         password: String?,

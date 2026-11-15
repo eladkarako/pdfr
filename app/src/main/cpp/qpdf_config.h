@@ -58,6 +58,8 @@ namespace qpdf_config {
     inline constexpr std::string_view
     OPT_DECRYPT = "--decrypt";
     inline constexpr std::string_view
+    OPT_REMOVE_RESTRICTIONS = "--remove-restrictions";
+    inline constexpr std::string_view
     OPT_FORCE_VERSION = "--force-version=";
 
 // Values passed to the options above.
