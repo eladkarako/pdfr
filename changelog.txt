@@ -1,7 +1,10 @@
 26.11.14
-+ added **Print** to the right of **Share**: PDFs go to the system print service, where Android's spooler renders the preview and pagination; encrypted PDFs are decrypted into a temporary cache copy first and that copy is deleted once the spooler has read it.
++ added **Print** to the right of **Share**, for every format the reader opens: unencrypted PDFs go straight to the system print service, encrypted PDFs are decrypted into a temporary cache copy, and other formats are converted to a temporary PDF with MuPDF's vector PDF writer. Reflowable documents are laid out at A4, and every temporary copy is deleted once the spooler has read it.
++ encrypted PDFs are now decrypted by qpdf first (`--decrypt` plus `--remove-restrictions`, which also clears digital-signature editing limits), so the print path does not have to wake MuPDF's crypto code; MuPDF's rewrite remains the fallback when qpdf cannot handle the file.
++ the overflow menu now mirrors the toolbar first, in the same left-to-right order: **Share**, **Print**, **Info**, **Open** and **Save**. The entries stay visible with no document and are disabled like their toolbar counterparts, except **Open**, which stays available; a divider separates them from the remaining document actions.
 + every overflow-menu entry now has a leading icon.
-+ PDFs gain **Copy all** beside **Copy** in the page menu and as the first overflow entry: Copy takes the current page's selection, Copy all extracts every page's text, so no cross-page selection is needed.
++ PDFs gain **Copy all** beside **Copy** in the page menu and as an overflow entry: Copy takes the current page's selection, Copy all extracts every page's text, so no cross-page selection is needed.
++ added **Page size** for PDFs and images: pick an ISO A, B or C sheet or enter an exact width and height in mm, cm, in, pt, px or em for a page range that defaults to `1-e`. PDF pages get a new MediaBox and CropBox without moving their content, so a larger sheet adds space and a smaller one crops the overflow; an image is scaled to fit and centred, then written as a PDF. The new copy replaces the current document.
 
 26.11.13
 

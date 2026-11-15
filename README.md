@@ -78,10 +78,13 @@ intact wherever the target provider allows its timestamp to be updated.
 - 💾 **Save as** next to **Open**: choose a destination and keep the current
   format, filename, extension and, where the provider supports it, the original
   modification time.
-- 🖨️ **Print** next to **Share** (PDF only): the file goes to the system print
-  service, where Android's spooler renders the preview and pagination. An
-  encrypted PDF is decrypted into a temporary cache copy first; the copy is
-  deleted once the spooler has read it.
+- 🖨️ **Print** next to **Share**, for every supported format: PDFs go straight
+  to the system print service, where Android's spooler renders the preview and
+  pagination. An encrypted PDF is decrypted into a temporary cache copy first
+  (qpdf, with MuPDF as the fallback for encryption handlers qpdf rejects);
+  EPUB, CBZ, images, text and other formats are converted to a temporary PDF,
+  with reflowable documents laid out at A4. Temporary copies are deleted once
+  the spooler has read them.
 - ✂️ **Text selection and copying** - long-press a PDF page to open the page
   menu, then choose **Select all** to highlight every text block on that page
   and expose **Copy** and **Copy all**. Copy takes the current page's selection;
@@ -89,8 +92,13 @@ intact wherever the target provider allows its timestamp to be updated.
   across paragraphs and shows the same two actions in its touch menu, including
   lines outside the viewport; line numbers are never included. There are no drag
   handles: PDF selection is intentionally page-wide for now.
-- 📋 **Copy all** is also the first overflow entry for plain text and PDFs, above
-  a divider: the entries below it only change how the document is shown.
+- 📋 **Copy all** is also in the overflow menu, below the mirrored toolbar
+  actions and above a divider: the entries below it only change how the
+  document is shown.
+- 🧭 **The overflow menu mirrors the toolbar first**: Share, Print, Info, Open
+  and Save appear in the same left-to-right order, disabled when no document is
+  loaded (Open stays available). A divider separates them from the document
+  actions that follow.
 - 🔍 **Zoom** from 100% to 600% for fixed-layout documents with a two-finger
   pinch (any intermediate value) or a smooth double-tap glide (2x, 4x, 6x, back
   to 1x). The content resizes and pans under the fingers around the midpoint
@@ -112,6 +120,13 @@ intact wherever the target provider allows its timestamp to be updated.
   unencrypted PDF into its cache and opens it in place of the current document.
 - 🔄 **Rotate 180°** (PDF only): turns the listed pages upside down. The range
   defaults to `1-e`, and only the pages you list are rotated.
+- 📐 **Page size** (PDF and image): choose an ISO A, B or C sheet, or type an
+  exact width and height in millimetres, centimetres, inches, points, CSS
+  pixels or 12 pt `em`. The range defaults to `1-e`. PDF pages get a new
+  MediaBox and CropBox without moving their content, so a larger sheet adds
+  space and a smaller one crops the overflow; an image is fitted into the
+  chosen page (aspect ratio preserved, centred) and written as a PDF. The new
+  copy replaces the current document.
 - 🧰 **Normalize** (PDF only): calls the bundled
   [qpdf](https://qpdf.readthedocs.io/) native library and applies the selected
   optimisations in one pass. Choose stream compression, decode-all/recompress
