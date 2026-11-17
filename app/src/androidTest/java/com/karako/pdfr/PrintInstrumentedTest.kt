@@ -56,7 +56,7 @@ class PrintInstrumentedTest {
             TestPdfWriter.write(file, listOf("Print page one", "Print page two"))
         }
 
-        val source = viewModel.printSource()
+        val source: PrintSource? = viewModel.printSource()
 
         assertNotNull("printSource() returned null for a plain PDF", source)
         source!!
@@ -72,7 +72,7 @@ class PrintInstrumentedTest {
             file.writeText("PDFr print fixture\nSecond line\nThird line\n")
         }
 
-        val source = viewModel.printSource()
+        val source: PrintSource? = viewModel.printSource()
 
         assertNotNull("printSource() returned null for plain text", source)
         source!!
@@ -96,7 +96,7 @@ class PrintInstrumentedTest {
             bitmap.recycle()
         }
 
-        val source = viewModel.printSource()
+        val source: PrintSource? = viewModel.printSource()
 
         assertNotNull("printSource() returned null for an image", source)
         source!!
@@ -116,7 +116,7 @@ class PrintInstrumentedTest {
             assertTrue(encryptWithMuPdf(plain, file, PASSWORD))
         }
 
-        val source = viewModel.printSource()
+        val source: PrintSource? = viewModel.printSource()
 
         assertNotNull("printSource() returned null for an encrypted PDF", source)
         source!!
