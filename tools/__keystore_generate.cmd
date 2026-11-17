@@ -23,7 +23,19 @@ set "TZ=UTC"
 set "NO_COLOR=1"
 
 echo.>"build\logs\__keystore_generate.log"
-call "node.exe" "tools\__keystore_generate.js" 2>&1 | "tee.exe" --append "build\logs\__keystore_generate.log"
+rem Prefer Node on PATH, then the copy make_test_files.cmd downloads into
+rem tools\. The script runs from the repository root, so tools\node.exe is not
+rem found by a bare name unless tools is also on PATH.
+set "NODE="
+where node.exe >nul 2>nul && set "NODE=node.exe"
+if not defined NODE if exist "%~dp0node.exe" set "NODE=%~dp0node.exe"
+if not defined NODE (
+  echo [ERROR] Node.js was not found. Install it, or run tools\make_test_files.cmd once to download it.
+  pause
+  popd
+  exit /b 1
+)
+call "%NODE%" "tools\__keystore_generate.js" 2>&1 | "tee.exe" --append "build\logs\__keystore_generate.log"
 
 pause
 popd
