@@ -357,15 +357,6 @@ androidComponents {
     onVariants { variant ->
         println("[VERSION] variant=${variant.name}, buildType=${variant.buildType}, outputs=${variant.outputs.size}, base=${base_version_code}")
 
-        // The app and its libraries ship English only. Keeping one locale
-        // strips the other ~80 translations bundled by AndroidX and Material,
-        // which are never shown by PDFr. This is a release-only packaging
-        // optimisation: debug builds keep every locale for inspection.
-        if (variant.buildType == "release") {
-            variant.androidResources.localeFilters.add("en")
-            println("[RESOURCES] ${variant.name}: locale filter en")
-        }
-
         variant.outputs.forEach { output ->
             val abi = output.filters.find { it.filterType == ABI }?.identifier
             val label: String

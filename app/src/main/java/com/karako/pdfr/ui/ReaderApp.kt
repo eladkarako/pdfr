@@ -49,11 +49,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -63,6 +61,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -90,6 +89,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -100,6 +100,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karako.pdfr.R
@@ -110,6 +111,7 @@ import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.ShareSheet
+import com.karako.pdfr.data.ThemeMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -162,6 +164,10 @@ fun ReaderApp(
     state: ReaderState,
     selection: SelectionState?,
     viewModel: ReaderViewModel,
+    themeMode: ThemeMode,
+    languageTag: String,
+    onThemeModeChange: (ThemeMode) -> Unit,
+    onLanguageChange: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -197,10 +203,19 @@ fun ReaderApp(
     var showNormalizeDialog by rememberSaveable { mutableStateOf(false) }
     var showPageSizeDialog by rememberSaveable { mutableStateOf(false) }
     var showTextSizeDialog by rememberSaveable { mutableStateOf(false) }
+    var showSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var zoom by rememberSaveable { mutableFloatStateOf(1f) }
     var showOverflowMenu by remember { mutableStateOf(false) }
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
+
+    // The toolbar keeps a fixed left-to-right icon order in every language, so
+    // Share, Print, Info, Open, Save and Menu never move. The title row below is
+    // forced to LTR for that reason; the overflow menu gets the real direction
+    // back so its captions still align right in a right-to-left language. Tab
+    // and D-pad then follow the row's composition order, skipping the buttons
+    // that are disabled in the current state.
+    val uiLayoutDirection = LocalLayoutDirection.current
 
     // Toolbar and overflow menu share these actions so both always agree on
     // what each entry does. Their enabled state is decided by the callers.
@@ -317,389 +332,412 @@ fun ReaderApp(
             TopAppBar(
                 title = {
                     // Share and print on the left; info, open and save together
-                    // in the middle; menu on the right. The app is forced to
-                    // LTR so this order never flips in an RTL locale.
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                    // in the middle; menu on the right. The title row is forced
+                    // to LTR so this order never flips in an RTL language.
+                    CompositionLocalProvider(
+                        LocalLayoutDirection provides LayoutDirection.Ltr,
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = shareDocument,
-                                enabled = state is ReaderState.Ready && !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_share),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AccessibleIconButton(
                                     contentDescription = stringResource(R.string.share_document),
-                                )
-                            }
-                            IconButton(
-                                onClick = printDocument,
-                                enabled = state is ReaderState.Ready && !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_print),
-                                    contentDescription = stringResource(R.string.print_document),
-                                )
-                            }
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = editInfo,
-                                enabled = state is ReaderState.Ready && !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_info),
-                                    contentDescription = stringResource(R.string.document_info),
-                                )
-                            }
-                            IconButton(
-                                onClick = openPicker,
-                                enabled = !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_folder_open),
-                                    contentDescription = stringResource(R.string.open_another),
-                                )
-                            }
-                            IconButton(
-                                onClick = saveDocumentAs,
-                                enabled = state is ReaderState.Ready && !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_save),
-                                    contentDescription = stringResource(R.string.save_as),
-                                )
-                            }
-                        }
-                        Box {
-                            IconButton(
-                                onClick = { showOverflowMenu = true },
-                                // Exit is available from every state, so the
-                                // menu stays reachable with no document, after
-                                // an error and while a password is required.
-                                enabled = !busy,
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_more_vert),
-                                    contentDescription = stringResource(R.string.more_options),
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = showOverflowMenu,
-                                onDismissRequest = { showOverflowMenu = false },
-                                modifier = Modifier.heightIn(
-                                    max = screenHeightDp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
-                                ),
-                            ) {
-                                val ready = state as? ReaderState.Ready
-                                val plainText = ready?.plainText
-                                val canAct = ready != null && !busy
-
-                                // Mirror the toolbar first, in the same
-                                // left-to-right order. These entries stay
-                                // visible without a document so the menu and
-                                // toolbar never disagree; only Open remains
-                                // available with nothing loaded.
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.share_document)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_share) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        shareDocument()
-                                    },
-                                    enabled = canAct,
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.print_document)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_print) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        printDocument()
-                                    },
-                                    enabled = canAct,
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.document_info)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_info) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        editInfo()
-                                    },
-                                    enabled = canAct,
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.open_another)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_folder_open) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        openPicker()
-                                    },
-                                    enabled = !busy,
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.save_as)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_save) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        saveDocumentAs()
-                                    },
-                                    enabled = canAct,
-                                )
-
-                                // Fix PDF stays available with no document:
-                                // it opens the picker and repairs the file that
-                                // is chosen. It never appears for non-PDFs.
-                                val canFixPdf =
-                                    (ready?.info?.isPdf == true) ||
-                                            state is ReaderState.Empty
-                                val canCopyAll = plainText != null || ready?.info?.isPdf == true
-                                val canPageSize =
-                                    ready?.info?.isPdf == true || ready?.info?.isImage == true
-                                // Keep the toolbar mirror apart from the rest,
-                                // but do not leave a divider dangling when a
-                                // format has no further document actions.
-                                val hasDocumentActions = canFixPdf || canCopyAll ||
-                                        canPageSize ||
-                                        ready?.reflowable == true ||
-                                        ready?.monospaceAvailable == true
-                                if (hasDocumentActions) HorizontalDivider()
-                                if (canFixPdf) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.fix_pdf)) },
-                                        leadingIcon = { MenuIcon(R.drawable.ic_build) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            if (ready != null) {
-                                                viewModel.fixPdf()
-                                            } else {
-                                                pendingFix = true
-                                                openPdfForFix()
-                                            }
-                                        },
+                                    onClick = shareDocument,
+                                    enabled = state is ReaderState.Ready && !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_share),
+                                        contentDescription = null,
                                     )
-                                    if (ready != null) HorizontalDivider()
                                 }
-                                // Copy all is the only action here; everything
-                                // below changes how the document is shown, so
-                                // the divider keeps the two groups apart. PDFs
-                                // get the same entry because their selection is
-                                // limited to the current page as well.
-                                if (canCopyAll) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.copy_all)) },
-                                        leadingIcon = { MenuIcon(R.drawable.ic_copy) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            if (plainText != null) {
-                                                // Copy the decoded document, not
-                                                // a selection: the lazy list only
-                                                // composes the lines near the
-                                                // viewport, so Select all would
-                                                // miss everything above or below.
-                                                copyToClipboard(
-                                                    context,
-                                                    PlainText.copyText(plainText),
-                                                    R.string.copied_all,
-                                                )
-                                            } else {
-                                                scope.launch {
-                                                    val text = viewModel.allText()
-                                                    if (text.isNullOrBlank()) {
-                                                        Toast.makeText(
-                                                            context,
-                                                            R.string.no_text_to_copy,
-                                                            Toast.LENGTH_SHORT,
-                                                        ).show()
+                                AccessibleIconButton(
+                                    contentDescription = stringResource(R.string.print_document),
+                                    onClick = printDocument,
+                                    enabled = state is ReaderState.Ready && !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_print),
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                AccessibleIconButton(
+                                    contentDescription = stringResource(R.string.document_info),
+                                    onClick = editInfo,
+                                    enabled = state is ReaderState.Ready && !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_info),
+                                        contentDescription = null,
+                                    )
+                                }
+                                AccessibleIconButton(
+                                    contentDescription = stringResource(R.string.open_another),
+                                    onClick = openPicker,
+                                    enabled = !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_folder_open),
+                                        contentDescription = null,
+                                    )
+                                }
+                                AccessibleIconButton(
+                                    contentDescription = stringResource(R.string.save_as),
+                                    onClick = saveDocumentAs,
+                                    enabled = state is ReaderState.Ready && !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_save),
+                                        contentDescription = null,
+                                    )
+                                }
+                            }
+                            Box {
+                                AccessibleIconButton(
+                                    contentDescription = stringResource(R.string.more_options),
+                                    onClick = { showOverflowMenu = true },
+                                    // Exit is available from every state, so the
+                                    // menu stays reachable with no document, after
+                                    // an error and while a password is required.
+                                    enabled = !busy,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_more_vert),
+                                        contentDescription = null,
+                                    )
+                                }
+                                CompositionLocalProvider(
+                                    LocalLayoutDirection provides uiLayoutDirection,
+                                ) {
+                                    DropdownMenu(
+                                        expanded = showOverflowMenu,
+                                        onDismissRequest = { showOverflowMenu = false },
+                                        modifier = Modifier.heightIn(
+                                            max = screenHeightDp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
+                                        ),
+                                    ) {
+                                        val ready = state as? ReaderState.Ready
+                                        val plainText = ready?.plainText
+                                        val canAct = ready != null && !busy
+
+                                        // Mirror the toolbar first, in the same
+                                        // left-to-right order. These entries stay
+                                        // visible without a document so the menu and
+                                        // toolbar never disagree; only Open remains
+                                        // available with nothing loaded.
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.share_document)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_share) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                shareDocument()
+                                            },
+                                            enabled = canAct,
+                                        )
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.print_document)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_print) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                printDocument()
+                                            },
+                                            enabled = canAct,
+                                        )
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.document_info)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_info) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                editInfo()
+                                            },
+                                            enabled = canAct,
+                                        )
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.open_another)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_folder_open) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                openPicker()
+                                            },
+                                            enabled = !busy,
+                                        )
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.save_as)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_save) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                saveDocumentAs()
+                                            },
+                                            enabled = canAct,
+                                        )
+
+                                        // Fix PDF stays available with no document:
+                                        // it opens the picker and repairs the file that
+                                        // is chosen. It never appears for non-PDFs.
+                                        val canFixPdf =
+                                            (ready?.info?.isPdf == true) ||
+                                                    state is ReaderState.Empty
+                                        val canCopyAll =
+                                            plainText != null || ready?.info?.isPdf == true
+                                        val canPageSize =
+                                            ready?.info?.isPdf == true || ready?.info?.isImage == true
+                                        // Keep the toolbar mirror apart from the rest,
+                                        // but do not leave a divider dangling when a
+                                        // format has no further document actions.
+                                        val hasDocumentActions = canFixPdf || canCopyAll ||
+                                                canPageSize ||
+                                                ready?.reflowable == true ||
+                                                ready?.monospaceAvailable == true
+                                        if (hasDocumentActions) HorizontalDivider()
+                                        if (canFixPdf) {
+                                            AccessibleDropdownMenuItem(
+                                                text = { Text(stringResource(R.string.fix_pdf)) },
+                                                leadingIcon = { MenuIcon(R.drawable.ic_build) },
+                                                onClick = {
+                                                    showOverflowMenu = false
+                                                    if (ready != null) {
+                                                        viewModel.fixPdf()
                                                     } else {
+                                                        pendingFix = true
+                                                        openPdfForFix()
+                                                    }
+                                                },
+                                            )
+                                            if (ready != null) HorizontalDivider()
+                                        }
+                                        // Copy all is the only action here; everything
+                                        // below changes how the document is shown, so
+                                        // the divider keeps the two groups apart. PDFs
+                                        // get the same entry because their selection is
+                                        // limited to the current page as well.
+                                        if (canCopyAll) {
+                                            AccessibleDropdownMenuItem(
+                                                text = { Text(stringResource(R.string.copy_all)) },
+                                                leadingIcon = { MenuIcon(R.drawable.ic_copy) },
+                                                onClick = {
+                                                    showOverflowMenu = false
+                                                    if (plainText != null) {
+                                                        // Copy the decoded document, not
+                                                        // a selection: the lazy list only
+                                                        // composes the lines near the
+                                                        // viewport, so Select all would
+                                                        // miss everything above or below.
                                                         copyToClipboard(
                                                             context,
-                                                            text,
+                                                            PlainText.copyText(plainText),
                                                             R.string.copied_all,
                                                         )
+                                                    } else {
+                                                        scope.launch {
+                                                            val text = viewModel.allText()
+                                                            if (text.isNullOrBlank()) {
+                                                                Toast.makeText(
+                                                                    context,
+                                                                    R.string.no_text_to_copy,
+                                                                    Toast.LENGTH_SHORT,
+                                                                ).show()
+                                                            } else {
+                                                                copyToClipboard(
+                                                                    context,
+                                                                    text,
+                                                                    R.string.copied_all,
+                                                                )
+                                                            }
+                                                        }
                                                     }
-                                                }
+                                                },
+                                            )
+                                            HorizontalDivider()
+                                        }
+                                        if (ready != null) {
+                                            if (ready.info.isPdf) {
+                                                AccessibleDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.reorder_pages)) },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_reorder) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        showReorderDialog = true
+                                                    },
+                                                )
+                                                AccessibleDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.rotate_pages)) },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_rotate_right) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        showRotateDialog = true
+                                                    },
+                                                )
+                                                AccessibleDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.normalize)) },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_tune) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        showNormalizeDialog = true
+                                                    },
+                                                )
                                             }
-                                        },
-                                    )
-                                    HorizontalDivider()
-                                }
-                                if (ready != null) {
-                                    if (ready.info.isPdf) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.reorder_pages)) },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_reorder) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showReorderDialog = true
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.rotate_pages)) },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_rotate_right) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showRotateDialog = true
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.normalize)) },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_tune) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showNormalizeDialog = true
-                                            },
-                                        )
-                                    }
-                                    // PDFs and single images can both be
-                                    // given a new page box; CBZ and other
-                                    // multi-page reflowable documents cannot.
-                                    if (canPageSize) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.page_size)) },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_page_size) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showPageSizeDialog = true
-                                            },
-                                        )
-                                    }
-                                    if (ready.reflowable) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        R.string.text_size_menu,
-                                                        ready.textSizePt,
-                                                    ),
+                                            // PDFs and single images can both be
+                                            // given a new page box; CBZ and other
+                                            // multi-page reflowable documents cannot.
+                                            if (canPageSize) {
+                                                AccessibleDropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.page_size)) },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_page_size) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        showPageSizeDialog = true
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_format_size) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                showTextSizeDialog = true
-                                            },
-                                        )
-                                    }
-                                    if (ready.plainText != null) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        if (ready.singlePage) {
-                                                            R.string.single_page_on
-                                                        } else {
-                                                            R.string.single_page_off
-                                                        },
-                                                    ),
+                                            }
+                                            if (ready.reflowable) {
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                R.string.text_size_menu,
+                                                                ready.textSizePt,
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_format_size) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        showTextSizeDialog = true
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_description) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                viewModel.setSinglePage(!ready.singlePage)
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        if (ready.lineWrap) {
-                                                            R.string.line_wrap_on
-                                                        } else {
-                                                            R.string.line_wrap_off
-                                                        },
-                                                    ),
+                                            }
+                                            if (ready.plainText != null) {
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                if (ready.singlePage) {
+                                                                    R.string.single_page_on
+                                                                } else {
+                                                                    R.string.single_page_off
+                                                                },
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_description) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        viewModel.setSinglePage(!ready.singlePage)
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_wrap_text) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                viewModel.setLineWrap(!ready.lineWrap)
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        if (ready.alignRight) {
-                                                            R.string.align_right_on
-                                                        } else {
-                                                            R.string.align_right_off
-                                                        },
-                                                    ),
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                if (ready.lineWrap) {
+                                                                    R.string.line_wrap_on
+                                                                } else {
+                                                                    R.string.line_wrap_off
+                                                                },
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_wrap_text) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        viewModel.setLineWrap(!ready.lineWrap)
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = {
-                                                MenuIcon(R.drawable.ic_format_align_right)
-                                            },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                viewModel.setAlignRight(!ready.alignRight)
-                                            },
-                                        )
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        if (ready.lineNumbers) {
-                                                            R.string.line_numbers_on
-                                                        } else {
-                                                            R.string.line_numbers_off
-                                                        },
-                                                    ),
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                if (ready.alignRight) {
+                                                                    R.string.align_right_on
+                                                                } else {
+                                                                    R.string.align_right_off
+                                                                },
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = {
+                                                        MenuIcon(R.drawable.ic_format_align_right)
+                                                    },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        viewModel.setAlignRight(!ready.alignRight)
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = {
-                                                MenuIcon(R.drawable.ic_format_list_numbered)
-                                            },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                viewModel.setLineNumbers(!ready.lineNumbers)
-                                            },
-                                        )
-                                    }
-                                    if (ready.monospaceAvailable) {
-                                        DropdownMenuItem(
-                                            text = {
-                                                Text(
-                                                    stringResource(
-                                                        if (ready.monospace) {
-                                                            R.string.monospace_on
-                                                        } else {
-                                                            R.string.monospace_off
-                                                        },
-                                                    ),
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                if (ready.lineNumbers) {
+                                                                    R.string.line_numbers_on
+                                                                } else {
+                                                                    R.string.line_numbers_off
+                                                                },
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = {
+                                                        MenuIcon(R.drawable.ic_format_list_numbered)
+                                                    },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        viewModel.setLineNumbers(!ready.lineNumbers)
+                                                    },
                                                 )
-                                            },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_code) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                viewModel.setMonospace(!ready.monospace)
-                                            },
-                                        )
-                                    }
-                                }
+                                            }
+                                            if (ready.monospaceAvailable) {
+                                                AccessibleDropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            stringResource(
+                                                                if (ready.monospace) {
+                                                                    R.string.monospace_on
+                                                                } else {
+                                                                    R.string.monospace_off
+                                                                },
+                                                            ),
+                                                        )
+                                                    },
+                                                    leadingIcon = { MenuIcon(R.drawable.ic_code) },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        viewModel.setMonospace(!ready.monospace)
+                                                    },
+                                                )
+                                            }
+                                        }
 
-                                // Exit is always the last entry, kept apart
-                                // from the document actions by a divider.
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.exit)) },
-                                    leadingIcon = { MenuIcon(R.drawable.ic_exit_to_app) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        // Remove the task first so the
-                                        // launcher has nothing to resume, then
-                                        // end the process. PDFr has no service,
-                                        // but this also stops its reader, qpdf
-                                        // and metadata threads and the native
-                                        // contexts they own.
-                                        context.findActivity()?.finishAndRemoveTask()
-                                        exitProcess(0)
-                                    },
-                                )
+                                        // Settings and Exit are always available, so
+                                        // they stay apart from the document actions.
+                                        HorizontalDivider()
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.settings_open)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_settings) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                showSettingsDialog = true
+                                            },
+                                        )
+                                        AccessibleDropdownMenuItem(
+                                            text = { Text(stringResource(R.string.exit)) },
+                                            leadingIcon = { MenuIcon(R.drawable.ic_exit_to_app) },
+                                            onClick = {
+                                                showOverflowMenu = false
+                                                // Remove the task first so the
+                                                // launcher has nothing to resume, then
+                                                // end the process. PDFr has no service,
+                                                // but this also stops its reader, qpdf
+                                                // and metadata threads and the native
+                                                // contexts they own.
+                                                context.findActivity()?.finishAndRemoveTask()
+                                                exitProcess(0)
+                                            },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -817,6 +855,16 @@ fun ReaderApp(
                 showNormalizeDialog = false
                 viewModel.normalizePdf(options)
             },
+        )
+    }
+
+    if (showSettingsDialog) {
+        SettingsDialog(
+            themeMode = themeMode,
+            languageTag = languageTag,
+            onThemeModeChange = onThemeModeChange,
+            onLanguageChange = onLanguageChange,
+            onDismiss = { showSettingsDialog = false },
         )
     }
 

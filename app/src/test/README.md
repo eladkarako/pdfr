@@ -35,6 +35,7 @@ silently loses data.
 | `StorageConfigTest`        | Cache name limits, sidecar/share naming, epoch-seconds vs milliseconds detection, and `safeFileName` sanitising/UTF-8 truncation.                                                                                                                                                                                                      |
 | `ImageMetadataFormatsTest` | PNG text/physical/time chunks, IPTC datasets, ICC description parsing and XMP read/update round-trips, including clearing values.                                                                                                                                                                                                      |
 | `NormalizeOptionsTest`     | Defaults, the all-off guard, JPEG-quality validation and apply enablement for the Normalize dialog.                                                                                                                                                                                                                                    |
+| `AppSettingsTest`          | Theme parsing and repair, the language list (system first, English and Hebrew, unique tags) and which modes count as dark.                                                                                                                                                                                                             |
 
 Reports are written to
 `build/app/reports/tests/testDebugUnitTest/index.html`.

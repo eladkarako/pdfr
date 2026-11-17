@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">פתיחת מסמך</string>
+    <string name="open_another">פתיחת מסמך</string>
+    <string name="share_document">שיתוף מסמך</string>
+    <string name="save_as">שמירה בשם</string>
+    <string name="saved_as">נשמר %1$s.</string>
+    <string name="save_failed">לא ניתן היה לשמור את העותק.</string>
+
+    <string name="empty_title">אין מסמך פתוח</string>
+    <string name="empty_body">פתחו PDF, EPUB, מסמך Markdown, תמונה, ארכיון קומיקס או קובץ טקסט כדי להתחיל לקרוא. PDFr מופיע גם בתפריטים „פתח באמצעות” ו„שיתוף” של אפליקציות אחרות.</string>
+
+    <string name="loading">פותח…</string>
+    <string name="error_title">לא ניתן היה לפתוח את הקובץ</string>
+    <string name="error_generic">משהו השתבש בקריאת הקובץ.</string>
+    <string name="error_no_pages">למסמך הזה אין עמודים קריאים.</string>
+    <string name="error_file_unreadable">לא ניתן היה לקרוא את הקובץ. נסו עותק אחר שלו.</string>
+    <string name="error_file_empty">הקובץ ריק.</string>
+    <string name="error_location_not_writable">המיקום שנבחר אינו ניתן לכתיבה.</string>
+    <string name="try_another">נסו קובץ אחר</string>
+
+    <string name="document_info">פרטי מסמך</string>
+    <string name="file_name">שם קובץ</string>
+    <string name="file_size">גודל קובץ</string>
+    <string name="document_type">סוג</string>
+    <string name="document_format">פורמט</string>
+    <string name="page_count">עמודים</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d עמוד</item>
+        <item quantity="other">%1$d עמודים</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">מוגן בסיסמה</string>
+    <string name="yes">כן</string>
+    <string name="no">לא</string>
+    <string name="close">סגירה</string>
+    <string name="exit">יציאה</string>
+
+    <string name="document_metadata">מטא-נתוני מסמך</string>
+    <string name="file_properties">מאפייני קובץ</string>
+    <string name="metadata_title">כותרת</string>
+    <string name="metadata_author">מחבר</string>
+    <string name="metadata_subject">נושא</string>
+    <string name="metadata_keywords">מילות מפתח</string>
+    <string name="metadata_creator">יוצר</string>
+    <string name="metadata_producer">מפיק</string>
+    <string name="metadata_created">נוצר</string>
+    <string name="metadata_modified">עודכן</string>
+    <string name="metadata_make">יצרן</string>
+    <string name="metadata_model">דגם</string>
+    <string name="metadata_lens_model">דגם עדשה</string>
+    <string name="metadata_datetime_original">תאריך צילום</string>
+    <string name="metadata_datetime">תאריך שינוי</string>
+    <string name="metadata_exposure_time">זמן חשיפה</string>
+    <string name="metadata_f_number">מספר F</string>
+    <string name="metadata_iso">רגישות ISO</string>
+    <string name="metadata_focal_length">אורך מוקד</string>
+    <string name="metadata_orientation">כיוון</string>
+    <string name="metadata_image_width">רוחב תמונה</string>
+    <string name="metadata_image_length">גובה תמונה</string>
+    <string name="metadata_x_resolution">רזולוציית X</string>
+    <string name="metadata_y_resolution">רזולוציית Y</string>
+    <string name="metadata_color_space">מרחב צבע</string>
+    <string name="metadata_software">תוכנה</string>
+    <string name="metadata_gps_latitude">קו רוחב GPS</string>
+    <string name="metadata_gps_longitude">קו אורך GPS</string>
+    <string name="metadata_gps_altitude">גובה GPS</string>
+    <string name="metadata_caption">כיתוב / תקציר</string>
+    <string name="metadata_copyright">הודעת זכויות יוצרים</string>
+    <string name="metadata_headline">כותרת ראשית</string>
+    <string name="metadata_city">עיר</string>
+    <string name="metadata_country">מדינה</string>
+    <string name="metadata_rating">דירוג</string>
+    <string name="metadata_icc_profile">פרופיל ICC</string>
+    <string name="file_created">הקובץ נוצר</string>
+    <string name="file_modified">הקובץ עודכן</string>
+    <string name="file_extension">סיומת</string>
+    <string name="file_extension_hint">אותיות וספרות בלבד, עד 8.</string>
+    <string name="file_name_required">הזינו שם קובץ.</string>
+    <string name="metadata_empty_hint">כל מאפייני המסמך מוצגים, כולל ריקים. ניקוי ערך מסיר אותו מהמסמך כשהפורמט מאפשר זאת; אחרת הערך הריק נשמר לצד הקובץ.</string>
+    <string name="metadata_applied">המטא-נתונים עודכנו.</string>
+    <string name="metadata_partially_applied">המטא-נתונים עודכנו. חלק מהערכים נשמרים לצד הקובץ מכיוון שהפורמט הזה אינו יכול לאחסן אותם.</string>
+    <string name="metadata_failed">עדכון המטא-נתונים נכשל.</string>
+
+    <string name="apply">החלה</string>
+    <string name="ok">אישור</string>
+    <string name="pick_date">תאריך</string>
+    <string name="pick_time">שעה</string>
+    <string name="clear_value">ניקוי</string>
+    <string name="time_picker_title">בחירת שעה</string>
+    <string name="date_invalid">השתמשו ב-yyyy-MM-ddThh:mm:ss.</string>
+
+    <string name="text_size_menu">גודל טקסט: %1$d נק׳</string>
+    <string name="text_size_title">גודל טקסט</string>
+    <string name="text_size_value">%1$d נק׳</string>
+    <string name="text_size_range">5 עד 40 נק׳. משפיע על מסמכי טקסט; PDF ותמונות שומרים על הזום שלהם.</string>
+
+    <string name="single_page_on">עמוד יחיד: פועל</string>
+    <string name="single_page_off">עמוד יחיד: כבוי</string>
+    <string name="line_wrap_on">גלישת שורות: פועל</string>
+    <string name="line_wrap_off">גלישת שורות: כבוי</string>
+    <string name="align_right_on">יישור לימין: פועל</string>
+    <string name="align_right_off">יישור לימין: כבוי</string>
+    <string name="line_numbers_on">מספרי שורות: פועל</string>
+    <string name="line_numbers_off">מספרי שורות: כבוי</string>
+
+    <string name="copy">העתקה</string>
+    <string name="copy_all">העתקת הכול</string>
+    <string name="select_all">בחירת הכול</string>
+    <string name="copied">הועתק ללוח</string>
+    <string name="copied_all">כל הטקסט הועתק ללוח</string>
+
+    <string name="password_title">נדרשת סיסמה</string>
+    <string name="password_body">„%1$s” מוגן. הזינו את הסיסמה כדי לפתוח אותו.</string>
+    <string name="password_label">סיסמה</string>
+    <string name="password_wrong">הסיסמה לא התאימה.</string>
+    <string name="unlock">פתיחה</string>
+    <string name="cancel">ביטול</string>
+    <string name="enter_password">הזינו סיסמה</string>
+    <string name="password_required_title">המסמך הזה נעול</string>
+    <string name="password_required_body">הזינו את סיסמת המסמך כדי לקרוא אותו. MuPDF מפענח אותו בזיכרון; PDFr אינו כותב עותק מפוענח.</string>
+
+    <string name="more_options">אפשרויות נוספות</string>
+    <string name="monospace_on">רוחב אחיד: פועל</string>
+    <string name="monospace_off">רוחב אחיד: כבוי</string>
+
+    <string name="settings_open">הגדרות…</string>
+    <string name="settings_title">הגדרות</string>
+    <string name="settings_theme">ערכת נושא</string>
+    <string name="settings_language">שפה</string>
+    <string name="settings_note">השינויים נשמרים מיד. שפה חדשה טוענת מחדש את המסך.</string>
+    <string name="theme_system">לפי המערכת</string>
+    <string name="theme_light">בהיר</string>
+    <string name="theme_dark">כהה</string>
+    <string name="theme_amoled">שחור AMOLED</string>
+    <string name="language_system">ברירת המחדל של המערכת</string>
+
+    <string name="reorder_pages">סידור מחדש של עמודים…</string>
+    <string name="reorder_title">סידור מחדש של עמודים</string>
+    <string name="reorder_body">הזינו את העמודים לשמירה, לפי הסדר הרצוי. עמודים שלא יוזכרו יימחקו. מספרי העמודים מתייחסים ל-PDF הפתוח כעת.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">הפרידו עמודים בפסיקים. השתמשו במקף לטווח וב-e לעמוד האחרון. רווחים מתעלמים מהם; הסדר והחזרות נשמרים.</string>
+    <string name="reorder_apply">סידור מחדש</string>
+    <string name="rewrite_replace_note">ה-PDF החדש מחליף את המסמך הנוכחי. כדי לחזור למקור, פתחו אותו שוב.</string>
+    <string name="reorder_done">נוצר PDF מסודר מחדש.</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">שומר %1$d עמוד</item>
+        <item quantity="other">שומר %1$d עמודים</item>
+    </plurals>
+
+    <string name="rotate_pages">סיבוב 180°…</string>
+    <string name="rotate_title">סיבוב 180°</string>
+    <string name="rotate_body">הופך את העמודים המפורטים. מספרי העמודים מתייחסים ל-PDF הפתוח כעת.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">סיבוב</string>
+    <string name="rotate_done">נוצר PDF מסובב.</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">מסובב %1$d עמוד</item>
+        <item quantity="other">מסובב %1$d עמודים</item>
+    </plurals>
+
+    <string name="page_size">גודל עמוד…</string>
+    <string name="page_size_title">גודל עמוד</string>
+    <string name="page_size_body">קבעו את גודל הנייר לעמודים המפורטים. PDF שומר על התוכן בגודלו ובמיקומו הנוכחיים; תמונה מותאמת לעמוד החדש ונשמרת כ-PDF.</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">נייר</string>
+    <string name="page_size_custom">מותאם אישית</string>
+    <string name="page_size_width">רוחב</string>
+    <string name="page_size_height">גובה</string>
+    <string name="page_size_points">%1$s x %2$s נק׳</string>
+    <string name="page_size_error">הזינו גודל חיובי עד 14400 נק׳ (כ-5080 מ״מ).</string>
+    <string name="page_size_apply">קביעת גודל</string>
+    <string name="page_size_done">נוצר PDF עם גודל העמוד החדש.</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">משנה גודל של %1$d עמוד</item>
+        <item quantity="other">משנה גודל של %1$d עמודים</item>
+    </plurals>
+
+    <string name="page_error_empty">הזינו מספרי עמודים, לדוגמה 1-3,7,9-e.</string>
+    <string name="page_error_empty_entry">הסירו את הפסיק המיותר.</string>
+    <string name="page_error_token">לא ניתן לקרוא את „%1$s”. השתמשו במספרי עמודים, טווחים ו-e.</string>
+    <string name="page_error_range">עמוד %1$d אינו קיים. במסמך הזה יש %2$d עמודים.</string>
+    <string name="page_error_reversed">טווח לא יכול להסתיים לפני שהוא מתחיל.</string>
+    <string name="page_error_too_many">הבחירה הזו מכילה יותר מדי עמודים.</string>
+
+    <string name="normalize">נרמול…</string>
+    <string name="normalize_title">נרמול PDF</string>
+    <string name="normalize_body">מחיל את אופטימיזציות qpdf שנבחרו במעבר אחד, בסדר ששומר על תוצאה תקינה. העותק המותאם מחליף את המסמך הנוכחי.</string>
+    <string name="normalize_apply">נרמול</string>
+    <string name="normalize_done">נוצר PDF מנורמל.</string>
+    <string name="normalize_unavailable">qpdf אינו זמין בגרסה הזו.</string>
+    <string name="normalize_section_streams">זרמים</string>
+    <string name="normalize_compress_streams">דחיסת זרמים</string>
+    <string name="normalize_compress_streams_desc">דחוס זרמים שאינם דחוסים כבר.</string>
+    <string name="normalize_decode_all">פענוח כל הזרמים</string>
+    <string name="normalize_decode_all_desc">בטל דחיסה של כל זרם נתמך, כולל תמונות JPEG. מומלץ לשלב עם אופטימיזציית תמונות.</string>
+    <string name="normalize_recompress_flate">דחיסה מחדש של Flate</string>
+    <string name="normalize_recompress_flate_desc">בטל דחיסה ודחוס מחדש זרמי Flate. נדרש לפני שינוי רמת הדחיסה.</string>
+    <string name="normalize_compression_level">דחיסה מרבית (רמה 9)</string>
+    <string name="normalize_compression_level_desc">השתמש ברמת הדחיסה הגבוהה ביותר של qpdf ל-Flate.</string>
+    <string name="normalize_section_images">תמונות</string>
+    <string name="normalize_optimize_images">אופטימיזציית תמונות</string>
+    <string name="normalize_optimize_images_desc">קודד מחדש תמונות בדחיסה היעילה של qpdf. ייתכן אובדן איכות כאשר איכות JPEG נמוכה מ-100.</string>
+    <string name="normalize_jpeg_quality">איכות JPEG</string>
+    <string name="normalize_jpeg_quality_desc">0 (הקטן ביותר) עד 100 (הטוב ביותר). משמש רק באופטימיזציית תמונות.</string>
+    <string name="normalize_quality_error">הזינו איכות בין 0 ל-100.</string>
+    <string name="normalize_section_structure">מבנה</string>
+    <string name="normalize_newline">שורה חדשה לפני endstream</string>
+    <string name="normalize_newline_desc">הוסף שורה חדשה לפני כל endstream. עוזר ל-qpdf לשמר PDF/A.</string>
+    <string name="normalize_remove_resources">הסרת משאבים שאינם בשימוש</string>
+    <string name="normalize_remove_resources_desc">הסר משאבי עמוד שאין בהם שימוש בתוכן העמוד.</string>
+    <string name="normalize_externalize_images">הוצאת תמונות מוטמעות</string>
+    <string name="normalize_externalize_images_desc">העבר תמונות המוטמעות בזרמי תוכן לאובייקטי תמונה רגילים.</string>
+    <string name="normalize_section_output">פלט</string>
+    <string name="normalize_linearize">לינאריזציה</string>
+    <string name="normalize_linearize_desc">כתוב PDF מותאם לאינטרנט שיכול להציג את העמוד הראשון לפני קריאת השאר.</string>
+    <string name="normalize_pdfa">PDF/A-2b (מאמץ מיטבי)</string>
+    <string name="normalize_pdfa_desc">מוסיף זיהוי PDF/A-2b וכוונת פלט sRGB. גופנים ותוכן אינם מומרים; בדקו את התוצאה לפני ארכיון.</string>
+
+    <string name="fix_pdf">תיקון PDF</string>
+    <string name="fix_pdf_done">נוצר PDF מתוקן.</string>
+    <string name="fix_pdf_unavailable">qpdf אינו זמין בגרסה הזו.</string>
+    <string name="fix_pdf_only_pdf">רק קובצי PDF ניתנים לתיקון.</string>
+
+    <string name="print_document">הדפסת מסמך</string>
+    <string name="print_prepare_failed">לא ניתן היה להכין את המסמך להדפסה.</string>
+    <string name="no_text_to_copy">אין טקסט להעתקה.</string>
+
+    <string name="rewrite_failed">לא ניתן היה ליצור את ה-PDF החדש.</string>
+    <string name="working">עובד…</string>
+    <string name="working_body">עובד על המסמך…</string>
+</resources>

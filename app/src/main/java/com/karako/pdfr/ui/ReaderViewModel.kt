@@ -2,10 +2,12 @@ package com.karako.pdfr.ui
 
 import android.app.Application
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.karako.pdfr.R
+import com.karako.pdfr.data.AppSettings
 import com.karako.pdfr.data.DocumentDates
 import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.DocumentInfo
@@ -597,7 +599,7 @@ class ReaderViewModel(
                     val documentInfo = DocumentMetadataDraft.applySidecar(doc.info(), sidecar)
                     if (documentInfo.pageCount <= 0) {
                         throw IOException(
-                            getApplication<Application>().getString(R.string.error_no_pages),
+                            localizedString(R.string.error_no_pages),
                         )
                     }
                     lastLayout = appliedLayout
@@ -899,7 +901,7 @@ class ReaderViewModel(
     /** Explains why a file chosen for Fix PDF cannot be repaired. */
     fun reportFixNeedsPdf() {
         _messages.tryEmit(
-            getApplication<Application>().getString(R.string.fix_pdf_only_pdf),
+            localizedString(R.string.fix_pdf_only_pdf),
         )
     }
 
@@ -967,7 +969,7 @@ class ReaderViewModel(
                         )
                     }
                     if (!saved) {
-                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        _messages.tryEmit(localizedString(R.string.metadata_failed))
                         return@launch
                     }
 
@@ -987,7 +989,7 @@ class ReaderViewModel(
                         lastModified = modified,
                     )
                     if (!replaced) {
-                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        _messages.tryEmit(localizedString(R.string.metadata_failed))
                         return@launch
                     }
 
@@ -1019,7 +1021,7 @@ class ReaderViewModel(
                         lastModified = modified,
                     )
                     if (!replaced) {
-                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        _messages.tryEmit(localizedString(R.string.metadata_failed))
                         return@launch
                     }
                 } else {
@@ -1037,21 +1039,21 @@ class ReaderViewModel(
                         lastModified = modified,
                     )
                     if (!replaced) {
-                        _messages.tryEmit(app.getString(R.string.metadata_failed))
+                        _messages.tryEmit(localizedString(R.string.metadata_failed))
                         return@launch
                     }
                 }
 
                 _infoDraft.value = null
                 _messages.tryEmit(
-                    app.getString(
+                    localizedString(
                         if (partial) R.string.metadata_partially_applied else R.string.metadata_applied,
                     ),
                 )
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                _messages.tryEmit(app.getString(R.string.metadata_failed))
+                _messages.tryEmit(localizedString(R.string.metadata_failed))
             } finally {
                 output?.delete()
                 _busy.value = false
@@ -1077,7 +1079,7 @@ class ReaderViewModel(
                 withContext(Dispatchers.IO) {
                     val output = app.contentResolver.openOutputStream(target, "wt")
                         ?: throw IOException(
-                            app.getString(R.string.error_location_not_writable),
+                            localizedString(R.string.error_location_not_writable),
                         )
                     output.use { sink ->
                         ready.file.inputStream().use { source -> source.copyTo(sink) }
@@ -1085,11 +1087,11 @@ class ReaderViewModel(
                     DocumentStore.applyLastModified(app, target, ready.lastModified)
                 }
                 val savedName = DocumentStore.displayName(app, target) ?: ready.displayName
-                _messages.tryEmit(app.getString(R.string.saved_as, savedName))
+                _messages.tryEmit(localizedString(R.string.saved_as, savedName))
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                _messages.tryEmit(app.getString(R.string.save_failed))
+                _messages.tryEmit(localizedString(R.string.save_failed))
             } finally {
                 _busy.value = false
             }
@@ -1206,7 +1208,7 @@ class ReaderViewModel(
 
                         else -> R.string.rewrite_failed
                     }
-                    _messages.tryEmit(app.getString(message))
+                    _messages.tryEmit(localizedString(message))
                     return@launch
                 }
 
@@ -1236,16 +1238,16 @@ class ReaderViewModel(
                     output = null // the reader now owns the file
                     // Close the old document before unlinking its cache file.
                     MuPdf.execute { DocumentStore.discard(ready.file) }
-                    _messages.tryEmit(app.getString(kind.doneMessage))
+                    _messages.tryEmit(localizedString(kind.doneMessage))
                 } else {
                     created.delete()
                     output = null
-                    _messages.tryEmit(app.getString(R.string.rewrite_failed))
+                    _messages.tryEmit(localizedString(R.string.rewrite_failed))
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (_: Exception) {
-                _messages.tryEmit(app.getString(R.string.rewrite_failed))
+                _messages.tryEmit(localizedString(R.string.rewrite_failed))
             } finally {
                 output?.delete()
                 _busy.value = false
@@ -1310,11 +1312,21 @@ class ReaderViewModel(
         )
     }
 
+    /**
+     * Resolves a string in the language picked in Settings.
+     *
+     * The ViewModel outlives an activity recreation, so the context is looked
+     * up per call instead of being cached: a language change must not keep
+     * returning the previous language's strings.
+     */
+    private fun localizedString(@StringRes id: Int, vararg args: Any): String =
+        AppSettings.wrap(getApplication()).getString(id, *args)
+
     private fun fail(error: Exception) {
         _selection.value = null
         _state.value = ReaderState.Error(
             error.message?.takeIf { it.isNotBlank() }
-                ?: getApplication<Application>().getString(R.string.error_generic),
+                ?: localizedString(R.string.error_generic),
         )
     }
 
