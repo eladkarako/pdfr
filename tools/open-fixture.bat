@@ -30,6 +30,12 @@ if not defined BASE set "BASE=%NAME%"
 
 set "SOURCE=%~1"
 if exist "%SOURCE%" goto have_source
+rem Accept a path relative to the repository root as well, so the script works
+rem when it is started from tools\ (for example ..\build\test-fixtures\sample.pdf).
+if exist "%PDFR_ROOT%\%SOURCE%" (
+  set "SOURCE=%PDFR_ROOT%\%SOURCE%"
+  goto have_source
+)
 if exist "%PDFR_FIXTURES%\%NAME%" (
   set "SOURCE=%PDFR_FIXTURES%\%NAME%"
   goto have_source
