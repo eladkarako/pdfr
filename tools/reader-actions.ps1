@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Drives the reader's tap and long-press menus and captures screenshots.
@@ -32,11 +32,19 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action text-size -Prefix sample-text-size
 
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action theme-amoled
+
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-hebrew -Prefix hebrew
+
 .NOTES
   Run tools\open-fixture.bat first so a document is open. The long-press point
   should be over readable text; the default (centre of the screen) is fine for
   the first page of sample.pdf. The text-size and toggle actions need a
-  reflowable document (for example notes.txt or book.epub).
+  reflowable document (for example notes.txt or book.epub). The theme and
+  language actions match both the English and Hebrew labels, so they also work
+  after the UI has been switched to Hebrew.
 #>
 [CmdletBinding()]
 param(
@@ -57,6 +65,13 @@ param(
         'toggle-line-wrap',
         'toggle-align-right',
         'toggle-line-numbers',
+        'settings',
+        'theme-system',
+        'theme-light',
+        'theme-dark',
+        'theme-amoled',
+        'language-hebrew',
+        'language-system',
         'scroll',
         'screenshot',
         'list'
@@ -322,6 +337,57 @@ switch ($Action) {
         Tap-Node '^Line numbers:'
         Save-Shot 'line-numbers'
     }
+    'settings' {
+        Write-Host "[PDFr] Opening Settings from the overflow menu..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Save-Shot 'settings'
+    }
+    'theme-system' {
+        Write-Host "[PDFr] Choosing the system theme..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^(Same as system|לפי המערכת)$'
+        Save-Shot 'theme-system'
+    }
+    'theme-light' {
+        Write-Host "[PDFr] Choosing the light theme..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^(Light|בהיר)$'
+        Save-Shot 'theme-light'
+    }
+    'theme-dark' {
+        Write-Host "[PDFr] Choosing the dark theme..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^(Dark|כהה)$'
+        Save-Shot 'theme-dark'
+    }
+    'theme-amoled' {
+        Write-Host "[PDFr] Choosing the AMOLED black theme..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^(AMOLED black|שחור AMOLED)$'
+        Save-Shot 'theme-amoled'
+    }
+    'language-hebrew' {
+        Write-Host "[PDFr] Switching the UI to Hebrew..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^עברית$'
+        # The activity recreates, so wait for the new window before capturing.
+        Start-Sleep -Milliseconds 1800
+        Save-Shot 'language-hebrew'
+    }
+    'language-system' {
+        Write-Host "[PDFr] Returning the UI to the system language..."
+        Open-OverflowMenu
+        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node '^(System default|ברירת המחדל של המערכת)$'
+        Start-Sleep -Milliseconds 1800
+        Save-Shot 'language-system'
+    }
     'scroll' {
         $fromY = if ($ScrollDirection -eq 'up') {
             [int]($ScreenHeight * ($Y + $ScrollDistance / 2))
@@ -344,3 +410,8 @@ switch ($Action) {
 }
 
 Write-Host "[PDFr] Output in $OutDir"
+
+# `adb shell` now forwards the remote command's exit code, and the last command
+# (removing the screenshot from /sdcard) can fail harmlessly. Exit cleanly so
+# callers such as manual-testing.bat do not report a failed run.
+exit 0

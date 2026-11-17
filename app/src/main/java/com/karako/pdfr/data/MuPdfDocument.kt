@@ -7,9 +7,9 @@ import com.artifex.mupdf.fitz.Context
 import com.artifex.mupdf.fitz.Document
 import com.artifex.mupdf.fitz.DocumentWriter
 import com.artifex.mupdf.fitz.Matrix
-import com.artifex.mupdf.fitz.Page
 import com.artifex.mupdf.fitz.PDFDocument
 import com.artifex.mupdf.fitz.PDFPage
+import com.artifex.mupdf.fitz.Page
 import com.artifex.mupdf.fitz.Rect
 import com.artifex.mupdf.fitz.RectI
 import com.artifex.mupdf.fitz.StructuredText

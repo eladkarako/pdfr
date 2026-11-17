@@ -235,7 +235,7 @@ object DocumentStore {
             ?.filter {
                 it.isDirectory && it.name.startsWith(StorageConfig.SHARE_DIR_PREFIX)
             }
-            ?.forEach { it.deleteRecursively() }
+            ?.forEach { child -> runCatching { child.deleteRecursively() } }
         val dir = File(root, StorageConfig.SHARE_DIR_PREFIX + UUID.randomUUID())
             .apply { mkdirs() }
         val target = File(dir, safeFileName(displayName))
@@ -250,7 +250,11 @@ object DocumentStore {
         val keepEntry = keep?.let { if (it.parentFile == root) it else it.parentFile }
         root.listFiles()?.forEach { child ->
             if (child != keepEntry) {
-                child.deleteRecursively()
+                // Cleanup races with other imports and with Android deleting the
+                // cache itself. A directory that disappears mid-walk must not
+                // abort the import that triggered the cleanup, so each entry
+                // fails on its own.
+                runCatching { child.deleteRecursively() }
             }
         }
     }

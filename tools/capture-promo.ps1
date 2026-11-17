@@ -68,15 +68,27 @@ $Adb = Resolve-AndroidTool 'adb'
 
 function Invoke-Adb {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    $output = & $Adb @Arguments 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw "adb failed ($LASTEXITCODE): $($Arguments -join ' ')`n$output"
+
+    # adb writes progress such as "1 file pulled" to stderr. The script runs with
+    # ErrorActionPreference = 'Stop', which would turn that text into a
+    # terminating NativeCommandError, so stderr is collected as plain text.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $Adb @Arguments 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+
+    if ($code -ne 0) {
+        throw "adb failed ($code): $($Arguments -join ' ')`n$output"
     }
     return $output
 }
 
 function Get-ConnectedDevice {
-    $lines = & $Adb devices 2>&1
+    $lines = Invoke-Adb devices
     foreach ($line in $lines) {
         if ($line -match '^(\S+)\s+device$') { return $matches[1] }
     }
@@ -135,6 +147,11 @@ function Install-DebugApk {
     Write-Step "Installing $abi debug APK..."
     & $Adb install -r -t $apk | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'adb install failed.' }
+
+    # Reset the stored theme and language so every run starts in the system
+    # language with the system theme, and the first screenshot shows the empty
+    # state rather than the document left open by the previous run.
+    Invoke-Adb shell pm clear com.karako.pdfr | Out-Null
 }
 
 function Save-Shot([string]$Name) {
@@ -147,10 +164,19 @@ function Save-Shot([string]$Name) {
 
 function Get-UiDocument {
     $remote = '/sdcard/pdfr-promo-ui.xml'
-    & $Adb shell "uiautomator dump --windows $remote" 2>&1 | Out-Null
     $local = Join-Path $OutDir 'window.xml'
-    & $Adb pull $remote $local 2>&1 | Out-Null
-    & $Adb shell rm $remote 2>&1 | Out-Null
+    try {
+        # Dump only the active window. uiautomator would otherwise include the
+        # window behind an open menu, where the toolbar button carries the same
+        # label as the menu entry; the first match would then tap the toolbar
+        # and close the menu instead of choosing the entry.
+        Invoke-Adb shell "uiautomator dump $remote" | Out-Null
+        Invoke-Adb pull $remote $local | Out-Null
+    } catch {
+        return $null
+    } finally {
+        try { Invoke-Adb shell rm $remote | Out-Null } catch { }
+    }
     if (-not (Test-Path $local)) { return $null }
     try {
         return [xml](Get-Content $local -Raw)
@@ -225,8 +251,8 @@ function Open-Fixture([string]$Name) {
 }
 
 function Restart-App {
-    & $Adb shell am force-stop com.karako.pdfr 2>&1 | Out-Null
-    & $Adb shell am start -n com.karako.pdfr/.MainActivity 2>&1 | Out-Null
+    Invoke-Adb shell am force-stop com.karako.pdfr | Out-Null
+    Invoke-Adb shell am start -n com.karako.pdfr/.MainActivity | Out-Null
     Start-Sleep -Seconds 2
 }
 
@@ -260,11 +286,25 @@ function Capture-Screenshots {
     Save-Shot '06-epub'
 
     if (-not $SkipPrint) {
-        $spooler = (& $Adb shell pm list packages 2>&1) -join "`n"
+        $spooler = (Invoke-Adb shell pm list packages | Out-String)
         if ($spooler -match 'printspooler') {
             Tap-Node 'Print document'
-            Start-Sleep -Seconds 4
-            Save-Shot '07-print'
+            # The print spooler starts on first use and can take a few seconds,
+            # so wait for its window instead of a fixed delay.
+            $printOpen = $false
+            for ($attempt = 1; $attempt -le 20; $attempt++) {
+                $windows = (Invoke-Adb shell dumpsys window windows | Out-String)
+                if ($windows -match 'printspooler') {
+                    $printOpen = $true
+                    break
+                }
+                Start-Sleep -Milliseconds 500
+            }
+            if ($printOpen) {
+                Save-Shot '07-print'
+            } else {
+                Write-Host '  the print dialog did not appear; skipped 07-print.png'
+            }
             Invoke-Adb shell input keyevent 4 | Out-Null
             Start-Sleep -Seconds 1
         } else {
@@ -288,7 +328,7 @@ function Capture-Video {
     if (-not $menu) { throw 'Could not find the overflow button for the video.' }
 
     $remote = '/sdcard/pdfr-promo.mp4'
-    & $Adb shell rm $remote 2>&1 | Out-Null
+    try { Invoke-Adb shell rm $remote | Out-Null } catch { }
 
     # Portrait phones exceed screenrecord's encoder limits at full resolution,
     # so scale to 720 px wide while keeping the display aspect ratio.
@@ -317,7 +357,7 @@ function Capture-Video {
     Swipe-Down 34 76
     Start-Sleep -Seconds 2
 
-    & $Adb shell pkill -INT screenrecord 2>&1 | Out-Null
+    try { Invoke-Adb shell pkill -INT screenrecord | Out-Null } catch { }
     Wait-Process -Id $record.Id -Timeout 15 -ErrorAction SilentlyContinue
     Invoke-Adb pull $remote (Join-Path $OutDir 'pdfr-promo.mp4') | Out-Null
     Invoke-Adb shell rm $remote | Out-Null
@@ -389,3 +429,7 @@ if ($script:StartedEmulator -and -not $KeepEmulator) {
 
 Write-Host ''
 Write-Host "[OK] Promo assets are in $OutDir" -ForegroundColor Green
+
+# adb writes progress to stderr, which PowerShell counts as an error even when
+# the command succeeded. Failures above throw, so reaching this point is success.
+exit 0

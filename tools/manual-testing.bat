@@ -24,11 +24,19 @@ echo  12. Print the open document (PDF, EPUB, text, image)
 echo  13. Check the overflow-menu toolbar mirror
 echo  14. Capture promo screenshots + MP4
 echo  15. Compose the promo poster
+echo  16. Open Settings (theme + language)
+echo  17. Switch the UI to Hebrew (RTL)
+echo  18. Return the UI to the system language
+echo  19. Regenerate the Android TV banner
 echo   0. Exit
 echo.
 set "ACTION="
 set /p "ACTION=Choose an action: "
 
+if "%ACTION%"=="19" goto banner
+if "%ACTION%"=="18" goto language-system
+if "%ACTION%"=="17" goto language-hebrew
+if "%ACTION%"=="16" goto settings
 if "%ACTION%"=="15" goto poster
 if "%ACTION%"=="14" goto promo
 if "%ACTION%"=="13" goto menu-mirror
@@ -138,6 +146,22 @@ goto pause
 
 :poster
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-poster.ps1"
+goto pause
+
+:settings
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action settings
+goto pause
+
+:language-hebrew
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language-hebrew
+goto pause
+
+:language-system
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language-system
+goto pause
+
+:banner
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-tv-banner.ps1"
 goto pause
 
 :pause
