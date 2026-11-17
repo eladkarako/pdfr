@@ -32,6 +32,7 @@ tools\manual-testing.bat
 | Script | What it does |
 | --- | --- |
 | `create-test-avd.bat [name] [ram-mb]` | Creates the `pdfr_full` API 35 x86_64 AVD with 1536 MB RAM. Installs the system image if it is missing. Safe to re-run. |
+| `create-tv-avd.bat [name] [ram-mb]` | Creates the `pdfr_tv` API 34 Android TV x86_64 AVD (`tv_1080p`) with 2048 MB RAM, a D-pad and a keyboard. Downloads the TV system image on the first run. Safe to re-run. |
 | `start-emulator.bat [avd]` | Starts the AVD without a snapshot and waits until `sys.boot_completed`. |
 | `stop-emulator.bat` | `adb emu kill`. |
 | `install-debug.bat [abi]` | Builds `:app:assembleDebug`, detects the device ABI and installs the matching split APK. |
@@ -42,9 +43,10 @@ tools\manual-testing.bat
 | `manual-testing.bat` | Interactive menu for the scenarios below. |
 | `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
 | `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
-| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
+| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language-hebrew`, `language-system`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
 | `capture-promo.ps1 [-StartEmulator] [-SkipBuild] [-SkipVideo] [-SkipPrint] [-KeepEmulator]` | Builds the debug APK first, generates fixtures, installs the app and captures the promo set: empty state, two colourful PDF pages, the overflow menu, the info editor, an EPUB, the print dialog, a short scrolling MP4 and a composed poster. Writes to `build\promo\`. `-StartEmulator` starts the AVD only after the build. |
 | `make-poster.ps1 [-OutDir DIR] [-Images a.png,b.png,...]` | Composes 3-4 screenshots into `poster.png` with a dark gradient, rounded cards and a title, using `System.Drawing` (no ImageMagick or ffmpeg). Defaults to `build\promo\` and picks `02-pdf-cover`, `03-pdf-colour`, `04-overflow` and `06-epub`. |
+| `make-tv-banner.ps1 [-OutFile PATH]` | Draws the 320x180 Android TV banner (document sheet, `PDFr`, `Read anything`) with `System.Drawing` and writes it to `app\src\main\res\drawable-nodpi\tv_banner.png`. Re-run after changing the app's colours or name. |
 | `reader-checks.bat [-Section ...]` | Automated on-device regression checks: disabled toolbar with no document, plain-text defaults and toggles, native selection plus the Copy/Copy all touch menu, the editable info dialog, and pinch behaviour. Copy all is checked through the clipboard against `long.txt`, which is taller than the viewport. Reads Compose through `uiautomator dump --windows` (the text context menu is its own popup window, so the app and popup hierarchies are merged), compares screenshots for the pixel-only checks, writes `build\reader-checks\results.txt`, and exits non-zero on any failure. Sections: `empty`, `text`, `selection`, `metadata`, `gestures`, `exit` (default `all`). |
 | `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
 | `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
@@ -163,9 +165,35 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
     size in each unit (mm, cm, in, pt, px, em) to check the point summary.
     Open `image.png`, choose **Page size** and confirm the image is fitted and
     centred on the chosen sheet. The entry is absent for EPUB, CBZ and text.
-25. **Exit** - the overflow menu ends with a divider and **Exit**, with or
-    without a document open. Choosing it removes the task from recents and stops
-    the process: `adb shell pidof com.karako.pdfr` prints nothing afterwards.
+25. **Exit** - the overflow menu ends with a divider, **Settings…** and **Exit**,
+    with or without a document open. Choosing Exit removes the task from recents
+    and stops the process: `adb shell pidof com.karako.pdfr` prints nothing
+    afterwards.
+26. **Theme** - overflow -> **Settings…** -> **Theme**. The four rows are ordered
+    **Same as system**, **Light**, **Dark**, **AMOLED black**. A row applies
+    immediately: Light stays light with the device in dark mode, Dark uses grey
+    surfaces, and AMOLED black uses pure black backgrounds and surfaces. The
+    status/navigation bar icons stay readable in each mode. Reopen the app and
+    the choice is still there. `reader-actions.ps1 -Action theme-amoled`
+    captures the result.
+27. **Language** - overflow -> **Settings…** -> **Language**. Choose **עברית**:
+    the activity reloads and the whole UI, menus and dialogs are Hebrew with a
+    right-to-left layout. The toolbar keeps Share → Print → Info → Open → Save →
+    Menu left-to-right in both languages; only the menu captions, dialogs and
+    other text mirror. Open `notes.txt`: the text still starts left-aligned
+    unless **Align right** is on. Choose **English** or **System default** to
+    switch back. `reader-actions.ps1 -Action language-hebrew` and `-Action
+    language-system` repeat both switches.
+28. **Keyboard and mouse** - with a hardware keyboard, Tab moves through the
+    toolbar in Share, Print, Info, Open, Save, Menu order in every language (the
+    toolbar does not mirror), and then into the reader and dialogs; Shift+Tab
+    reverses it. The focused button gets a primary-coloured ring, hovering with
+    a mouse shows the same ring, and pressing shows a coloured ripple. Arrow keys
+    work in the settings and metadata dialogs.
+29. **Android TV** - install the same APK on a TV or the TV emulator. PDFr
+    appears in the leanback launcher with its 320x180 banner, the D-pad moves
+    focus between toolbar buttons and menu rows, and the settings dialog scrolls
+    with the remote. `make-tv-banner.ps1` regenerates the banner.
 
 ### Gesture notes
 
@@ -246,7 +274,8 @@ available from the `manual-testing.bat` menu as option 11.
 
 `reader-actions.ps1` covers the single-finger side of the reader: the
 long-press page menu, Select all/Copy, the overflow menu, the document-info and
-metadata dialogs, text size, the plain-text toggles, and scrolling.
+metadata dialogs, text size, the plain-text toggles, the theme and language
+settings, and scrolling.
 
 ```bat
 tools\open-fixture.bat sample.pdf
@@ -271,6 +300,12 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-wrap
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-align-right
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-numbers
+
+:: Theme and language. These match both English and Hebrew labels.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action settings
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action theme-amoled -Prefix amoled
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-hebrew -Prefix hebrew
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-system -Prefix english
 
 :: Scroll and take a plain screenshot.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action scroll
@@ -303,7 +338,11 @@ that:
 - the info and metadata dialogs scroll and never cover more than three quarters
   of the screen;
 - the page indicator starts dim and fades to nearly invisible after about five
-  seconds, then returns on the next scroll.
+  seconds, then returns on the next scroll;
+- the settings dialog lists the four themes in the required order and switches
+  the palette as soon as a row is tapped;
+- switching to עברית mirrors the toolbar, menu and dialogs while plain text and
+  PDF pages keep their own direction.
 
 ## Promo capture
 
@@ -460,3 +499,28 @@ tools\create-test-avd.bat pdfr_full 1536
 ```
 
 Re-running the script recreates the AVD with the same name.
+
+## Creating the TV AVD
+
+`create-tv-avd.bat` creates the Android TV emulator used for the D-pad and
+leanback checks:
+
+```bat
+tools\create-tv-avd.bat
+tools\start-emulator.bat pdfr_tv
+tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest
+```
+
+It installs `system-images;android-34;android-tv;x86_64` when needed (a large
+download on the first run), creates a 1080p TV AVD named `pdfr_tv`, and enables
+the D-pad and a keyboard in the generated config. The same APK installs on a
+phone and on TV: the leanback launcher entry is an extra intent filter, and the
+TV features are declared optional. The accessibility tests run unchanged on
+this AVD because `hw.keyboard=yes` gives them the Tab key.
+
+Pass `-SkipInstall` to fail instead of downloading a missing image, or
+`-Name`/`-RamMb` to override the defaults:
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\create-tv-avd.ps1 -Name pdfr_tv -RamMb 2048
+```

@@ -114,6 +114,21 @@ intact wherever the target provider allows its timestamp to be updated.
 - 📍 **Page indicator** fades away while you read and wakes on any scroll, pan or
   zoom. The overflow menu, info editor and other dialogs scroll when needed and
   never cover more than three quarters of the screen.
+- 🌐 **Hebrew and RTL** - the whole interface is translated, and the layout
+  mirrors when the language is right-to-left. **Settings…** in the overflow menu
+  switches between the system language, English and עברית without leaving the
+  reader. Only the UI direction changes: PDF pages, images and plain text keep
+  their own direction, and plain text still opens left-to-right unless **Align
+  right** is turned on.
+- 🎨 **Theme override** - the same **Settings…** dialog offers **Same as
+  system**, **Light**, **Dark** (grey surfaces) and **AMOLED black** (pure black
+  surfaces for OLED panels). A forced theme also updates the status and
+  navigation bar icons.
+- ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries and settings rows
+  show a focus/hover ring, presses use a primary-coloured ripple, and Tab follows
+  Share → Print → Info → Open → Save → Menu in that order in every language (the
+  toolbar never mirrors). Android TV is supported through the leanback launcher
+  entry and a 320x180 banner, and the dialogs scroll with a D-pad remote.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -181,6 +196,7 @@ app/src/main/java/com/karako/pdfr/
 │   ├── DocumentStore.kt     # 💾 copies an incoming URI into cache
 │   ├── StorageConfig.kt     # ⚙️ cache directory, name limits and sidecar names
 │   ├── PageRanges.kt        # 🔢 parses "1-3,7,9-e" page selections
+│   ├── AppSettings.kt       # ⚙️ stored theme/language + locale wrapping
 │   ├── MuPdf.kt             # 🧵 one dedicated MuPDF thread
 │   ├── MuPdfDocument.kt     # 📂 open/auth/layout/render/select/rewrite
 │   ├── Qpdf.kt              # 🧵 one dedicated qpdf thread + JNI bridge
@@ -194,7 +210,9 @@ app/src/main/java/com/karako/pdfr/
 │   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
 │   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
 │   ├── TextSizeDialog.kt    # 🔠 reflowable text-size picker
-│   └── theme/Theme.kt       # 🎨 theme
+│   ├── SettingsDialog.kt    # 🎨 theme and language chooser
+│   ├── AccessibleControls.kt# ♿ focus/hover rings for toolbar and menu items
+│   └── theme/Theme.kt       # 🎨 light, dark, AMOLED and dynamic palettes
 app/src/main/cpp/            # 🔌 JNI bridge to static libqpdf
 │   ├── qpdf_jni.cpp         # 🔌 JNI entry points and QDF repair
 │   └── qpdf_config.h        # ⚙️ native qpdf options, PDF/A and ICC values
@@ -229,6 +247,8 @@ Tunable values live in a handful of places, depending on who consumes them:
 | What | Where | Why there |
 | --- | --- | --- |
 | User-visible text | `app/src/main/res/values/strings.xml` | Translatable, with plurals. Technical patterns such as the ISO date hint are marked `translatable="false"`. |
+| Hebrew text | `app/src/main/res/values-iw/strings.xml` | Mirrors every translatable entry; keep both files in sync. `iw` is Android's legacy qualifier for Hebrew and is what the platform selects at runtime, so the folder must stay `values-iw` even though the language tag is `he`. |
+| Stored theme and language | `data/AppSettings.kt` | The preference keys, the language list and the locale wrapper; a new language folder must be added here too. |
 | Colours and theme | `app/src/main/res/values/colors.xml`, `themes.xml` | Standard Android resource lookup. |
 | Semantic layout sizes | `app/src/main/res/values/dimens.xml` | Dialog heights, label columns, icon sizes and the selection outline. One-off spacing stays next to its composable. |
 | Reader timing, layout limits, saved-state keys and selection colours | `ui/ReaderConfig.kt` | Shared by composables and the view model; mostly floats, durations and opaque keys. |
@@ -244,6 +264,7 @@ Other central homes worth knowing:
 - `data/StorageConfig.kt` - cache directory, file-name limits, sidecar suffix and timestamp thresholds.
 - `data/NormalizeOptions.kt` - Normalize defaults and JPEG-quality bounds.
 - `data/TextSettings.kt` - text-size range and default.
+- `data/AppSettings.kt` - stored theme/language, the offered languages and the locale wrapper.
 - `ui/ZoomMath.kt` - zoom range and double-tap stops.
 
 When changing a default, change it at its central home rather than at a call
@@ -312,10 +333,12 @@ Three layers, all runnable from the repository root:
   dates, plain-text decoding and metadata sidecars.
 - 📄 `app/src/androidTest/README.md` - opens, renders, selects, reorders,
   rotates, normalizes and repairs through qpdf, unlocks AES-256 PDFs, rewrites
-  metadata and toggles plain-text monospace on real MuPDF.
-- 📄 `tools/README.md` - AVD creation, emulator/install helpers, fixture pushing,
-  the manual checklist, the raw-multitouch pinch helper, and the
-  dependency-free fixture generator/Project Gutenberg downloader.
+  metadata and toggles plain-text monospace on real MuPDF. It also checks the
+  accessibility tree (labels, 48dp targets, Tab order), the Hebrew toolbar, the
+  leanback/banner manifest entries and every `printSource()` conversion path.
+- 📄 `tools/README.md` - AVD creation (phone and TV), emulator/install helpers,
+  fixture pushing, the manual checklist, the raw-multitouch pinch helper, and
+  the dependency-free fixture generator/Project Gutenberg downloader.
 
 🚀 Typical first run:
 
@@ -326,6 +349,14 @@ tools\install-debug.bat
 tools\push-fixtures.bat
 tools\run-instrumented-tests.bat
 tools\manual-testing.bat
+```
+
+📺 Android TV checks use the same APK and a leanback AVD:
+
+```bat
+tools\create-tv-avd.bat
+tools\start-emulator.bat pdfr_tv
+tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest
 ```
 
 🧾 The instrumented tests generate their own PDFs at runtime (including a
@@ -358,13 +389,12 @@ means future versions can no longer update an installed app.
 
 📦 Release builds are size-optimised without obfuscation: R8 full mode,
 resource shrinking, non-final resource IDs and the optimised resource
-shrinker are enabled, and AndroidX/Material translations are filtered to
-English. `BuildConfig` is not generated for any variant because nothing reads
-it. `-dontobfuscate` stays, so class, method and field names remain readable
-in a decompiler; `Signature`, `InnerClasses`, `EnclosingMethod`, `Exceptions`,
-`SourceFile` and `LineNumberTable` are kept for the same reason. The R8,
-shrinking and locale settings are release-only, so debug builds keep every
-locale; they only add a little compile time, not runtime cost. On the arm64
+shrinker are enabled. `BuildConfig` is not generated for any variant because
+nothing reads it. `-dontobfuscate` stays, so class, method and field names
+remain readable in a decompiler; `Signature`, `InnerClasses`, `EnclosingMethod`,
+`Exceptions`, `SourceFile` and `LineNumberTable` are kept for the same reason.
+The R8 and shrinking settings are release-only, so debug builds are faster to
+iterate on; they only add a little compile time, not runtime cost. On the arm64
 APK they remove about 540 KB (~3.1%), almost all of it unused
 `resources.arsc` entries.
 
