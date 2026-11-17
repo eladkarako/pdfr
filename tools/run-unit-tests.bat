@@ -9,8 +9,14 @@ set "FILTER="
 if not "%~1"=="" set FILTER=--tests "%~1"
 
 echo [PDFr] Running local JVM unit tests...
-call "%PDFR_ROOT%\gradlew.bat" :app:testDebugUnitTest %FILTER% --console=plain
-if errorlevel 1 (
+rem Gradle resolves the project from the current directory, so enter the
+rem repository first. Without this the wrapper would look for a build under
+rem tools\ when the script is started there.
+pushd "%PDFR_ROOT%"
+call ".\gradlew.bat" :app:testDebugUnitTest %FILTER% --console=plain
+set "RC=%ErrorLevel%"
+popd
+if not "%RC%"=="0" (
   echo [FAIL] Unit tests failed.
   echo        Report: %PDFR_ROOT%\build\app\reports\tests\testDebugUnitTest\index.html
   exit /b 1
