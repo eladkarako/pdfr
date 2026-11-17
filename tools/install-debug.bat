@@ -5,8 +5,13 @@ call "%~dp0_env.bat"
 rem Usage: install-debug.bat [abi]
 rem ABI defaults to the architecture reported by the connected device.
 
-call "%PDFR_ROOT%\gradlew.bat" :app:assembleDebug --console=plain
-if errorlevel 1 (
+rem Gradle looks for the build in the current directory. Enter the repository
+rem so the script also works when it is started from tools\.
+pushd "%PDFR_ROOT%"
+call ".\gradlew.bat" :app:assembleDebug --console=plain
+set "RC=%ErrorLevel%"
+popd
+if not "%RC%"=="0" (
   echo [ERROR] Build failed.
   exit /b 1
 )
