@@ -50,7 +50,10 @@ class AccessibilityInstrumentedTest {
             val nodes = expected.map { id ->
                 val label = context.getString(id)
                 val node = findNode(root) { it.contentDescription?.toString() == label }
-                assertNotNull("the toolbar button '$label' is missing from the accessibility tree", node)
+                assertNotNull(
+                    "the toolbar button '$label' is missing from the accessibility tree",
+                    node
+                )
                 node!!
             }
 
@@ -156,7 +159,10 @@ class AccessibilityInstrumentedTest {
             )
             val lefts = expected.map { id ->
                 val label = hebrew.getString(id)
-                assertFalse("Hebrew label for $id fell back to English", label == context.getString(id))
+                assertFalse(
+                    "Hebrew label for $id fell back to English",
+                    label == context.getString(id)
+                )
                 val node = findNode(root) { it.contentDescription?.toString() == label }
                 assertNotNull("'$label' is missing from the Hebrew toolbar", node)
                 val bounds = android.graphics.Rect()
