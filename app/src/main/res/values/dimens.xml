@@ -13,6 +13,10 @@
     <!-- Normalize options scroll inside this height on small screens. -->
     <dimen name="normalize_dialog_max_height">440dp</dimen>
 
+    <!-- Language picker: fixed width keeps the three caption columns aligned
+         across every dropdown entry. -->
+    <dimen name="language_menu_width">280dp</dimen>
+
     <!-- Illustration on the empty and error screens. -->
     <dimen name="empty_state_icon_size">64dp</dimen>
 

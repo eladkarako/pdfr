@@ -30,14 +30,19 @@ enum class ThemeMode {
 /**
  * One language offered by the settings dialog.
  *
- * [tag] is an empty string for "follow the system". [endonym] is the name of
- * the language in that language, so a Hebrew speaker can find עברית even while
- * the UI is English. [labelRes] is used instead when the entry is translated
- * (the system-default row).
+ * [tag] is the value stored in preferences and passed to [Locale.forLanguageTag];
+ * an empty string means "follow the system". [code] is the short resource
+ * qualifier shown in the picker. Hebrew deliberately displays `iw`, because
+ * that is the folder Android resolves (the modern `he` tag is still what gets
+ * stored). [englishName] lets a speaker of any language recognise the row, and
+ * [endonym] is the language's own name. [labelRes] replaces the three columns
+ * for the system-default row, whose label is translated.
  */
 data class AppLanguage(
     val tag: String,
-    val endonym: String,
+    val code: String = "",
+    val englishName: String = "",
+    val endonym: String = "",
     val labelRes: Int? = null,
 )
 
@@ -62,10 +67,18 @@ object AppSettings {
 
     /** Languages that have a values-* resource folder in this build. */
     val languages: List<AppLanguage> = listOf(
-        AppLanguage(SYSTEM_LANGUAGE, "", R.string.language_system),
-        AppLanguage("en", "English"),
-        AppLanguage("he", "עברית"),
+        AppLanguage(SYSTEM_LANGUAGE, labelRes = R.string.language_system),
+        AppLanguage("en", "en", "English", "English"),
+        AppLanguage("he", "iw", "Hebrew", "עברית"),
+        AppLanguage("ar", "ar", "Arabic", "العربية"),
+        AppLanguage("fr", "fr", "French", "Français"),
+        AppLanguage("ru", "ru", "Russian", "Русский"),
+        AppLanguage("de", "de", "German", "Deutsch"),
     )
+
+    /** The entry for [tag], or the system-default entry when it is unknown. */
+    fun language(tag: String): AppLanguage =
+        languages.firstOrNull { it.tag == tag } ?: languages.first()
 
     fun preferences(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)

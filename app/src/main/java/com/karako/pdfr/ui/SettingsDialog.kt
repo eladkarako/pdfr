@@ -3,9 +3,11 @@ package com.karako.pdfr.ui
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,39 +15,51 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.karako.pdfr.R
+import com.karako.pdfr.data.AppLanguage
 import com.karako.pdfr.data.AppSettings
 import com.karako.pdfr.data.ThemeMode
 
 /**
  * App-wide appearance and language settings.
  *
- * The theme choice applies as soon as a row is tapped. The language choice
- * reloads the activity so Android resolves the new resource folder; the
- * document itself is unaffected because the reader keeps its own text
- * direction.
+ * The theme choice applies as soon as a row is tapped. The language choice is
+ * a closed combo box rather than a radio list, which keeps the dialog short;
+ * its entries are laid out as three aligned columns (English name, code and
+ * native name) so every language can be recognised whichever UI language is
+ * active. Choosing a language reloads the activity so Android resolves the new
+ * resource folder; the document itself is unaffected because the reader keeps
+ * its own text direction.
  */
 @Composable
 internal fun SettingsDialog(
@@ -55,7 +69,6 @@ internal fun SettingsDialog(
     onLanguageChange: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_title)) },
@@ -79,13 +92,11 @@ internal fun SettingsDialog(
                 Spacer(Modifier.height(12.dp))
 
                 SectionTitle(stringResource(R.string.settings_language))
-                AppSettings.languages.forEach { language ->
-                    ChoiceRow(
-                        selected = language.tag == languageTag,
-                        label = AppSettings.displayName(context, language),
-                        onClick = { onLanguageChange(language.tag) },
-                    )
-                }
+                LanguageCombo(
+                    selected = AppSettings.language(languageTag),
+                    languages = AppSettings.languages,
+                    onSelect = { onLanguageChange(it.tag) },
+                )
 
                 Spacer(Modifier.height(12.dp))
                 Text(
@@ -101,6 +112,133 @@ internal fun SettingsDialog(
             }
         },
     )
+}
+
+/**
+ * A closed combo box for the language override.
+ *
+ * The trigger shows only the current choice, and tapping it opens the full
+ * list. Every real language entry uses the same three weighted columns, so the
+ * English names, codes and native names line up visually; the system-default
+ * entry is a single translated label because it has no language of its own.
+ */
+@Composable
+private fun LanguageCombo(
+    selected: AppLanguage,
+    languages: List<AppLanguage>,
+    onSelect: (AppLanguage) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
+    val active = focused || hovered
+    val shape = RoundedCornerShape(10.dp)
+
+    Box(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(shape)
+                .background(
+                    if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    else Color.Transparent,
+                    shape,
+                )
+                .border(
+                    width = if (active) 2.dp else 1.dp,
+                    color = if (active) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.outline,
+                    shape = shape,
+                )
+                .clickable(
+                    interactionSource = interaction,
+                    indication = LocalIndication.current,
+                    role = Role.DropdownList,
+                ) { expanded = true }
+                .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(Modifier.weight(1f)) {
+                LanguageCaption(selected)
+            }
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow_drop_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(dimensionResource(R.dimen.language_menu_width)),
+        ) {
+            languages.forEach { language ->
+                AccessibleDropdownMenuItem(
+                    text = { LanguageCaption(language) },
+                    onClick = {
+                        expanded = false
+                        if (language.tag != selected.tag) onSelect(language)
+                    },
+                    leadingIcon = {
+                        // A fixed slot for every row keeps the caption columns
+                        // aligned whether or not this row is the current one.
+                        Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                            if (language.tag == selected.tag) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** English name, resource code and native name, in three aligned columns. */
+@Composable
+private fun LanguageCaption(language: AppLanguage) {
+    val labelRes = language.labelRes
+    if (labelRes != null) {
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        return
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = language.englishName,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1.15f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = language.code,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.45f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = language.endonym,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
 }
 
 @Composable

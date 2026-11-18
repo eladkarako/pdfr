@@ -25,18 +25,40 @@ class AppSettingsTest {
     }
 
     @Test
-    fun offersTheSystemFirstThenEnglishAndHebrew() {
+    fun offersTheSystemFirstThenEveryTranslatedLanguage() {
         val languages = AppSettings.languages
         assertEquals(AppSettings.SYSTEM_LANGUAGE, languages.first().tag)
-        assertEquals(listOf("", "en", "he"), languages.map { it.tag })
+        assertEquals(
+            listOf("", "en", "he", "ar", "fr", "ru", "de"),
+            languages.map { it.tag },
+        )
         assertEquals(languages.size, languages.map { it.tag }.distinct().size)
+    }
+
+    @Test
+    fun hebrewShowsTheResourceCodeAndroidResolves() {
+        val hebrew = AppSettings.language("he")
+        assertEquals("iw", hebrew.code)
+        assertEquals("Hebrew", hebrew.englishName)
+        assertEquals("עברית", hebrew.endonym)
+    }
+
+    @Test
+    fun unknownTagsFallBackToTheSystemEntry() {
+        assertEquals(AppSettings.SYSTEM_LANGUAGE, AppSettings.language("xx").tag)
     }
 
     @Test
     fun onlyTheSystemEntryHasNoEndonym() {
         val system = AppSettings.languages.first()
         assertEquals("", system.endonym)
-        AppSettings.languages.drop(1).forEach { assertTrue(it.endonym.isNotBlank()) }
+        assertTrue(system.labelRes != null)
+        AppSettings.languages.drop(1).forEach {
+            assertTrue(it.endonym.isNotBlank())
+            assertTrue(it.code.isNotBlank())
+            assertTrue(it.englishName.isNotBlank())
+            assertEquals(null, it.labelRes)
+        }
     }
 
     @Test
