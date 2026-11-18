@@ -119,8 +119,16 @@ function Build-Apk {
     }
 
     Write-Step 'Building the debug APK before touching the emulator...'
-    & $Gradlew ':app:assembleDebug' '--console=plain'
-    if ($LASTEXITCODE -ne 0) { throw 'Gradle build failed.' }
+    # Gradle resolves the build from the working directory, so run the wrapper
+    # from the repository root even when this script is started in tools\.
+    Push-Location $Root
+    try {
+        & $Gradlew ':app:assembleDebug' '--console=plain'
+        $buildExit = $LASTEXITCODE
+    } finally {
+        Pop-Location
+    }
+    if ($buildExit -ne 0) { throw 'Gradle build failed.' }
 }
 
 function New-Fixtures {
