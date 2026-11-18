@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">Открыть документ</string>
+    <string name="open_another">Открыть документ</string>
+    <string name="share_document">Поделиться документом</string>
+    <string name="save_as">Сохранить как</string>
+    <string name="saved_as">Сохранено как %1$s.</string>
+    <string name="save_failed">Не удалось сохранить копию.</string>
+
+    <string name="empty_title">Ничего не открыто</string>
+    <string name="empty_body">Откройте PDF, EPUB, документ Markdown, изображение, архив комиксов или текстовый файл, чтобы начать чтение. PDFr также появляется в меню «Открыть с помощью» и «Поделиться» других приложений.</string>
+
+    <string name="loading">Открытие…</string>
+    <string name="error_title">Не удалось открыть этот файл</string>
+    <string name="error_generic">При чтении этого файла произошла ошибка.</string>
+    <string name="error_no_pages">В этом документе нет читаемых страниц.</string>
+    <string name="error_file_unreadable">Не удалось прочитать этот файл. Попробуйте другую его копию.</string>
+    <string name="error_file_empty">Этот файл пуст.</string>
+    <string name="error_location_not_writable">Выбранное место недоступно для записи.</string>
+    <string name="try_another">Попробовать другой файл</string>
+
+    <string name="document_info">Сведения о документе</string>
+    <string name="file_name">Имя файла</string>
+    <string name="file_size">Размер файла</string>
+    <string name="document_type">Тип</string>
+    <string name="document_format">Формат</string>
+    <string name="page_count">Страницы</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d страница</item>
+        <item quantity="few">%1$d страницы</item>
+        <item quantity="many">%1$d страниц</item>
+        <item quantity="other">%1$d страницы</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">Защищено паролем</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="close">Закрыть</string>
+    <string name="exit">Выход</string>
+
+    <string name="document_metadata">Метаданные документа</string>
+    <string name="file_properties">Свойства файла</string>
+    <string name="metadata_title">Название</string>
+    <string name="metadata_author">Автор</string>
+    <string name="metadata_subject">Тема</string>
+    <string name="metadata_keywords">Ключевые слова</string>
+    <string name="metadata_creator">Создатель</string>
+    <string name="metadata_producer">Производитель</string>
+    <string name="metadata_created">Создано</string>
+    <string name="metadata_modified">Изменено</string>
+    <string name="metadata_make">Марка</string>
+    <string name="metadata_model">Модель</string>
+    <string name="metadata_lens_model">Модель объектива</string>
+    <string name="metadata_datetime_original">Дата съёмки</string>
+    <string name="metadata_datetime">Дата изменения</string>
+    <string name="metadata_exposure_time">Выдержка</string>
+    <string name="metadata_f_number">Диафрагма (F)</string>
+    <string name="metadata_iso">Светочувствительность ISO</string>
+    <string name="metadata_focal_length">Фокусное расстояние</string>
+    <string name="metadata_orientation">Ориентация</string>
+    <string name="metadata_image_width">Ширина изображения</string>
+    <string name="metadata_image_length">Высота изображения</string>
+    <string name="metadata_x_resolution">Разрешение по X</string>
+    <string name="metadata_y_resolution">Разрешение по Y</string>
+    <string name="metadata_color_space">Цветовое пространство</string>
+    <string name="metadata_software">Программа</string>
+    <string name="metadata_gps_latitude">Широта GPS</string>
+    <string name="metadata_gps_longitude">Долгота GPS</string>
+    <string name="metadata_gps_altitude">Высота GPS</string>
+    <string name="metadata_caption">Подпись / Аннотация</string>
+    <string name="metadata_copyright">Уведомление об авторских правах</string>
+    <string name="metadata_headline">Заголовок</string>
+    <string name="metadata_city">Город</string>
+    <string name="metadata_country">Страна</string>
+    <string name="metadata_rating">Рейтинг</string>
+    <string name="metadata_icc_profile">Профиль ICC</string>
+    <string name="metadata_icc_profile_size">Профиль ICC (%1$d байт)</string>
+    <string name="file_created">Файл создан</string>
+    <string name="file_modified">Файл изменён</string>
+    <string name="file_extension">Расширение</string>
+    <string name="file_extension_hint">Только буквы и цифры, до 8.</string>
+    <string name="file_name_required">Введите имя файла.</string>
+    <string name="metadata_empty_hint">Показаны все свойства документа, включая пустые. Очистка значения удаляет его из документа, если формат это позволяет; иначе пустое значение сохраняется рядом с файлом.</string>
+    <string name="metadata_applied">Метаданные обновлены.</string>
+    <string name="metadata_partially_applied">Метаданные обновлены. Некоторые значения сохраняются рядом с файлом, поскольку этот формат не может их хранить.</string>
+    <string name="metadata_failed">Не удалось обновить метаданные.</string>
+
+    <string name="apply">Применить</string>
+    <string name="ok">ОК</string>
+    <string name="pick_date">Дата</string>
+    <string name="pick_time">Время</string>
+    <string name="clear_value">Очистить</string>
+    <string name="time_picker_title">Выбор времени</string>
+    <string name="date_invalid">Используйте yyyy-MM-ddThh:mm:ss.</string>
+
+    <string name="text_size_menu">Размер текста: %1$d пт</string>
+    <string name="text_size_title">Размер текста</string>
+    <string name="text_size_value">%1$d пт</string>
+    <string name="text_size_range">От 5 до 40 пт. Действует для текстовых документов; PDF и изображения сохраняют собственный масштаб.</string>
+
+    <string name="single_page_on">Одна страница: вкл.</string>
+    <string name="single_page_off">Одна страница: выкл.</string>
+    <string name="line_wrap_on">Перенос строк: вкл.</string>
+    <string name="line_wrap_off">Перенос строк: выкл.</string>
+    <string name="align_right_on">Выравнивание по правому краю: вкл.</string>
+    <string name="align_right_off">Выравнивание по правому краю: выкл.</string>
+    <string name="line_numbers_on">Номера строк: вкл.</string>
+    <string name="line_numbers_off">Номера строк: выкл.</string>
+
+    <string name="copy">Копировать</string>
+    <string name="copy_all">Копировать всё</string>
+    <string name="select_all">Выделить всё</string>
+    <string name="copied">Скопировано в буфер обмена</string>
+    <string name="copied_all">Весь текст скопирован в буфер обмена</string>
+
+    <string name="password_title">Требуется пароль</string>
+    <string name="password_body">«%1$s» защищён. Введите пароль, чтобы открыть его.</string>
+    <string name="password_label">Пароль</string>
+    <string name="password_wrong">Неверный пароль.</string>
+    <string name="unlock">Разблокировать</string>
+    <string name="cancel">Отмена</string>
+    <string name="enter_password">Введите пароль</string>
+    <string name="password_required_title">Этот документ заблокирован</string>
+    <string name="password_required_body">Введите пароль документа, чтобы прочитать его. MuPDF расшифровывает его в памяти; PDFr не записывает расшифрованную копию.</string>
+
+    <string name="more_options">Дополнительные параметры</string>
+    <string name="monospace_on">Моноширинный: вкл.</string>
+    <string name="monospace_off">Моноширинный: выкл.</string>
+
+    <string name="settings_open">Настройки…</string>
+    <string name="settings_title">Настройки</string>
+    <string name="settings_theme">Тема</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_note">Изменения сохраняются сразу. Новый язык перезагружает экран.</string>
+    <string name="theme_system">Как в системе</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
+    <string name="theme_amoled">Чёрная AMOLED</string>
+    <string name="language_system">Системный язык</string>
+
+    <string name="reorder_pages">Изменить порядок страниц…</string>
+    <string name="reorder_title">Изменение порядка страниц</string>
+    <string name="reorder_body">Перечислите страницы, которые нужно оставить, в нужном порядке. Пропущенные страницы будут удалены. Номера страниц относятся к открытому сейчас PDF.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">Разделяйте страницы запятыми. Используйте дефис для диапазона и e для последней страницы. Пробелы игнорируются; порядок и повторы сохраняются.</string>
+    <string name="reorder_apply">Изменить порядок</string>
+    <string name="rewrite_replace_note">Новый PDF заменяет текущий документ. Чтобы вернуться к оригиналу, откройте его снова.</string>
+    <string name="reorder_done">PDF с новым порядком страниц создан.</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">Сохраняется: %1$d страница</item>
+        <item quantity="few">Сохраняется: %1$d страницы</item>
+        <item quantity="many">Сохраняется: %1$d страниц</item>
+        <item quantity="other">Сохраняется: %1$d страницы</item>
+    </plurals>
+
+    <string name="rotate_pages">Повернуть на 180°…</string>
+    <string name="rotate_title">Поворот на 180°</string>
+    <string name="rotate_body">Переворачивает указанные страницы. Номера страниц относятся к открытому сейчас PDF.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">Повернуть</string>
+    <string name="rotate_done">Повёрнутый PDF создан.</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">Поворачивается: %1$d страница</item>
+        <item quantity="few">Поворачивается: %1$d страницы</item>
+        <item quantity="many">Поворачивается: %1$d страниц</item>
+        <item quantity="other">Поворачивается: %1$d страницы</item>
+    </plurals>
+
+    <string name="page_size">Размер страницы…</string>
+    <string name="page_size_title">Размер страницы</string>
+    <string name="page_size_body">Задайте размер бумаги для указанных страниц. PDF сохраняет содержимое в текущем размере и положении; изображение вписывается в новую страницу и сохраняется как PDF.</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">Бумага</string>
+    <string name="page_size_custom">Другой</string>
+    <string name="page_size_width">Ширина</string>
+    <string name="page_size_height">Высота</string>
+    <string name="page_size_points">%1$s x %2$s пт</string>
+    <string name="page_size_error">Введите положительный размер до 14400 пт (около 5080 мм).</string>
+    <string name="page_size_apply">Задать размер</string>
+    <string name="page_size_done">PDF с новым размером страницы создан.</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">Изменение размера: %1$d страница</item>
+        <item quantity="few">Изменение размера: %1$d страницы</item>
+        <item quantity="many">Изменение размера: %1$d страниц</item>
+        <item quantity="other">Изменение размера: %1$d страницы</item>
+    </plurals>
+
+    <string name="page_error_empty">Введите номера страниц, например 1-3,7,9-e.</string>
+    <string name="page_error_empty_entry">Уберите лишнюю запятую.</string>
+    <string name="page_error_token">Не удалось прочитать «%1$s». Используйте номера страниц, диапазоны и e.</string>
+    <string name="page_error_range">Страницы %1$d не существует. В этом документе %2$d страниц.</string>
+    <string name="page_error_reversed">Диапазон не может заканчиваться раньше, чем начинается.</string>
+    <string name="page_error_too_many">В этом выборе слишком много страниц.</string>
+
+    <string name="normalize">Нормализовать…</string>
+    <string name="normalize_title">Нормализация PDF</string>
+    <string name="normalize_body">Применяет выбранные оптимизации qpdf за один проход в порядке, сохраняющем корректность результата. Настроенная копия заменяет текущий документ.</string>
+    <string name="normalize_apply">Нормализовать</string>
+    <string name="normalize_done">Нормализованный PDF создан.</string>
+    <string name="normalize_unavailable">qpdf недоступен в этой сборке.</string>
+    <string name="normalize_section_streams">Потоки</string>
+    <string name="normalize_compress_streams">Сжимать потоки</string>
+    <string name="normalize_compress_streams_desc">Сжимает потоки, которые ещё не сжаты.</string>
+    <string name="normalize_decode_all">Раскодировать все потоки</string>
+    <string name="normalize_decode_all_desc">Распаковывает все поддерживаемые потоки, включая изображения JPEG. Лучше сочетать с оптимизацией изображений.</string>
+    <string name="normalize_recompress_flate">Пересжать Flate</string>
+    <string name="normalize_recompress_flate_desc">Распаковывает и заново сжимает потоки Flate. Требуется перед изменением уровня сжатия.</string>
+    <string name="normalize_compression_level">Максимальное сжатие (уровень 9)</string>
+    <string name="normalize_compression_level_desc">Использует максимальный уровень сжатия Flate в qpdf.</string>
+    <string name="normalize_section_images">Изображения</string>
+    <string name="normalize_optimize_images">Оптимизировать изображения</string>
+    <string name="normalize_optimize_images_desc">Перекодирует изображения с эффективным сжатием qpdf. Возможна потеря качества, если качество JPEG ниже 100.</string>
+    <string name="normalize_jpeg_quality">Качество JPEG</string>
+    <string name="normalize_jpeg_quality_desc">От 0 (наименьший размер) до 100 (лучшее качество). Используется только при оптимизации изображений.</string>
+    <string name="normalize_quality_error">Введите качество от 0 до 100.</string>
+    <string name="normalize_section_structure">Структура</string>
+    <string name="normalize_newline">Перевод строки перед endstream</string>
+    <string name="normalize_newline_desc">Добавляет перевод строки перед каждым endstream. Помогает qpdf сохранить PDF/A.</string>
+    <string name="normalize_remove_resources">Удалять неиспользуемые ресурсы</string>
+    <string name="normalize_remove_resources_desc">Удаляет ресурсы страницы, которые не использует её содержимое.</string>
+    <string name="normalize_externalize_images">Выносить встроенные изображения</string>
+    <string name="normalize_externalize_images_desc">Перемещает изображения, встроенные в потоки содержимого, в обычные объекты изображений.</string>
+    <string name="normalize_section_output">Вывод</string>
+    <string name="normalize_linearize">Линеаризовать</string>
+    <string name="normalize_linearize_desc">Записывает оптимизированный для Интернета PDF, который может показать первую страницу до чтения остальных.</string>
+    <string name="normalize_pdfa">PDF/A-2b (по возможности)</string>
+    <string name="normalize_pdfa_desc">Добавляет идентификацию PDF/A-2b и выходной профиль sRGB. Шрифты и содержимое не преобразуются; проверьте результат перед архивированием.</string>
+
+    <string name="fix_pdf">Исправить PDF</string>
+    <string name="fix_pdf_done">Исправленный PDF создан.</string>
+    <string name="fix_pdf_unavailable">qpdf недоступен в этой сборке.</string>
+    <string name="fix_pdf_only_pdf">Исправлять можно только файлы PDF.</string>
+
+    <string name="print_document">Печать документа</string>
+    <string name="print_prepare_failed">Не удалось подготовить документ к печати.</string>
+    <string name="no_text_to_copy">Нет текста для копирования.</string>
+
+    <string name="rewrite_failed">Не удалось создать новый PDF.</string>
+    <string name="working">Работа…</string>
+    <string name="working_body">Обработка документа…</string>
+</resources>

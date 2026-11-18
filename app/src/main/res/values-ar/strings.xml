@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">فتح مستند</string>
+    <string name="open_another">فتح مستند</string>
+    <string name="share_document">مشاركة المستند</string>
+    <string name="save_as">حفظ باسم</string>
+    <string name="saved_as">تم الحفظ %1$s.</string>
+    <string name="save_failed">تعذّر حفظ النسخة.</string>
+
+    <string name="empty_title">لا يوجد شيء مفتوح</string>
+    <string name="empty_body">افتح ملف PDF أو EPUB أو مستند Markdown أو صورة أو أرشيف قصص مصوّرة أو ملف نصّي لبدء القراءة. يظهر PDFr أيضًا في قائمتَي “فتح باستخدام” و“مشاركة” في التطبيقات الأخرى.</string>
+
+    <string name="loading">جارٍ الفتح…</string>
+    <string name="error_title">تعذّر فتح هذا الملف</string>
+    <string name="error_generic">حدث خطأ أثناء قراءة هذا الملف.</string>
+    <string name="error_no_pages">لا يحتوي هذا المستند على صفحات قابلة للقراءة.</string>
+    <string name="error_file_unreadable">تعذّرت قراءة هذا الملف. جرّب نسخة أخرى منه.</string>
+    <string name="error_file_empty">هذا الملف فارغ.</string>
+    <string name="error_location_not_writable">الموقع المحدد غير قابل للكتابة.</string>
+    <string name="try_another">جرّب ملفًا آخر</string>
+
+    <string name="document_info">معلومات المستند</string>
+    <string name="file_name">اسم الملف</string>
+    <string name="file_size">حجم الملف</string>
+    <string name="document_type">النوع</string>
+    <string name="document_format">التنسيق</string>
+    <string name="page_count">الصفحات</string>
+    <plurals name="page_count_value">
+        <item quantity="zero">لا صفحات</item>
+        <item quantity="one">صفحة واحدة</item>
+        <item quantity="two">صفحتان</item>
+        <item quantity="few">%1$d صفحات</item>
+        <item quantity="many">%1$d صفحة</item>
+        <item quantity="other">%1$d صفحة</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">محمي بكلمة مرور</string>
+    <string name="yes">نعم</string>
+    <string name="no">لا</string>
+    <string name="close">إغلاق</string>
+    <string name="exit">خروج</string>
+
+    <string name="document_metadata">بيانات المستند الوصفية</string>
+    <string name="file_properties">خصائص الملف</string>
+    <string name="metadata_title">العنوان</string>
+    <string name="metadata_author">المؤلف</string>
+    <string name="metadata_subject">الموضوع</string>
+    <string name="metadata_keywords">الكلمات المفتاحية</string>
+    <string name="metadata_creator">المنشئ</string>
+    <string name="metadata_producer">المنتج</string>
+    <string name="metadata_created">تاريخ الإنشاء</string>
+    <string name="metadata_modified">تاريخ التعديل</string>
+    <string name="metadata_make">الشركة المصنّعة</string>
+    <string name="metadata_model">الطراز</string>
+    <string name="metadata_lens_model">طراز العدسة</string>
+    <string name="metadata_datetime_original">تاريخ الالتقاط</string>
+    <string name="metadata_datetime">تاريخ التعديل</string>
+    <string name="metadata_exposure_time">زمن التعريض</string>
+    <string name="metadata_f_number">رقم F</string>
+    <string name="metadata_iso">حساسية ISO</string>
+    <string name="metadata_focal_length">البعد البؤري</string>
+    <string name="metadata_orientation">الاتجاه</string>
+    <string name="metadata_image_width">عرض الصورة</string>
+    <string name="metadata_image_length">ارتفاع الصورة</string>
+    <string name="metadata_x_resolution">دقة X</string>
+    <string name="metadata_y_resolution">دقة Y</string>
+    <string name="metadata_color_space">فضاء اللون</string>
+    <string name="metadata_software">البرنامج</string>
+    <string name="metadata_gps_latitude">خط عرض GPS</string>
+    <string name="metadata_gps_longitude">خط طول GPS</string>
+    <string name="metadata_gps_altitude">ارتفاع GPS</string>
+    <string name="metadata_caption">التسمية / الملخص</string>
+    <string name="metadata_copyright">إشعار حقوق النشر</string>
+    <string name="metadata_headline">العنوان الرئيسي</string>
+    <string name="metadata_city">المدينة</string>
+    <string name="metadata_country">البلد</string>
+    <string name="metadata_rating">التقييم</string>
+    <string name="metadata_icc_profile">ملف ICC</string>
+    <string name="metadata_icc_profile_size">ملف ICC (%1$d بايت)</string>
+    <string name="file_created">تاريخ إنشاء الملف</string>
+    <string name="file_modified">تاريخ تعديل الملف</string>
+    <string name="file_extension">الامتداد</string>
+    <string name="file_extension_hint">حروف وأرقام فقط، حتى 8.</string>
+    <string name="file_name_required">أدخل اسم ملف.</string>
+    <string name="metadata_empty_hint">تُعرض جميع خصائص المستند، بما فيها الفارغة. مسح قيمة يزيلها من المستند عندما يسمح التنسيق بذلك؛ وإلا تُخزَّن القيمة الفارغة بجانب الملف.</string>
+    <string name="metadata_applied">تم تحديث البيانات الوصفية.</string>
+    <string name="metadata_partially_applied">تم تحديث البيانات الوصفية. تُحفظ بعض القيم بجانب الملف لأن هذا التنسيق لا يستطيع تخزينها.</string>
+    <string name="metadata_failed">لم يتم تحديث البيانات الوصفية.</string>
+
+    <string name="apply">تطبيق</string>
+    <string name="ok">موافق</string>
+    <string name="pick_date">التاريخ</string>
+    <string name="pick_time">الوقت</string>
+    <string name="clear_value">مسح</string>
+    <string name="time_picker_title">اختيار الوقت</string>
+    <string name="date_invalid">استخدم yyyy-MM-ddThh:mm:ss.</string>
+
+    <string name="text_size_menu">حجم النص: %1$d نقطة</string>
+    <string name="text_size_title">حجم النص</string>
+    <string name="text_size_value">%1$d نقطة</string>
+    <string name="text_size_range">من 5 إلى 40 نقطة. يؤثر على مستندات النص؛ تحتفظ ملفات PDF والصور بتكبيرها الخاص.</string>
+
+    <string name="single_page_on">صفحة واحدة: مفعّل</string>
+    <string name="single_page_off">صفحة واحدة: متوقف</string>
+    <string name="line_wrap_on">التفاف الأسطر: مفعّل</string>
+    <string name="line_wrap_off">التفاف الأسطر: متوقف</string>
+    <string name="align_right_on">محاذاة لليمين: مفعّل</string>
+    <string name="align_right_off">محاذاة لليمين: متوقف</string>
+    <string name="line_numbers_on">أرقام الأسطر: مفعّل</string>
+    <string name="line_numbers_off">أرقام الأسطر: متوقف</string>
+
+    <string name="copy">نسخ</string>
+    <string name="copy_all">نسخ الكل</string>
+    <string name="select_all">تحديد الكل</string>
+    <string name="copied">تم النسخ إلى الحافظة</string>
+    <string name="copied_all">تم نسخ كل النص إلى الحافظة</string>
+
+    <string name="password_title">كلمة المرور مطلوبة</string>
+    <string name="password_body">“%1$s” محمي. أدخل كلمة مروره لفتحه.</string>
+    <string name="password_label">كلمة المرور</string>
+    <string name="password_wrong">لم تعمل كلمة المرور هذه.</string>
+    <string name="unlock">فتح</string>
+    <string name="cancel">إلغاء</string>
+    <string name="enter_password">أدخل كلمة المرور</string>
+    <string name="password_required_title">هذا المستند مقفل</string>
+    <string name="password_required_body">أدخل كلمة مرور المستند لقراءته. يفكّ MuPDF تشفيره في الذاكرة؛ ولا يكتب PDFr نسخة مفكوكة التشفير.</string>
+
+    <string name="more_options">مزيد من الخيارات</string>
+    <string name="monospace_on">أحادي المسافة: مفعّل</string>
+    <string name="monospace_off">أحادي المسافة: متوقف</string>
+
+    <string name="settings_open">الإعدادات…</string>
+    <string name="settings_title">الإعدادات</string>
+    <string name="settings_theme">المظهر</string>
+    <string name="settings_language">اللغة</string>
+    <string name="settings_note">تُحفظ التغييرات فورًا. اللغة الجديدة تعيد تحميل الشاشة.</string>
+    <string name="theme_system">مثل النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="theme_amoled">أسود AMOLED</string>
+    <string name="language_system">الافتراضي للنظام</string>
+
+    <string name="reorder_pages">إعادة ترتيب الصفحات…</string>
+    <string name="reorder_title">إعادة ترتيب الصفحات</string>
+    <string name="reorder_body">اذكر الصفحات التي تريد الاحتفاظ بها بالترتيب الذي تريده. تُحذف الصفحات التي تستبعدها. تشير أرقام الصفحات إلى ملف PDF المفتوح الآن.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">افصل الصفحات بفواصل. استخدم شرطة للنطاق وe للصفحة الأخيرة. تُتجاهل المسافات؛ ويُحتفظ بالترتيب والتكرارات.</string>
+    <string name="reorder_apply">إعادة الترتيب</string>
+    <string name="rewrite_replace_note">يحل ملف PDF الجديد محل المستند الحالي. للعودة إلى الأصل، افتحه مجددًا.</string>
+    <string name="reorder_done">تم إنشاء ملف PDF المُعاد ترتيبه.</string>
+    <plurals name="reorder_selected">
+        <item quantity="zero">لا يتم الاحتفاظ بأي صفحة</item>
+        <item quantity="one">الاحتفاظ بصفحة واحدة</item>
+        <item quantity="two">الاحتفاظ بصفحتين</item>
+        <item quantity="few">الاحتفاظ بـ %1$d صفحات</item>
+        <item quantity="many">الاحتفاظ بـ %1$d صفحة</item>
+        <item quantity="other">الاحتفاظ بـ %1$d صفحة</item>
+    </plurals>
+
+    <string name="rotate_pages">تدوير 180°…</string>
+    <string name="rotate_title">تدوير 180°</string>
+    <string name="rotate_body">اقلب الصفحات المذكورة رأسًا على عقب. تشير أرقام الصفحات إلى ملف PDF المفتوح الآن.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">تدوير</string>
+    <string name="rotate_done">تم إنشاء ملف PDF المُدوَّر.</string>
+    <plurals name="rotate_selected">
+        <item quantity="zero">لا يتم تدوير أي صفحة</item>
+        <item quantity="one">تدوير صفحة واحدة</item>
+        <item quantity="two">تدوير صفحتين</item>
+        <item quantity="few">تدوير %1$d صفحات</item>
+        <item quantity="many">تدوير %1$d صفحة</item>
+        <item quantity="other">تدوير %1$d صفحة</item>
+    </plurals>
+
+    <string name="page_size">حجم الصفحة…</string>
+    <string name="page_size_title">حجم الصفحة</string>
+    <string name="page_size_body">اضبط حجم الورق للصفحات المذكورة. يحتفظ ملف PDF بمحتواه بالحجم والموضع الحاليين؛ وتُملأ الصورة داخل الصفحة الجديدة وتُحفظ كملف PDF.</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">ورق</string>
+    <string name="page_size_custom">مخصص</string>
+    <string name="page_size_width">العرض</string>
+    <string name="page_size_height">الارتفاع</string>
+    <string name="page_size_points">%1$s x %2$s نقطة</string>
+    <string name="page_size_error">أدخل حجمًا موجبًا حتى 14400 نقطة (حوالي 5080 مم).</string>
+    <string name="page_size_apply">تعيين الحجم</string>
+    <string name="page_size_done">تم إنشاء ملف PDF بحجم الصفحة الجديد.</string>
+    <plurals name="page_size_selected">
+        <item quantity="zero">لا يتم تغيير حجم أي صفحة</item>
+        <item quantity="one">تغيير حجم صفحة واحدة</item>
+        <item quantity="two">تغيير حجم صفحتين</item>
+        <item quantity="few">تغيير حجم %1$d صفحات</item>
+        <item quantity="many">تغيير حجم %1$d صفحة</item>
+        <item quantity="other">تغيير حجم %1$d صفحة</item>
+    </plurals>
+
+    <string name="page_error_empty">أدخل أرقام الصفحات، مثل 1-3,7,9-e.</string>
+    <string name="page_error_empty_entry">أزل الفاصلة الزائدة.</string>
+    <string name="page_error_token">تعذّرت قراءة “%1$s”. استخدم أرقام الصفحات والنطاقات وe.</string>
+    <string name="page_error_range">الصفحة %1$d غير موجودة. يحتوي هذا المستند على %2$d صفحات.</string>
+    <string name="page_error_reversed">لا يمكن أن ينتهي النطاق قبل أن يبدأ.</string>
+    <string name="page_error_too_many">يحتوي هذا التحديد على صفحات كثيرة جدًا.</string>
+
+    <string name="normalize">تطبيع…</string>
+    <string name="normalize_title">تطبيع PDF</string>
+    <string name="normalize_body">يطبّق تحسينات qpdf المحددة في تمريرة واحدة، بترتيب يحافظ على صلاحية النتيجة. تحل النسخة المُحسَّنة محل المستند الحالي.</string>
+    <string name="normalize_apply">تطبيع</string>
+    <string name="normalize_done">تم إنشاء ملف PDF المُطبَّع.</string>
+    <string name="normalize_unavailable">qpdf غير متوفر في هذه النسخة.</string>
+    <string name="normalize_section_streams">التدفقات</string>
+    <string name="normalize_compress_streams">ضغط التدفقات</string>
+    <string name="normalize_compress_streams_desc">اضغط التدفقات غير المضغوطة بالفعل.</string>
+    <string name="normalize_decode_all">فك ترميز كل التدفقات</string>
+    <string name="normalize_decode_all_desc">فك ضغط كل تدفق مدعوم، بما في ذلك صور JPEG. يُفضَّل دمجه مع تحسين الصور.</string>
+    <string name="normalize_recompress_flate">إعادة ضغط Flate</string>
+    <string name="normalize_recompress_flate_desc">فك ضغط تدفقات Flate وإعادة ضغطها. مطلوب قبل تغيير مستوى الضغط.</string>
+    <string name="normalize_compression_level">أقصى ضغط (المستوى 9)</string>
+    <string name="normalize_compression_level_desc">استخدم أعلى مستوى ضغط Flate في qpdf.</string>
+    <string name="normalize_section_images">الصور</string>
+    <string name="normalize_optimize_images">تحسين الصور</string>
+    <string name="normalize_optimize_images_desc">أعد ترميز الصور بضغط qpdf الفعّال. قد يكون ذلك بفقدان جودة عندما تقل جودة JPEG عن 100.</string>
+    <string name="normalize_jpeg_quality">جودة JPEG</string>
+    <string name="normalize_jpeg_quality_desc">من 0 (الأصغر) إلى 100 (الأفضل). يُستخدم فقط عند تحسين الصور.</string>
+    <string name="normalize_quality_error">أدخل جودة من 0 إلى 100.</string>
+    <string name="normalize_section_structure">البنية</string>
+    <string name="normalize_newline">سطر جديد قبل endstream</string>
+    <string name="normalize_newline_desc">أضف سطرًا جديدًا قبل كل endstream. يساعد qpdf على الحفاظ على PDF/A.</string>
+    <string name="normalize_remove_resources">إزالة الموارد غير المرجعية</string>
+    <string name="normalize_remove_resources_desc">أسقط موارد الصفحة التي لا يستخدمها أي محتوى في الصفحة.</string>
+    <string name="normalize_externalize_images">إخراج الصور المضمنة</string>
+    <string name="normalize_externalize_images_desc">انقل الصور المضمنة في تدفقات المحتوى إلى كائنات صور عادية.</string>
+    <string name="normalize_section_output">الإخراج</string>
+    <string name="normalize_linearize">خطّي</string>
+    <string name="normalize_linearize_desc">اكتب ملف PDF محسّنًا للويب يمكنه عرض الصفحة الأولى قبل قراءة الباقي.</string>
+    <string name="normalize_pdfa">PDF/A-2b (أفضل جهد)</string>
+    <string name="normalize_pdfa_desc">يضيف تعريف PDF/A-2b ونية إخراج sRGB. لا تُحوَّل الخطوط والمحتوى؛ تحقّق من النتيجة قبل الأرشفة.</string>
+
+    <string name="fix_pdf">إصلاح PDF</string>
+    <string name="fix_pdf_done">تم إنشاء ملف PDF مُصلَح.</string>
+    <string name="fix_pdf_unavailable">qpdf غير متوفر في هذه النسخة.</string>
+    <string name="fix_pdf_only_pdf">يمكن إصلاح ملفات PDF فقط.</string>
+
+    <string name="print_document">طباعة المستند</string>
+    <string name="print_prepare_failed">تعذّر تحضير المستند للطباعة.</string>
+    <string name="no_text_to_copy">لا يوجد نص للنسخ.</string>
+
+    <string name="rewrite_failed">تعذّر إنشاء ملف PDF الجديد.</string>
+    <string name="working">جارٍ العمل…</string>
+    <string name="working_body">جارٍ العمل على المستند…</string>
+</resources>

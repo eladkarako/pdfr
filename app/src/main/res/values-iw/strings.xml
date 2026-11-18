@@ -74,6 +74,7 @@
     <string name="metadata_country">מדינה</string>
     <string name="metadata_rating">דירוג</string>
     <string name="metadata_icc_profile">פרופיל ICC</string>
+    <string name="metadata_icc_profile_size">פרופיל ICC (%1$d בייטים)</string>
     <string name="file_created">הקובץ נוצר</string>
     <string name="file_modified">הקובץ עודכן</string>
     <string name="file_extension">סיומת</string>

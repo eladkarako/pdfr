@@ -74,6 +74,7 @@
     <string name="metadata_country">Country</string>
     <string name="metadata_rating">Rating</string>
     <string name="metadata_icc_profile">ICC profile</string>
+    <string name="metadata_icc_profile_size">ICC profile (%1$d bytes)</string>
     <string name="file_created">File created</string>
     <string name="file_modified">File modified</string>
     <string name="file_extension">Extension</string>
