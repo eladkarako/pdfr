@@ -13,6 +13,7 @@ import android.print.PrintManager
 import com.karako.pdfr.data.DocumentStore
 import java.io.File
 import java.io.FileInputStream
+import java.util.concurrent.Executors
 
 /**
  * A PDF ready for the print spooler.
@@ -71,6 +72,17 @@ object DocumentPrinter {
         private val source: PrintSource,
     ) : PrintDocumentAdapter() {
 
+        /**
+         * The framework calls [onWrite] on the main thread. Copying a large PDF
+         * there would freeze the UI for as long as the copy takes (and can make
+         * the print job look like it never starts), so the bytes move on this
+         * thread and the result is reported through the callback, which accepts
+         * calls from any thread.
+         */
+        private val writer = Executors.newSingleThreadExecutor { runnable ->
+            Thread(runnable, "pdfr-print-write").apply { isDaemon = true }
+        }
+
         override fun onLayout(
             oldAttributes: PrintAttributes?,
             newAttributes: PrintAttributes,
@@ -101,33 +113,54 @@ object DocumentPrinter {
                 return
             }
 
-            try {
-                // The spooler may ask for a subset of pages, but it renders the
-                // PDF itself, so handing it the whole file is both correct and
-                // simpler than slicing it here.
-                FileInputStream(source.file).use { input ->
-                    // Let the ParcelFileDescriptor own its descriptor. Wrapping
-                    // the raw fd in FileOutputStream closes it twice, and the
-                    // second close can fail with EBADF when the spooler is done
-                    // with the job.
-                    ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
-                        input.copyTo(output)
-                    }
-                }
+            writer.execute {
                 if (cancellationSignal?.isCanceled == true) {
                     callback.onWriteCancelled()
-                } else {
-                    callback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+                    return@execute
                 }
-            } catch (e: Exception) {
-                callback.onWriteFailed(e.message)
+
+                try {
+                    // The spooler may ask for a subset of pages, but it renders
+                    // the PDF itself, so handing it the whole file is both
+                    // correct and simpler than slicing it here.
+                    FileInputStream(source.file).use { input ->
+                        // Let the ParcelFileDescriptor own its descriptor.
+                        // Wrapping the raw fd in FileOutputStream closes it
+                        // twice, and the second close can fail with EBADF when
+                        // the spooler is done with the job.
+                        ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
+                            val buffer = ByteArray(COPY_BUFFER_BYTES)
+                            while (true) {
+                                // Check between chunks, so cancelling a large
+                                // job stops the copy instead of waiting for the
+                                // whole file to be written.
+                                if (cancellationSignal?.isCanceled == true) {
+                                    callback.onWriteCancelled()
+                                    return@execute
+                                }
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                output.write(buffer, 0, read)
+                            }
+                        }
+                    }
+                    callback.onWriteFinished(arrayOf(PageRange.ALL_PAGES))
+                } catch (e: Exception) {
+                    callback.onWriteFailed(e.message)
+                }
             }
         }
 
         override fun onFinish() {
-            // The spooler has copied the bytes by now; a decrypted temporary
-            // file should not outlive the job.
-            source.discard()
+            // The spooler has the bytes by now; a decrypted temporary file
+            // should not outlive the job. Queue the cleanup behind the copy so
+            // the file is never deleted while it is still being read.
+            writer.execute { source.discard() }
+            writer.shutdown()
+        }
+
+        private companion object {
+            const val COPY_BUFFER_BYTES = 64 * 1024
         }
     }
 }
