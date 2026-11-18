@@ -518,6 +518,7 @@ fun ReaderApp(
                                                         openPdfForFix()
                                                     }
                                                 },
+                                                enabled = !busy,
                                             )
                                             if (ready != null) HorizontalDivider()
                                         }
@@ -562,6 +563,7 @@ fun ReaderApp(
                                                         }
                                                     }
                                                 },
+                                                enabled = !busy,
                                             )
                                             HorizontalDivider()
                                         }
@@ -574,6 +576,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         showReorderDialog = true
                                                     },
+                                                    enabled = !busy,
                                                 )
                                                 AccessibleDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.rotate_pages)) },
@@ -582,6 +585,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         showRotateDialog = true
                                                     },
+                                                    enabled = !busy,
                                                 )
                                                 AccessibleDropdownMenuItem(
                                                     text = { Text(stringResource(R.string.normalize)) },
@@ -590,6 +594,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         showNormalizeDialog = true
                                                     },
+                                                    enabled = !busy,
                                                 )
                                             }
                                             // PDFs and single images can both be
@@ -603,6 +608,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         showPageSizeDialog = true
                                                     },
+                                                    enabled = !busy,
                                                 )
                                             }
                                             if (ready.reflowable) {
@@ -620,6 +626,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         showTextSizeDialog = true
                                                     },
+                                                    enabled = !busy,
                                                 )
                                             }
                                             if (ready.plainText != null) {
@@ -640,6 +647,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         viewModel.setSinglePage(!ready.singlePage)
                                                     },
+                                                    enabled = !busy,
                                                 )
                                                 AccessibleDropdownMenuItem(
                                                     text = {
@@ -658,6 +666,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         viewModel.setLineWrap(!ready.lineWrap)
                                                     },
+                                                    enabled = !busy,
                                                 )
                                                 AccessibleDropdownMenuItem(
                                                     text = {
@@ -678,6 +687,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         viewModel.setAlignRight(!ready.alignRight)
                                                     },
+                                                    enabled = !busy,
                                                 )
                                                 AccessibleDropdownMenuItem(
                                                     text = {
@@ -698,6 +708,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         viewModel.setLineNumbers(!ready.lineNumbers)
                                                     },
+                                                    enabled = !busy,
                                                 )
                                             }
                                             if (ready.monospaceAvailable) {
@@ -718,6 +729,7 @@ fun ReaderApp(
                                                         showOverflowMenu = false
                                                         viewModel.setMonospace(!ready.monospace)
                                                     },
+                                                    enabled = !busy,
                                                 )
                                             }
                                         }
@@ -732,6 +744,7 @@ fun ReaderApp(
                                                 showOverflowMenu = false
                                                 showSettingsDialog = true
                                             },
+                                            enabled = !busy,
                                         )
                                         AccessibleDropdownMenuItem(
                                             text = { Text(stringResource(R.string.exit)) },
@@ -747,6 +760,7 @@ fun ReaderApp(
                                                 context.findActivity()?.finishAndRemoveTask()
                                                 exitProcess(0)
                                             },
+                                            enabled = !busy,
                                         )
                                     }
                                 }
@@ -1319,6 +1333,7 @@ private fun DocumentReader(
     val interactiveZoom = if (zoomable) zoom else 1f
     val latestZoom by rememberUpdatedState(interactiveZoom)
     val scope = rememberCoroutineScope()
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
 
     // Rendering and reflow follow the gesture with a short delay. Everything
@@ -1680,6 +1695,7 @@ private fun DocumentReader(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
+                enabled = !busy,
                 onCopy = {
                     copyToClipboard(context, selection.text)
                     viewModel.clearSelection()
@@ -1896,6 +1912,7 @@ private fun MenuIcon(iconRes: Int) {
 private fun SelectionBar(
     selection: SelectionState,
     modifier: Modifier,
+    enabled: Boolean,
     onCopy: () -> Unit,
     onCopyAll: () -> Unit,
     onSelectAll: () -> Unit,
@@ -1911,15 +1928,15 @@ private fun SelectionBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (selection.hasText) {
-                TextButton(onClick = onCopy) {
+                TextButton(onClick = onCopy, enabled = enabled) {
                     Text(stringResource(R.string.copy))
                 }
             } else {
-                TextButton(onClick = onSelectAll) {
+                TextButton(onClick = onSelectAll, enabled = enabled) {
                     Text(stringResource(R.string.select_all))
                 }
             }
-            TextButton(onClick = onCopyAll) {
+            TextButton(onClick = onCopyAll, enabled = enabled) {
                 Text(stringResource(R.string.copy_all))
             }
         }
