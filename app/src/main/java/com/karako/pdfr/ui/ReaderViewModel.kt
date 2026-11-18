@@ -44,7 +44,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.util.UUID
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 sealed interface ReaderState {
     data object Empty : ReaderState
@@ -430,10 +432,13 @@ class ReaderViewModel(
         var target: File? = null
         return try {
             // Every job gets its own file. A second print must not truncate a
-            // copy the spooler is still reading, and the UUID also keeps a
-            // cancelled job from colliding with the next one.
+            // copy the spooler is still reading, and the timestamp keeps a
+            // cancelled job from colliding with the next one. Each call also
+            // gets its own cache directory, so two jobs in the same second
+            // still cannot share a path.
             val printFile = withContext(Dispatchers.IO) {
-                DocumentStore.derivedFile(app, "print-${UUID.randomUUID()}.pdf")
+                val stamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
+                DocumentStore.derivedFile(app, "print-$stamp.pdf")
             }
             target = printFile
             val pageCount = if (ready.info.isPdf) {
