@@ -65,15 +65,34 @@ object AppSettings {
     /** Empty tag means "follow the system language". */
     const val SYSTEM_LANGUAGE = ""
 
-    /** Languages that have a values-* resource folder in this build. */
+    /**
+     * Languages that have a values-* resource folder in this build.
+     *
+     * The list stays explicit rather than derived from the APK: the picker
+     * needs an English name and a native name for every entry, and a region
+     * variant only makes sense next to its base language. Entries are ordered
+     * by language family so the combo reads like a menu rather than a random
+     * dump of tags.
+     */
     val languages: List<AppLanguage> = listOf(
         AppLanguage(SYSTEM_LANGUAGE, labelRes = R.string.language_system),
         AppLanguage("en", "en", "English", "English"),
+        AppLanguage("en-GB", "en-GB", "English (UK)", "English (UK)"),
         AppLanguage("he", "iw", "Hebrew", "עברית"),
         AppLanguage("ar", "ar", "Arabic", "العربية"),
         AppLanguage("fr", "fr", "French", "Français"),
-        AppLanguage("ru", "ru", "Russian", "Русский"),
+        AppLanguage("fr-CA", "fr-CA", "French (Canada)", "Français (Canada)"),
         AppLanguage("de", "de", "German", "Deutsch"),
+        AppLanguage("es", "es", "Spanish", "Español"),
+        AppLanguage("es-419", "es-419", "Spanish (LatAm)", "Español (LatAm)"),
+        AppLanguage("pt", "pt", "Portuguese (PT)", "Português (PT)"),
+        AppLanguage("pt-BR", "pt-BR", "Portuguese (BR)", "Português (BR)"),
+        AppLanguage("ru", "ru", "Russian", "Русский"),
+        AppLanguage("ja", "ja", "Japanese", "日本語"),
+        AppLanguage("zh-CN", "zh-CN", "Chinese (Simp.)", "简体中文"),
+        AppLanguage("zh-TW", "zh-TW", "Chinese (Trad.)", "繁體中文"),
+        AppLanguage("ko", "ko", "Korean", "한국어"),
+        AppLanguage("hi", "hi", "Hindi", "हिन्दी"),
     )
 
     /** The entry for [tag], or the system-default entry when it is unknown. */
