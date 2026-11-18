@@ -33,8 +33,13 @@ rem Build first: Gradle and the emulator are both memory-hungry, so the AVD is
 rem only started after the APKs exist. On a low-RAM machine this avoids the
 rem two competing for the same few gigabytes.
 echo [PDFr] Building app and test APKs...
-call "%PDFR_ROOT%\gradlew.bat" :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
-if errorlevel 1 (
+rem Gradle resolves the project from the current directory; enter the repo so
+rem this script works when started from tools\ as well as from the root.
+pushd "%PDFR_ROOT%"
+call ".\gradlew.bat" :app:assembleDebug :app:assembleDebugAndroidTest --console=plain
+set "RC=%ErrorLevel%"
+popd
+if not "%RC%"=="0" (
   echo [ERROR] Build failed.
   exit /b 1
 )
