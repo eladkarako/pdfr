@@ -62,6 +62,8 @@ class MuPdfDocument private constructor(
     val needsPasswordToOpen: Boolean,
     /** A temporary `.txt` copy used because MuPDF only recognises that suffix. */
     private val temporaryFile: File? = null,
+    /** Localised label for an ICC profile that has no description. */
+    private val iccProfileLabel: (Int) -> String = { "ICC profile ($it bytes)" },
 ) : AutoCloseable {
 
     val isReflowable: Boolean = runCatching { document.isReflowable }.getOrDefault(false)
@@ -416,7 +418,7 @@ class MuPdfDocument private constructor(
         val pdfMetadata = if (kind == DocumentFormats.PDF_KIND) PdfMetadata.read(document) else null
         val isImage = kind != DocumentFormats.PDF_KIND &&
                 (DocumentFormats.isImageName(file.name) || DocumentFormats.isImageKind(kind))
-        val imageFields = if (isImage) ImageMetadata.read(file) else emptyList()
+        val imageFields = if (isImage) ImageMetadata.read(file, iccProfileLabel) else emptyList()
 
         DocumentInfo(
             fileName = displayName,
@@ -644,6 +646,7 @@ class MuPdfDocument private constructor(
             displayName: String,
             password: String?,
             mimeType: String? = null,
+            iccProfileLabel: (Int) -> String = { "ICC profile ($it bytes)" },
         ): MuPdfDocument {
             // Touching Context first makes the native library load once, before
             // any document object is created.
@@ -709,7 +712,14 @@ class MuPdfDocument private constructor(
                 throw t
             }
 
-            return MuPdfDocument(file, displayName, document, needsPassword, temporaryFile)
+            return MuPdfDocument(
+                file,
+                displayName,
+                document,
+                needsPassword,
+                temporaryFile,
+                iccProfileLabel,
+            )
         }
 
         private fun bitmapCacheBytes(): Int {

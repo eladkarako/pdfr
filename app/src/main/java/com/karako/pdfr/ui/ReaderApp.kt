@@ -1109,9 +1109,12 @@ private fun NormalizeDialog(
     onDismiss: () -> Unit,
     onApply: (NormalizeOptions) -> Unit,
 ) {
-    var options by remember { mutableStateOf(NormalizeOptions()) }
+    val resources = LocalContext.current.resources
+    var options by remember {
+        mutableStateOf(NormalizeOptions.fromResources(resources))
+    }
     var qualityText by remember {
-        mutableStateOf(NormalizeOptions.DEFAULT_JPEG_QUALITY.toString())
+        mutableStateOf(options.jpegQuality.toString())
     }
 
     fun updateQuality(text: String) {
@@ -1884,6 +1887,8 @@ private fun SelectionOverlay(
         dimensionResource(R.dimen.selection_outline_width).toPx()
     }
     val scale = pageWidthPx.toFloat() / bounds.width
+    val fill = colorResource(R.color.selection_fill)
+    val outline = colorResource(R.color.selection_outline)
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val path = Path()
@@ -1894,8 +1899,8 @@ private fun SelectionOverlay(
             path.lineTo((quad.llX - bounds.x0) * scale, (quad.llY - bounds.y0) * scale)
             path.close()
         }
-        drawPath(path, ReaderConfig.SELECTION_FILL)
-        drawPath(path, ReaderConfig.SELECTION_OUTLINE, style = Stroke(width = outlineWidth))
+        drawPath(path, fill)
+        drawPath(path, outline, style = Stroke(width = outlineWidth))
     }
 }
 

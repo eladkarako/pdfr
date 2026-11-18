@@ -1,5 +1,8 @@
 package com.karako.pdfr.data
 
+import android.content.res.Resources
+import com.karako.pdfr.R
+
 /**
  * The qpdf transformations exposed by the Normalize action.
  *
@@ -55,5 +58,30 @@ data class NormalizeOptions(
         const val MIN_JPEG_QUALITY = 0
         const val MAX_JPEG_QUALITY = 100
         const val DEFAULT_JPEG_QUALITY = 70
+
+        /**
+         * The Normalize dialog's starting options, read from resources.
+         *
+         * The data-class defaults above stay as a safe fallback for JVM tests
+         * and for callers that do not have a [Resources] instance. The dialog
+         * uses this factory so the true/false switches are declared in
+         * `res/values/bools.xml`.
+         */
+        fun fromResources(resources: Resources): NormalizeOptions = NormalizeOptions(
+            compressStreams = resources.getBoolean(R.bool.normalize_compress_streams_default),
+            decodeAllStreams = resources.getBoolean(R.bool.normalize_decode_all_streams_default),
+            recompressFlate = resources.getBoolean(R.bool.normalize_recompress_flate_default),
+            compressionLevel9 = resources.getBoolean(R.bool.normalize_compression_level_9_default),
+            optimizeImages = resources.getBoolean(R.bool.normalize_optimize_images_default),
+            jpegQuality = resources.getInteger(R.integer.normalize_jpeg_quality_default),
+            newlineBeforeEndstream =
+                resources.getBoolean(R.bool.normalize_newline_before_endstream_default),
+            removeUnreferencedResources =
+                resources.getBoolean(R.bool.normalize_remove_unreferenced_resources_default),
+            externalizeInlineImages =
+                resources.getBoolean(R.bool.normalize_externalize_inline_images_default),
+            linearize = resources.getBoolean(R.bool.normalize_linearize_default),
+            pdfA = resources.getBoolean(R.bool.normalize_pdfa_default),
+        )
     }
 }

@@ -1,0 +1,165 @@
+# Resource extraction
+
+This document records the pass that moved hardcoded UI values out of Kotlin
+and into `app/src/main/res/`. The goal was not to resource-ise everything: only
+values that describe a **user-facing default, label, size or colour** moved.
+Engine tuning (cache sizes, render timings, native rewrite flags) stays in
+Kotlin, because it describes how PDFr talks to MuPDF/qpdf rather than what the
+UI shows.
+
+Every entry below lists the old home, the new resource and the code that reads
+it.
+
+## Booleans — `res/values/bools.xml`
+
+The true/false defaults used to be `const val`s in `ReaderConfig` and
+constructor defaults in `NormalizeOptions`. They are now declarative.
+
+| Resource | Old value | Read by |
+| --- | --- | --- |
+| `reader_single_page_default` | `ReaderConfig.DEFAULT_SINGLE_PAGE = true` | `ReaderDefaults.singlePage` |
+| `reader_line_wrap_default` | `ReaderConfig.DEFAULT_LINE_WRAP = true` | `ReaderDefaults.lineWrap` |
+| `reader_align_right_default` | `ReaderConfig.DEFAULT_ALIGN_RIGHT = false` | `ReaderDefaults.alignRight` |
+| `reader_line_numbers_default` | `ReaderConfig.DEFAULT_LINE_NUMBERS = true` | `ReaderDefaults.lineNumbers` |
+| `reader_monospace_default` | `ReaderConfig.DEFAULT_MONOSPACE = true` | `ReaderDefaults.monospace` |
+| `normalize_compress_streams_default` | `NormalizeOptions.compressStreams = true` | `NormalizeOptions.fromResources` |
+| `normalize_decode_all_streams_default` | `decodeAllStreams = false` | `NormalizeOptions.fromResources` |
+| `normalize_recompress_flate_default` | `recompressFlate = false` | `NormalizeOptions.fromResources` |
+| `normalize_compression_level_9_default` | `compressionLevel9 = false` | `NormalizeOptions.fromResources` |
+| `normalize_optimize_images_default` | `optimizeImages = false` | `NormalizeOptions.fromResources` |
+| `normalize_newline_before_endstream_default` | `newlineBeforeEndstream = true` | `NormalizeOptions.fromResources` |
+| `normalize_remove_unreferenced_resources_default` | `removeUnreferencedResources = true` | `NormalizeOptions.fromResources` |
+| `normalize_externalize_inline_images_default` | `externalizeInlineImages = false` | `NormalizeOptions.fromResources` |
+| `normalize_linearize_default` | `linearize = false` | `NormalizeOptions.fromResources` |
+| `normalize_pdfa_default` | `pdfA = false` | `NormalizeOptions.fromResources` |
+
+`ReaderDefaults` (`data/ReaderDefaults.kt`) is constructed once from
+`Application.resources` in `ReaderViewModel`. The view model then passes the
+values explicitly into `ReaderState.Ready`, which no longer has constructor
+defaults for them. That keeps a single source of truth for "what the reader
+starts with" and makes the state construction site readable.
+
+`NormalizeOptions()` still has Kotlin defaults so JVM tests and non-Android
+callers work without a `Resources` instance. The dialog uses
+`NormalizeOptions.fromResources(...)`; the data-class defaults are the
+fallback.
+
+## Integers — `res/values/integers.xml`
+
+| Resource | Old value | Read by |
+| --- | --- | --- |
+| `text_size_min_pt` | `TextSettings.MIN_SIZE_PT = 5` | `TextSettings.fromResources`, `TextSizeDialog` |
+| `text_size_max_pt` | `TextSettings.MAX_SIZE_PT = 40` | `TextSettings.fromResources`, `TextSizeDialog` |
+| `text_size_default_pt` | `TextSettings.DEFAULT_SIZE_PT = 12` | `TextSettings.fromResources` |
+| `normalize_jpeg_quality_default` | `NormalizeOptions.DEFAULT_JPEG_QUALITY = 70` | `NormalizeOptions.fromResources` |
+
+`TextSettings` is now a small class holding `minSizePt`, `maxSizePt` and
+`defaultSizePt`; it validates that the default is inside the range and keeps
+`clampSizePt` / `sizePtOrDefault` as instance methods. The clamping logic is
+still plain Kotlin, so `TextSettingsTest` runs on the JVM. `TextSizeDialog`
+reads the same two integers directly with `integerResource`, so the slider
+range and the menu's "5-40 pt" promise cannot drift apart.
+
+## Colours — `res/values/colors.xml`
+
+| Resource | Old value | Read by |
+| --- | --- | --- |
+| `selection_fill` | `ReaderConfig.SELECTION_FILL = Color(0x992196F3)` | `SelectionHighlight` in `ReaderApp.kt` |
+| `selection_outline` | `ReaderConfig.SELECTION_OUTLINE = Color(0xE60D47A1)` | `SelectionHighlight` in `ReaderApp.kt` |
+
+These stay fixed blue rather than theme colours, because reader pages are
+always white; the comment in `colors.xml` records that reasoning.
+
+## Dimensions — `res/values/dimens.xml`
+
+| Resource | Value | Read by |
+| --- | --- | --- |
+| `language_menu_width` | `280dp` | `SettingsDialog.LanguageCombo` |
+
+The fixed width is what makes the three caption columns line up across every
+dropdown entry: the popup is wider than the trigger, so the weighted columns
+resolve against the same width for all rows.
+
+Existing dimensions (`info_dialog_min_height`, `info_label_width`,
+`normalize_dialog_max_height`, `empty_state_icon_size`,
+`selection_outline_width`, `plain_text_padding`) were already resources and
+were left in place.
+
+## Strings — `res/values/strings.xml`
+
+| Resource | Old value | Read by |
+| --- | --- | --- |
+| `metadata_icc_profile_size` | `"ICC profile (${it.sizeBytes} bytes)"` | `ImageMetadata.read(..., iccProfileLabel)` |
+| `language_system` | `"System default"` (new label) | `AppSettings.languages` / `SettingsDialog` |
+
+The ICC fallback is the only string that was assembled in the data layer. It is
+now passed as an `iccProfileLabel: (Int) -> String` lambda from
+`ReaderViewModel`, which resolves `R.string.metadata_icc_profile_size` through
+the application context. `ImageMetadata` and `MuPdfDocument` keep a plain
+English default for JVM/instrumented callers that do not supply one, so the
+data layer still has no `Context` dependency.
+
+## Drawables
+
+| File | Purpose |
+| --- | --- |
+| `res/drawable/ic_check.xml` | Check mark on the selected language row. |
+| `res/drawable/ic_arrow_drop_down.xml` | Closed-combo affordance on the language trigger. |
+
+Both are simple vector paths, matching the existing `ic_*` drawables.
+
+## Translations
+
+Five locale folders ship with the app:
+
+| Folder | Language | Notes |
+| --- | --- | --- |
+| `values-iw` | Hebrew | Kept as `iw` because that is the qualifier Android resolves; the stored preference tag is `he`. |
+| `values-ar` | Arabic | Plurals use `zero/one/two/few/many/other`. |
+| `values-fr` | French | Plurals use `one/other`. |
+| `values-ru` | Russian | Plurals use `one/few/many/other`. |
+| `values-de` | German | Plurals use `one/other`. |
+
+The language picker shows the English name, the resource code and the native
+name, so every entry is recognisable regardless of the active UI language. The
+system-default row is a single translated label because it has no language of
+its own.
+
+To check that a translation is complete and still matches the base file:
+
+```powershell
+$base = (Select-String -Path app\src\main\res\values\strings.xml `
+    -Pattern '<(string|plurals) name="([^"]+)"').Matches |
+    ForEach-Object { $_.Groups[2].Value } | Sort-Object
+foreach ($loc in 'iw', 'ar', 'fr', 'ru', 'de') {
+    $names = (Select-String -Path "app\src\main\res\values-$loc\strings.xml" `
+        -Pattern '<(string|plurals) name="([^"]+)"').Matches |
+        ForEach-Object { $_.Groups[2].Value } | Sort-Object
+    "=== $loc ==="
+    "missing: " + (($base | Where-Object { $names -notcontains $_ }) -join ', ')
+    "extra:   " + (($names | Where-Object { $base -notcontains $_ }) -join ', ')
+}
+```
+
+## What deliberately stays in Kotlin
+
+- `ReaderConfig` layout/timing constants (viewport minimums, settle delays,
+  zoom animation, page-badge fade, saved-state keys). These are floats,
+  milliseconds and opaque keys shared with the view model; they are not
+  inflated XML.
+- `MuPdfConfig` cache sizes, reflow limits and rewrite flags. These describe
+  native engine behaviour, not a user-facing choice.
+- Saved-state keys. They are an on-device format; moving them to resources
+  would make renames look harmless when they silently lose state.
+- The English fallbacks in `ImageMetadata` / `MuPdfDocument` for callers that
+  do not pass a localised ICC label.
+
+## Verification
+
+- `.\gradlew.bat :app:processDebugResources` — every resource name resolves in
+  all locales.
+- `.\gradlew.bat :app:compileDebugKotlin` — the Kotlin readers match the new
+  resource types.
+- `.\gradlew.bat :app:testDebugUnitTest` — `TextSettingsTest`,
+  `NormalizeOptionsTest`, `AppSettingsTest` and `ReaderConfigTest` cover the
+  moved values and the fallback behaviour.

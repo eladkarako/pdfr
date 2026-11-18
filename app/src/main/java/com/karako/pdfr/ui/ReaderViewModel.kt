@@ -27,6 +27,7 @@ import com.karako.pdfr.data.PageSizeTarget
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.Qpdf
 import com.karako.pdfr.data.QpdfMessages
+import com.karako.pdfr.data.ReaderDefaults
 import com.karako.pdfr.data.RenderedPage
 import com.karako.pdfr.data.SelectionQuad
 import com.karako.pdfr.data.TextSettings
@@ -61,15 +62,15 @@ sealed interface ReaderState {
         val reflowable: Boolean,
         /** Source file timestamp in milliseconds, kept for Save as. */
         val lastModified: Long? = null,
-        val monospace: Boolean = false,
+        val monospace: Boolean,
         val monospaceAvailable: Boolean = false,
         /** Decoded text for the custom plain-text reader; null for other formats. */
         val plainText: String? = null,
-        val textSizePt: Int = TextSettings.DEFAULT_SIZE_PT,
-        val singlePage: Boolean = ReaderConfig.DEFAULT_SINGLE_PAGE,
-        val lineWrap: Boolean = ReaderConfig.DEFAULT_LINE_WRAP,
-        val alignRight: Boolean = ReaderConfig.DEFAULT_ALIGN_RIGHT,
-        val lineNumbers: Boolean = ReaderConfig.DEFAULT_LINE_NUMBERS,
+        val textSizePt: Int,
+        val singlePage: Boolean,
+        val lineWrap: Boolean,
+        val alignRight: Boolean,
+        val lineNumbers: Boolean,
         val layoutVersion: Int = 0,
         val anchorPage: Int = 0,
         /**
@@ -145,24 +146,45 @@ class ReaderViewModel(
 
     /** Kept in memory only, so an encrypted PDF can be rewritten. */
     private var password: String? = null
+
+    // Defaults come from res/values/bools.xml and integers.xml. They are read
+    // once; the view model then owns the live value and saves it in state.
+    private val readerDefaults by lazy {
+        ReaderDefaults(getApplication<Application>().resources)
+    }
+    private val textSettings by lazy {
+        TextSettings.fromResources(getApplication<Application>().resources)
+    }
+
+    /**
+     * Formats the ICC-profile fallback shown in the image metadata list. The
+     * label is resolved here so the data layer never needs a Context.
+     */
+    private val iccProfileLabel: (Int) -> String by lazy {
+        val app = getApplication<Application>()
+        return@lazy { bytes: Int ->
+            app.getString(R.string.metadata_icc_profile_size, bytes)
+        }
+    }
+
     private var monospace = false
 
     // Text options are global: they stay in effect when the next document is
     // opened, and survive rotation/process death through SavedStateHandle.
     private var textSizePt =
-        TextSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
+        textSettings.sizePtOrDefault(savedState.get(ReaderConfig.KEY_TEXT_SIZE))
     private var singlePage =
         savedState.get<Boolean>(ReaderConfig.KEY_SINGLE_PAGE)
-            ?: ReaderConfig.DEFAULT_SINGLE_PAGE
+            ?: readerDefaults.singlePage
     private var lineWrap =
         savedState.get<Boolean>(ReaderConfig.KEY_LINE_WRAP)
-            ?: ReaderConfig.DEFAULT_LINE_WRAP
+            ?: readerDefaults.lineWrap
     private var alignRight =
         savedState.get<Boolean>(ReaderConfig.KEY_ALIGN_RIGHT)
-            ?: ReaderConfig.DEFAULT_ALIGN_RIGHT
+            ?: readerDefaults.alignRight
     private var lineNumbers =
         savedState.get<Boolean>(ReaderConfig.KEY_LINE_NUMBERS)
-            ?: ReaderConfig.DEFAULT_LINE_NUMBERS
+            ?: readerDefaults.lineNumbers
 
     private data class Viewport(
         val widthPx: Int,
@@ -213,7 +235,7 @@ class ReaderViewModel(
         password = null
         // Plain text is monospace by default; non-text documents reset this in
         // load(). Starting true makes the text override visible immediately.
-        monospace = ReaderConfig.DEFAULT_MONOSPACE
+        monospace = readerDefaults.monospace
 
         val name = DocumentStore.displayName(app, uri)
         val mime = runCatching { app.contentResolver.getType(uri) }.getOrNull()
@@ -541,7 +563,7 @@ class ReaderViewModel(
             ?: DocumentFormats.mimeTypeForFile(file)
 
         monospace =
-            savedState.get<Boolean>(ReaderConfig.KEY_MONO) ?: ReaderConfig.DEFAULT_MONOSPACE
+            savedState.get<Boolean>(ReaderConfig.KEY_MONO) ?: readerDefaults.monospace
         val lastModified = savedState.get<Long>(ReaderConfig.KEY_MTIME)
             ?: file.lastModified().takeIf { it > 0L }
 
@@ -606,7 +628,13 @@ class ReaderViewModel(
 
         try {
             val (opened, info, plainText) = withContext(MuPdf.dispatcher) {
-                val doc = MuPdfDocument.open(file, effectiveName, password, mimeType)
+                val doc = MuPdfDocument.open(
+                    file = file,
+                    displayName = effectiveName,
+                    password = password,
+                    mimeType = mimeType,
+                    iccProfileLabel = iccProfileLabel,
+                )
                 try {
                     var appliedLayout: LayoutSpec? = null
                     if (doc.isReflowable) {
@@ -794,7 +822,7 @@ class ReaderViewModel(
     /** Sets the reflowable text size. Plain text uses it directly. */
     fun setTextSizePt(points: Int) {
         val ready = _state.value as? ReaderState.Ready ?: return
-        val value = TextSettings.clampSizePt(points)
+        val value = textSettings.clampSizePt(points)
         if (value == textSizePt) return
 
         textSizePt = value

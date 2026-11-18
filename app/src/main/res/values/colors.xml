@@ -10,4 +10,10 @@
     <color name="reader_page_placeholder">#FFF4F4F4</color>
     <!-- Line numbers and other secondary plain-text chrome. -->
     <color name="reader_text_muted">#FF888888</color>
+
+    <!-- PDF text-selection highlight. Fixed blue rather than a theme colour
+         because reader pages are always white, so this stays visible even when
+         the app's primary colour is very dark. -->
+    <color name="selection_fill">#992196F3</color>
+    <color name="selection_outline">#E60D47A1</color>
 </resources>

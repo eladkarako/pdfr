@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Runtime defaults for the reader's text view and the Normalize dialog.
+
+        These were plain Kotlin constants before. Keeping them in a resource
+        file lets a build or a translation overlay change a default without
+        touching code, and makes the true/false nature of each switch explicit.
+        See docs/resource-extraction.md for the full mapping.
+    -->
+
+    <!-- Reflowable text view. -->
+    <bool name="reader_single_page_default">true</bool>
+    <bool name="reader_line_wrap_default">true</bool>
+    <bool name="reader_align_right_default">false</bool>
+    <bool name="reader_line_numbers_default">true</bool>
+    <bool name="reader_monospace_default">true</bool>
+
+    <!-- Normalize dialog. -->
+    <bool name="normalize_compress_streams_default">true</bool>
+    <bool name="normalize_decode_all_streams_default">false</bool>
+    <bool name="normalize_recompress_flate_default">false</bool>
+    <bool name="normalize_compression_level_9_default">false</bool>
+    <bool name="normalize_optimize_images_default">false</bool>
+    <bool name="normalize_newline_before_endstream_default">true</bool>
+    <bool name="normalize_remove_unreferenced_resources_default">true</bool>
+    <bool name="normalize_externalize_inline_images_default">false</bool>
+    <bool name="normalize_linearize_default">false</bool>
+    <bool name="normalize_pdfa_default">false</bool>
+</resources>

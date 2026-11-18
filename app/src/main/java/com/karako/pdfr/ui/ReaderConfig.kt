@@ -1,7 +1,5 @@
 package com.karako.pdfr.ui
 
-import androidx.compose.ui.graphics.Color
-
 /**
  * Central timing, layout and persisted-state values for the reader UI.
  *
@@ -82,29 +80,21 @@ internal object ReaderConfig {
     const val PAGE_BADGE_FADE_MS = 5000
 
     // -----------------------------------------------------------------------
-    // Selection colours
+    // Selection outline
     // -----------------------------------------------------------------------
 
-    // A fixed blue, rather than a theme colour: reader pages are always white,
-    // so this stays visible even when the app's primary colour is very dark.
-    val SELECTION_FILL = Color(0x992196F3)
-    val SELECTION_OUTLINE = Color(0xE60D47A1)
+    // The fill and outline colours themselves live in res/values/colors.xml
+    // (selection_fill / selection_outline) so they can be themed like the rest
+    // of the palette.
 
     // -----------------------------------------------------------------------
     // Text defaults
     // -----------------------------------------------------------------------
 
-    /**
-     * Defaults for the reflowable text options. The view model reads the same
-     * values when restoring saved state, so a default is changed in one place.
-     */
-    const val DEFAULT_SINGLE_PAGE = true
-    const val DEFAULT_LINE_WRAP = true
-    const val DEFAULT_ALIGN_RIGHT = false
-    const val DEFAULT_LINE_NUMBERS = true
-
-    /** Plain text starts monospace; other formats reset this in `load()`. */
-    const val DEFAULT_MONOSPACE = true
+    // The boolean defaults for the reflowable text options now live in
+    // res/values/bools.xml and are read through ReaderDefaults. They were
+    // moved so the true/false switches are declarative rather than buried in
+    // Kotlin.
 
     // -----------------------------------------------------------------------
     // Saved-state keys

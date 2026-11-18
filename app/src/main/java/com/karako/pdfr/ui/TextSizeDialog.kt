@@ -14,10 +14,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.integerResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.karako.pdfr.R
-import com.karako.pdfr.data.TextSettings
 import kotlin.math.roundToInt
 
 /**
@@ -33,6 +33,8 @@ internal fun TextSizeDialog(
 ) {
     var value by rememberSaveable(current) { mutableFloatStateOf(current.toFloat()) }
     val points = value.roundToInt()
+    val minSizePt = integerResource(R.integer.text_size_min_pt)
+    val maxSizePt = integerResource(R.integer.text_size_max_pt)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -47,9 +49,8 @@ internal fun TextSizeDialog(
                 Slider(
                     value = value,
                     onValueChange = { value = it },
-                    valueRange = TextSettings.MIN_SIZE_PT.toFloat()..
-                            TextSettings.MAX_SIZE_PT.toFloat(),
-                    steps = TextSettings.MAX_SIZE_PT - TextSettings.MIN_SIZE_PT - 1,
+                    valueRange = minSizePt.toFloat()..maxSizePt.toFloat(),
+                    steps = maxSizePt - minSizePt - 1,
                 )
                 Text(
                     text = stringResource(R.string.text_size_range),

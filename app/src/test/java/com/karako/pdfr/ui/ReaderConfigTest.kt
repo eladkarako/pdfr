@@ -5,20 +5,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Covers the reader defaults and saved-state keys that were moved into
- * [ReaderConfig]. The keys are part of the on-device format: renaming one
- * silently loses the restored document, so they are asserted literally.
+ * Covers the reader constants that remain in [ReaderConfig]. The boolean text
+ * defaults moved to `res/values/bools.xml` (see docs/resource-extraction.md),
+ * so they are no longer asserted here. The saved-state keys are part of the
+ * on-device format: renaming one silently loses the restored document, so they
+ * are asserted literally.
  */
 class ReaderConfigTest {
-
-    @Test
-    fun textDefaultsMatchTheDocumentedReaderBehaviour() {
-        assertTrue(ReaderConfig.DEFAULT_SINGLE_PAGE)
-        assertTrue(ReaderConfig.DEFAULT_LINE_WRAP)
-        assertTrue(ReaderConfig.DEFAULT_LINE_NUMBERS)
-        assertTrue(ReaderConfig.DEFAULT_MONOSPACE)
-        assertEquals(false, ReaderConfig.DEFAULT_ALIGN_RIGHT)
-    }
 
     @Test
     fun viewportAndPointConstantsArePositive() {

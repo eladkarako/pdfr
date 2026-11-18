@@ -209,7 +209,10 @@ object ImageMetadata {
         val complete: Boolean,
     )
 
-    fun read(file: File): List<MetadataField> {
+    fun read(
+        file: File,
+        iccProfileLabel: (Int) -> String = { "ICC profile ($it bytes)" },
+    ): List<MetadataField> {
         val exif = open(file)
         val xmpText = runCatching { exif?.getAttribute(ExifInterface.TAG_XMP) }.getOrNull()
         val xmp = xmpText?.let { Xmp.read(it) }.orEmpty()
@@ -225,7 +228,7 @@ object ImageMetadata {
         SLOTS.forEach { slot ->
             val raw = when (slot.key) {
                 ICC_KEY -> icc?.description
-                    ?: icc?.let { "ICC profile (${it.sizeBytes} bytes)" }
+                    ?: icc?.let { iccProfileLabel(it.sizeBytes) }
                     ?: ""
 
                 GPS_LATITUDE, GPS_LONGITUDE -> {

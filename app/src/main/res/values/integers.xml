@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Numeric UI ranges and defaults that used to be Kotlin constants.
+        Engine tuning values (cache sizes, render limits, timings) stay in
+        MuPdfConfig / ReaderConfig because they describe native behaviour, not
+        a user-facing choice. See docs/resource-extraction.md.
+    -->
+
+    <!-- Text-size dialog: the menu promises this range. -->
+    <integer name="text_size_min_pt">5</integer>
+    <integer name="text_size_max_pt">40</integer>
+    <integer name="text_size_default_pt">12</integer>
+
+    <!-- Normalize dialog: JPEG quality is only used when images are optimised. -->
+    <integer name="normalize_jpeg_quality_default">70</integer>
+</resources>
