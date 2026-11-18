@@ -1,13 +1,20 @@
 # PDFr tools
 
-Windows helpers for building, installing and testing PDFr, plus the generators
-for the manual-test documents. Run the batch files from anywhere; they locate
-the repository relative to themselves.
+Windows helpers for building, installing, testing and documenting PDFr, plus
+the generators for the manual-test documents.
 
-## Helper scripts
+Every batch file and script works from the repository root and from `tools\`.
+They locate the repository relative to themselves, and the ones that call
+Gradle enter the root before building, so neither the starting directory nor a
+`..\` in a relative path matters.
 
-Before the first run, make sure `ANDROID_SDK_ROOT` is set (or the SDK is in
-the default `%LOCALAPPDATA%\Android\Sdk`). Everything can be overridden:
+Each chapter below covers one tool: how to run it, the variations worth knowing,
+and what it leaves behind.
+
+## Before the first run
+
+Make sure `ANDROID_SDK_ROOT` is set (or the SDK is in the default
+`%LOCALAPPDATA%\Android\Sdk`). Everything can be overridden:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -17,7 +24,7 @@ the default `%LOCALAPPDATA%\Android\Sdk`). Everything can be overridden:
 | `PDFR_AVD` | `pdfr_full` | AVD to start (override if your AVD has another name) |
 | `PDFR_FIXTURES` | `<repo>\build\test-fixtures` | generated fixture folder |
 
-### The short version
+### Quick start
 
 ```bat
 tools\create-test-avd.bat
@@ -27,47 +34,619 @@ tools\push-fixtures.bat
 tools\manual-testing.bat
 ```
 
-### Scripts
+### Where the tools write
 
-| Script | What it does |
+| Path | Contents |
 | --- | --- |
-| `create-test-avd.bat [name] [ram-mb]` | Creates the `pdfr_full` API 35 x86_64 AVD with 1536 MB RAM. Installs the system image if it is missing. Safe to re-run. |
-| `create-tv-avd.bat [name] [ram-mb]` | Creates the `pdfr_tv` API 34 Android TV x86_64 AVD (`tv_1080p`) with 2048 MB RAM, a D-pad and a keyboard. Downloads the TV system image on the first run. Safe to re-run. |
-| `start-emulator.bat [avd]` | Starts the AVD without a snapshot and waits until `sys.boot_completed`. |
-| `stop-emulator.bat` | `adb emu kill`. |
-| `install-debug.bat [abi]` | Builds `:app:assembleDebug`, detects the device ABI and installs the matching split APK. |
-| `run-unit-tests.bat [class]` | Runs the JVM tests (`:app:testDebugUnitTest`) and prints the report path. An optional class or `Class#method` filter runs just one test. |
-| `run-instrumented-tests.bat [class] [--start-emulator]` | Builds app + test APKs first, then installs both and runs `AndroidJUnitRunner` on the device. Optional class/`Class#method` filter; `--start-emulator` starts the AVD only after the build, so Gradle and the emulator do not compete for RAM. Fails early with a hint instead of installing into nothing. |
-| `push-fixtures.bat` | Generates the fixtures and downloads a few public-domain Project Gutenberg books (EPUB/TXT/HTML) into `gutenberg/`. Then pushes everything to `/sdcard/Download/pdfr-fixtures/`. |
-| `open-fixture.bat <name> [mime]` | Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then sends the app its own FileProvider URI. Needs the debug build. Falls back to a MediaStore `ACTION_VIEW` if the app is not debuggable. |
-| `manual-testing.bat` | Interactive menu for the scenarios below. |
-| `gestures.ps1 <gesture>` | Raw multitouch/tap helpers: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`. |
-| `zoom-probe.ps1 <action>` | Records `before/down/mid/late/settled` screenshots while pinching (`pinch-out`, `pinch-in`), panning with two fingers (`pan`) or double-tapping (`double-tap`), then scores how much the reading area changed between `late` and `settled`. `-CenterX`/`-CenterY` choose the midpoint. Writes to `build\zoom-probe\` by default. |
-| `reader-actions.ps1 <action>` | Single-finger reader checks: `long-press`, `tap`, `select-all`, `copy`, `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply`, `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers`, `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language-hebrew`, `language-system`, `scroll`, `screenshot` and `list`. Finds menu buttons through `uiautomator` and writes PNGs to `build\reader-actions\`. |
-| `capture-promo.ps1 [-StartEmulator] [-SkipBuild] [-SkipVideo] [-SkipPrint] [-KeepEmulator]` | Builds the debug APK first, generates fixtures, installs the app and captures the promo set: empty state, two colourful PDF pages, the overflow menu, the info editor, an EPUB, the print dialog, a short scrolling MP4 and a composed poster. Writes to `build\promo\`. `-StartEmulator` starts the AVD only after the build. |
-| `make-poster.ps1 [-OutDir DIR] [-Images a.png,b.png,...]` | Composes 3-4 screenshots into `poster.png` with a dark gradient, rounded cards and a title, using `System.Drawing` (no ImageMagick or ffmpeg). Defaults to `build\promo\` and picks `02-pdf-cover`, `03-pdf-colour`, `04-overflow` and `06-epub`. |
-| `make-tv-banner.ps1 [-OutFile PATH]` | Draws the 320x180 Android TV banner (document sheet, `PDFr`, `Read anything`) with `System.Drawing` and writes it to `app\src\main\res\drawable-nodpi\tv_banner.png`. Re-run after changing the app's colours or name. |
-| `reader-checks.bat [-Section ...]` | Automated on-device regression checks: disabled toolbar with no document, plain-text defaults and toggles, native selection plus the Copy/Copy all touch menu, the editable info dialog, and pinch behaviour. Copy all is checked through the clipboard against `long.txt`, which is taller than the viewport. Reads Compose through `uiautomator dump --windows` (the text context menu is its own popup window, so the app and popup hierarchies are merged), compares screenshots for the pixel-only checks, writes `build\reader-checks\results.txt`, and exits non-zero on any failure. Sections: `empty`, `text`, `selection`, `metadata`, `gestures`, `exit` (default `all`). |
-| `show-cache.bat` | `run-as` listing of `cache/documents`, useful after reordering, rotating or rewriting. |
-| `logcat-app.bat` | Last 400 log lines for the app PID, or recent `AndroidRuntime` crashes. |
-
-### Build helpers
-
-| Script | What it does |
-| --- | --- |
-| `__build.cmd` | Stops Gradle, runs `clean assembleRelease`, and writes `build\logs\__build.log`. |
-| `__clean_hard.cmd` | Removes the project and user Gradle caches, then runs `gradlew clean`. Writes `build\logs\__clean_hard.log`. |
-| `__clear_logs.cmd` | Deletes the files in `build\logs` and any legacy root logs. |
-| `__verify_apk.cmd [apk]` | Verifies the signature with `jarsigner` and `apksigner`. Defaults to `build\app\outputs\apk\release\app-arm64-v8a-release.apk`. Detects the newest installed `build-tools`, skips a checker with a warning when it is unavailable, and exits non-zero when verification fails. |
-| `__keystore_generate.cmd` | Runs `__keystore_generate.js` to create or verify `keystore.properties` and the keystore it points at. |
+| `build\app\outputs\apk\` | APKs and the instrumented test APK |
+| `build\test-fixtures\` | generated documents, Gutenberg books and the colour sampler |
+| `build\reader-actions\` | `reader-actions.ps1` screenshots and `window.xml` |
+| `build\reader-checks\` | `reader-checks.bat` screenshots and `results.txt` |
+| `build\zoom-probe\` | `zoom-probe.ps1` before/down/mid/late/settled PNGs |
+| `build\promo\` | promo screenshots, MP4 and poster |
+| `build\logs\` | output of the `__*.cmd` build helpers |
 
 Generated Gradle output lives under `<repo>\build\app`, and release APKs/AABs
 are mirrored to `<repo>\build\release` after `assembleRelease` or
 `bundleRelease`.
 
-### Manual scenarios
+## AVDs
 
-`manual-testing.bat` drives this checklist:
+### `create-test-avd.bat [name] [ram-mb]`
+
+Creates the phone emulator used by the screenshots, probes and instrumented
+tests.
+
+```bat
+tools\create-test-avd.bat
+```
+
+Variations:
+
+```bat
+:: A larger AVD for a machine with more RAM.
+tools\create-test-avd.bat pdfr_full 4096
+
+:: Any of the PowerShell options, for a different API or image.
+powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name pdfr_api34 -Api 34
+```
+
+It looks for the SDK in `ANDROID_SDK_ROOT`, `ANDROID_HOME` or
+`%LOCALAPPDATA%\Android\Sdk`, installs
+`system-images;android-35;default;x86_64` when needed, then creates a Pixel 5
+AVD with 1536 MB RAM and a 512 MB SD card. `-Api`, `-Abi`, `-Tag` and `-Device`
+override the image and hardware profile.
+
+Result: an AVD named `pdfr_full` (or the name you passed). Re-running the script
+recreates the AVD with the same name, so it is safe to run again after a broken
+boot.
+
+### `create-tv-avd.bat [name] [ram-mb]`
+
+Creates the Android TV emulator used for the D-pad and leanback checks.
+
+```bat
+tools\create-tv-avd.bat
+tools\start-emulator.bat pdfr_tv
+tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest
+```
+
+It installs `system-images;android-34;android-tv;x86_64` when needed (a large
+download on the first run), creates a 1080p TV AVD named `pdfr_tv`, and enables
+the D-pad and a keyboard in the generated config. Pass `-SkipInstall` to fail
+instead of downloading a missing image, or `-Name`/`-RamMb` to override the
+defaults:
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\create-tv-avd.ps1 -Name pdfr_tv -RamMb 2048
+```
+
+Result: a TV AVD that runs the same APK as a phone. The leanback launcher entry
+is an extra intent filter and the TV features are declared optional, so the
+accessibility tests run unchanged: `hw.keyboard=yes` gives them the Tab key.
+
+### `start-emulator.bat [avd]`
+
+Starts an AVD without a snapshot and waits until Android has finished booting.
+
+```bat
+tools\start-emulator.bat
+tools\start-emulator.bat pdfr_tv
+```
+
+The AVD defaults to `PDFR_AVD` (`pdfr_full`). A missing AVD produces the list of
+installed AVDs instead of a boot loop.
+
+Result: an emulator window in the background, and a command prompt that only
+returns once `sys.boot_completed` is `1`. The first boot after
+`create-test-avd.bat` takes the longest.
+
+### `stop-emulator.bat`
+
+```bat
+tools\stop-emulator.bat
+```
+
+Sends `adb emu kill` to the running emulator.
+
+Result: the emulator window closes and adb reports no device. Use it after the
+instrumented tests or a capture run to release the RAM.
+
+## Build and install
+
+### `install-debug.bat [abi]`
+
+Builds and installs the debug APK that the scripts drive.
+
+```bat
+tools\install-debug.bat
+tools\install-debug.bat arm64-v8a
+```
+
+Without an argument the script asks the connected device for
+`ro.product.cpu.abi` and installs the matching split. Pass `x86_64`,
+`arm64-v8a`, `armeabi-v7a` or `x86` to override it.
+
+Result: `:app:assembleDebug` runs from the repository root, the matching
+`app-<abi>-debug.apk` is installed with `adb install -r`, and the app is ready
+for `open-fixture.bat` and the reader scripts. It works when started from
+`tools\` as well as from the root.
+
+### `__build.cmd`
+
+```bat
+tools\__build.cmd
+```
+
+Stops the Gradle daemon, runs `clean assembleRelease`, and writes the full log
+to `build\logs\__build.log`.
+
+Result: release APKs/AABs in `build\app\outputs\` and a mirror in
+`build\release\`. The console shows the same output as the log.
+
+### `__clean_hard.cmd`
+
+```bat
+tools\__clean_hard.cmd
+```
+
+Removes the project and user Gradle caches, then runs `gradlew clean`. The log
+lands in `build\logs\__clean_hard.log`.
+
+Result: the next build downloads dependencies again. Use it when a build fails
+in a way that `clean` alone does not fix; expect a slow first build afterwards.
+
+### `__clear_logs.cmd`
+
+```bat
+tools\__clear_logs.cmd
+```
+
+Deletes the files in `build\logs` and any logs left over from the old layout.
+
+Result: an empty log folder, ready for the next `__build.cmd`,
+`__verify_apk.cmd` or `__clean_hard.cmd` run.
+
+### `__verify_apk.cmd [apk]`
+
+```bat
+tools\__verify_apk.cmd
+tools\__verify_apk.cmd build\app\outputs\apk\release\app-arm64-v8a-release.apk
+```
+
+Verifies the signature with `jarsigner` and `apksigner`. Without an argument it
+checks `build\app\outputs\apk\release\app-arm64-v8a-release.apk`. The script
+finds the newest installed `build-tools`, skips a checker with a warning when it
+is unavailable, and writes `build\logs\__verify_apk.log`.
+
+Result: a non-zero exit code and a readable reason when the APK is unsigned or
+the certificate is wrong; `[OK]` when both checkers agree.
+
+### `__keystore_generate.cmd`
+
+```bat
+tools\__keystore_generate.cmd
+```
+
+Runs `__keystore_generate.js` to create or verify `keystore.properties` and the
+keystore it points at. Node is looked up on `PATH` first, then in
+`tools\node.exe` (where `make_test_files.cmd` downloads it).
+
+Result: a release keystore and a matching `keystore.properties`, or a check of
+the existing pair. Keep both files out of version control.
+
+### `build-qpdf-android.ps1`
+
+Builds the static qpdf library and the JNI bridge for Android, then refreshes
+`app\src\main\jniLibs`.
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\build-qpdf-android.ps1
+powershell -ExecutionPolicy Bypass -File tools\build-qpdf-android.ps1 -Abis arm64-v8a -Clean
+```
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `-Abis` | all four | `armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64` |
+| `-QpdfVersion` | `12.4.2` | qpdf source release |
+| `-JpegVersion` | `3.2.1` | libjpeg-turbo source release |
+| `-AndroidPlatform` | `android-24` | minimum API used by the NDK build |
+| `-Ndk` | `ANDROID_NDK_ROOT` | NDK location |
+| `-Sdk` | `ANDROID_SDK_ROOT` / `ANDROID_HOME` | SDK location |
+| `-Clean` | off | rebuild the work tree from scratch |
+| `-SkipDownload` | off | reuse the sources in `build\qpdf\src` |
+
+Result: a stripped `libqpdfjni.so` per ABI in
+`app\src\main\jniLibs\<abi>\`, plus the CMake work tree under `build\qpdf\`.
+Rebuild the app afterwards; the JNI bridge is what exposes qpdf to Kotlin.
+
+## Tests
+
+### `run-unit-tests.bat [class[#method]]`
+
+Runs the JVM tests and prints the report path.
+
+```bat
+tools\run-unit-tests.bat
+tools\run-unit-tests.bat com.karako.pdfr.data.AppSettingsTest
+tools\run-unit-tests.bat com.karako.pdfr.data.PageRangesTest#parsesRanges
+```
+
+The optional argument is passed to Gradle as `--tests`, so a class or a single
+`Class#method` both work. No device is needed.
+
+Result: `:app:testDebugUnitTest` runs from the repository root,
+`build\app\reports\tests\testDebugUnitTest\index.html` holds the report, and the
+script exits non-zero on a failure.
+
+### `run-instrumented-tests.bat [class] [--start-emulator]`
+
+Builds the app and test APKs, installs both, and runs `AndroidJUnitRunner` on
+the device.
+
+```bat
+tools\run-instrumented-tests.bat
+tools\run-instrumented-tests.bat com.karako.pdfr.PrintInstrumentedTest
+tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest --start-emulator
+```
+
+The class filter maps to `am instrument -e class`. `--start-emulator` starts
+the AVD only after the build, so Gradle and the emulator do not compete for
+RAM; without it, the script fails early with a hint when no device is attached.
+
+The build runs from the repository root, so the script also works when started
+in `tools\`. It inspects the runner's own report (`FAILURES!!!`,
+`INSTRUMENTATION_FAILED`, `INSTRUMENTATION_ABORTED`, `Process crashed`) because
+`adb shell am instrument` returns 0 even when a test fails.
+
+Result: `[OK] Instrumented tests passed.` with exit code 0, or `[FAIL]` with a
+suggestion to re-run a single class. The APKs stay installed on the device.
+
+### `reader-checks.bat [-Section ...]`
+
+Automated on-device regression checks for the reader.
+
+```bat
+tools\reader-checks.bat
+tools\reader-checks.bat -Section text
+tools\reader-checks.bat -Section empty,text,selection,metadata,exit
+tools\reader-checks.bat -Section gestures -SkipRoot
+```
+
+Sections: `empty`, `text`, `selection`, `metadata`, `gestures`, `exit`
+(default `all`). It checks the disabled toolbar with no document, plain-text
+defaults and toggles, native selection plus the Copy/Copy all touch menu, the
+editable info dialog, and pinch behaviour. Copy all is checked through the
+clipboard against `long.txt`, which is taller than the viewport.
+
+Reads Compose through `uiautomator dump --windows` (the text context menu is its
+own popup window, so the app and popup hierarchies are merged) and compares
+screenshots for the pixel-only checks. `-SkipRoot` avoids an `adb root` restart
+that can resize the viewport between screenshots; `-KeepOpen` leaves the app on
+whatever the last check opened. Screen coordinates default to 1080x2340; use
+`-ScreenWidth`, `-ScreenHeight` and `-EventDevice` on another device.
+
+Result: `build\reader-checks\results.txt` plus the screenshots, and a non-zero
+exit code on any failure. The gesture section needs adb root, exactly like
+`zoom-probe.ps1`; the other sections also run on a retail device.
+
+### `reader-actions.ps1 <action>`
+
+Drives the single-finger reader actions and captures screenshots. It sends
+`adb shell input` events, so it needs no root and works on a normal device.
+
+```bat
+tools\open-fixture.bat sample.pdf
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press
+```
+
+Actions, grouped by what they exercise:
+
+| Group | Actions |
+| --- | --- |
+| Page menu and selection | `long-press`, `tap`, `select-all`, `copy` |
+| Overflow menu and dialogs | `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply` |
+| Text and plain-text toggles | `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers` |
+| Settings | `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language-hebrew`, `language-system` |
+| Inspection | `scroll`, `screenshot`, `list` |
+
+Useful variations:
+
+```bat
+:: Keep runs side by side.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
+
+:: Tap somewhere else (screen fractions).
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press -X 0.5 -Y 0.3
+
+:: A phone with another toolbar layout.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu -MenuX 0.93 -MenuY 0.06
+
+:: Print what the current screen exposes when a label cannot be found.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action list
+```
+
+The menu actions find the visible **Select all**, **Copy**, **Document info**,
+**Text size** or toggle label through `uiautomator`, so they do not hard-code a
+pixel position. Theme and language actions match both the English and Hebrew
+labels. `-ScreenWidth`/`-ScreenHeight` match the coordinates to the device.
+
+Result: a PNG (and, for menu actions, the `window.xml` used to find the button)
+in `build\reader-actions\`. Check that:
+
+- the long-press menu shows only **Select all** and nothing is highlighted before
+  it is tapped;
+- after Select all, every text line on the page is highlighted and only **Copy**
+  remains;
+- Copy empties the clipboard toast and dismisses the menu;
+- on plain text the touch menu offers only Copy and Copy all, the line numbers
+  are never copied, and Copy all copies the whole document even when the
+  selection is a few words;
+- the metadata editor keeps its draft when dismissed and shows Apply/Cancel at
+  the top, and Apply reloads with the edited name;
+- the text-size dialog stays inside 5-40 pt and applies to EPUB/Markdown but not
+  to a PDF;
+- the info and metadata dialogs scroll and never cover more than three quarters
+  of the screen;
+- the page indicator starts dim and fades to nearly invisible after about five
+  seconds, then returns on the next scroll;
+- the settings dialog lists the four themes in the required order and switches
+  the palette as soon as a row is tapped;
+- switching to עברית mirrors the toolbar, menu and dialogs while plain text and
+  PDF pages keep their own direction.
+
+### `zoom-probe.ps1 <action>`
+
+Records what the reader looks like before, during and after a two-finger
+gesture, then scores how much the reading area changed between `late` and
+`settled`.
+
+```bat
+tools\start-emulator.bat
+tools\install-debug.bat
+
+:: Fixed-layout PDF: pinch around the title of page 3.
+tools\open-fixture.bat sample.pdf
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterY 0.17
+
+:: Reflowable text: pinch, then pan with two fingers.
+tools\open-fixture.bat notes.txt
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pan
+
+:: Back to 100% and sharpen.
+powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-in -StartGap 780 -EndGap 120
+```
+
+Actions: `pinch-out`, `pinch-in`, `pan`, `double-tap`.
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `-CenterX` / `-CenterY` | `0.5` / `0.45` | gesture midpoint, as screen fractions |
+| `-StartGap` / `-EndGap` | `280` / `620` | finger distance for a pinch |
+| `-Gap` | `420` | finger distance for a pan |
+| `-StartY` / `-EndY` | `1700` / `900` | pan start and end |
+| `-Steps` | `8` | intermediate events |
+| `-SettleMs` | `700` | wait for the deferred render |
+| `-LateDelayMs` | `400` | delay before the `late` frame |
+| `-OutDir` / `-Prefix` | `build\zoom-probe` / `zoom` | output location and name |
+| `-EventDevice` | `/dev/input/event2` | multitouch device |
+| `-ScreenWidth` / `-ScreenHeight` | `1080` / `2340` | device size |
+| `-SkipRoot` | off | skip `adb root` when adbd is already root |
+
+The pinch and pan actions use Linux multitouch events, which is the only way adb
+can press two fingers at once. They need `adb root`, which works on an emulator
+(and on debuggable engineering builds), not on a retail phone.
+
+Result: `-before`, `-down`, `-mid`, `-late` and `-settled` PNGs in
+`build\zoom-probe\`. Check that:
+
+- `down` still shows the old size, while `mid` already shows the page enlarged
+  under the fingers (live resize, not a snap after the gesture);
+- the touched point stays in place between `down` and `mid`;
+- `late` and `settled` score as stable (mean under 1.5, fewer than 2% of sampled
+  pixels changed): the debounced bitmap/reflow landed at exactly the live size.
+  The toolbar and the fading page badge are excluded from the comparison;
+- a two-finger `pan` moves the content without changing its size.
+
+Reflowable documents repaginate when the deferred layout lands after the finger
+lift, so `late` (still the old pages, scaled) and `settled` (new pagination)
+differ by design. Use fixed-layout `sample.pdf` for the no-jump check; for
+reflowable text, confirm that the content under the midpoint stays put during
+the gesture and that scrolling afterwards feels normal.
+
+Use `-SkipRoot` when adbd is already root (the usual emulator state). Plain
+`adb root` can restart adbd, resize the viewport for a frame and trigger an
+extra reflow, which looks like a jump between `before` and `down`.
+
+Moving `-CenterX` away from 0.5 is the quickest way to confirm a pinch anchors
+on the midpoint between the fingers instead of drifting towards the starter
+finger. The same actions are available from `manual-testing.bat` as option 11.
+
+### `gestures.ps1 <gesture>`
+
+Sends reader gestures to the connected device.
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 pinch-out
+powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 double-tap
+```
+
+Gestures: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`.
+Options: `-EventDevice`, `-ScreenWidth`, `-ScreenHeight`, `-Steps`.
+
+The pinch gestures use Linux multitouch events, which is the only way adb can
+press two fingers at once. They need `adb root`, which works on an emulator (and
+on debuggable engineering builds), not on a retail phone.
+
+Coordinates default to a 1080x2340 phone/AVD. Override `-ScreenWidth` and
+`-ScreenHeight` for another device. The multitouch device defaults to the
+emulator's `/dev/input/event2`; use `adb shell getevent -lp` to find another:
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 pinch-out -ScreenWidth 1440 -ScreenHeight 3120
+adb shell getevent -lp
+```
+
+Use the event device whose name contains `multi_touch`.
+
+Result: the gesture plays on the device. Nothing is written to disk; use
+`zoom-probe.ps1` when you want screenshots and a stability score, or
+`reader-actions.ps1` for the single-finger menu actions.
+
+## Fixtures and device files
+
+### `make_test_files.cmd`
+
+Generates the documents used for manual testing into
+`build\test-fixtures\` (`../build/test-fixtures/` from the script's point of
+view).
+
+```bat
+tools\make_test_files.cmd
+tools\make_test_files.cmd --out build\my-fixtures --pages 30 --no-gutenberg
+```
+
+Everything except the encrypted PDF is produced with Node's built-in modules.
+The encrypted PDF needs `qpdf` on `PATH` or next to the script.
+`make_test_files.cmd` downloads Node and qpdf into `tools\` when they are
+missing from the folder or `PATH`, and uses `curl` and `7z`.
+
+Options:
+
+```text
+--out DIR                output directory (default: <repo>/build/test-fixtures)
+--pages N                number of pages in sample.pdf (default 14)
+--password TEXT          password for dummy-encrypted.pdf (default secret)
+--no-encrypted           skip dummy-encrypted.pdf
+--no-gutenberg            skip the Project Gutenberg downloads
+--gutenberg-timeout MS   per-download timeout in milliseconds (default 30000)
+```
+
+Output:
+
+| File | Contents |
+| --- | --- |
+| `sample.pdf` | 14 letter-size pages labelled `Sample page 1` ... `Sample page 14`. |
+| `dummy.pdf` | A one-page PDF. |
+| `dummy-encrypted.pdf` | A one-page PDF encrypted with AES-256 (password `secret`). |
+| `notes.txt` | Plain text with long lines, indentation and literal angle brackets. |
+| `README.nfo` | A small ASCII-art readme that exercises the `.nfo` plain-text path. |
+| `book.text` | Long reflowable paragraphs for the `.text` plain-text path. |
+| `alice.epub` | A minimal two-chapter EPUB 3 book. |
+| `sample.cbz` | Three solid-colour PNG pages. |
+| `guide.md` | Markdown headings, lists, a link, a code block, a quote and a long paragraph. |
+| `guide.markdown` | Same content with a suffix MuPDF does not know, to exercise the temporary `.md` alias. |
+| `config.yaml` | A small YAML file, opened through the temporary `.txt` text path. |
+| `main.c` | A small C source file, also opened as plain text. |
+| `image.png` | A 480x320 solid-colour image, one page when opened. |
+| `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |
+| `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |
+| `gutenberg/gutenberg-color.pdf` | Six colourful A4 pages built from Project Gutenberg excerpts, used for screenshots and promo recordings. |
+
+The generated PDFs are real, text-extractable documents (base-14 Helvetica), so
+selection, reordering, rotation and qpdf linearization all work on them.
+
+Gutenberg fixtures:
+
+| File | Book | Format |
+| --- | --- | --- |
+| `alice-gutenberg.epub` | *Alice's Adventures in Wonderland* | EPUB |
+| `pride-and-prejudice.epub` | *Pride and Prejudice* | EPUB with images |
+| `sherlock-holmes.txt` | *The Adventures of Sherlock Holmes* | plain text |
+| `yellow-wallpaper.html` | *The Yellow Wallpaper* | HTML |
+
+They are public-domain works downloaded from `https://www.gutenberg.org/`. Each
+file's source URL is recorded in `gutenberg/SOURCES.txt`. Downloads are skipped
+(with a warning) when offline, so fixture generation still succeeds without a
+network.
+
+Result: the documents above in the chosen folder. `push-fixtures.bat` copies
+them to the device, and `open-fixture.bat` opens one by name.
+
+### `fetch_gutenberg.py`
+
+The standalone Python equivalent of the Gutenberg part of the generator. It
+uses only the standard library.
+
+```bash
+node tools/make_test_files.js --out build/test-fixtures
+python3 tools/fetch_gutenberg.py --out build/test-fixtures/gutenberg
+```
+
+Variations: `--list` prints the known books, `--only <slug>` downloads one
+(`alice`, `pride`, `sherlock`, `yellow`). The JavaScript generator also
+downloads the Gutenberg books itself unless you pass `--no-gutenberg`.
+
+Result: the same `gutenberg/` folder and `SOURCES.txt`, without needing Node.
+
+### `push-fixtures.bat`
+
+Generates the fixtures, pushes them to the emulator and asks MediaStore to index
+them.
+
+```bat
+tools\push-fixtures.bat
+```
+
+It runs `make_test_files.cmd` into `PDFR_FIXTURES` (default
+`build\test-fixtures`), creates `/sdcard/Download/pdfr-fixtures/`, pushes the
+folder (including `gutenberg/`) and broadcasts a media scan for every file.
+
+Result: the fixtures are visible in the device's Downloads and in the app's
+picker. The encrypted PDF password is `secret`. The script prints each pushed
+name and ends with the `open-fixture.bat` hint.
+
+### `open-fixture.bat <name-or-path> [mime-type]`
+
+Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then
+sends the app its own FileProvider URI.
+
+```bat
+tools\open-fixture.bat sample.pdf
+tools\open-fixture.bat notes.txt text/plain
+tools\open-fixture.bat C:\docs\paper.pdf
+```
+
+The name is looked up in the current directory, the repository root, and
+`PDFR_FIXTURES`, so both `sample.pdf` and
+`build\test-fixtures\sample.pdf` work from the root or from `tools\`. The MIME
+type is guessed from the extension unless you pass one.
+
+The preferred route needs the debug build: it copies the file into
+`cache/documents` through `run-as` and sends the matching
+`content://com.karako.pdfr.fileprovider/...` URI. This avoids the scoped-storage
+trap where Android refuses to grant a shell-issued MediaStore URI. If you have a
+release build installed instead (no `run-as`), the script falls back to a
+MediaStore `ACTION_VIEW`; some Android builds reject that grant, in which case
+use the folder button inside the app and pick
+`/sdcard/Download/pdfr-fixtures/...` manually.
+
+Result: PDFr opens the fixture in the reader. Run it before any
+`reader-actions.ps1`, `zoom-probe.ps1` or `reader-checks.bat` action that needs
+a document.
+
+### `show-cache.bat`
+
+```bat
+tools\show-cache.bat
+```
+
+`run-as` listing of `cache/documents`, including the per-import folders.
+
+Result: the cache file names and sizes. Use it after reordering, rotating,
+normalizing, fixing or printing: the new copy should be there, the replaced one
+should be gone, and print copies should disappear once the job finishes.
+
+### `logcat-app.bat`
+
+```bat
+tools\logcat-app.bat
+```
+
+Prints the last 400 log lines for the app PID, or recent `AndroidRuntime`
+crashes when the process is not running.
+
+Result: a readable excerpt on the console. Useful after a failed print, a
+native qpdf/MuPDF error, or a crash that does not reach the UI.
+
+## Manual walkthrough
+
+### `manual-testing.bat`
+
+Interactive menu for the scenarios below.
+
+```bat
+tools\push-fixtures.bat
+tools\manual-testing.bat
+```
+
+The menu covers pushing fixtures, opening each format, zoom probes, selection,
+printing, the overflow mirror, promo capture, settings, Hebrew, the TV banner
+and the cache/log helpers. Choose a number and follow the prompt.
+
+Result: the chosen scenario runs on the connected device. The checklist below is
+the same route, in order, for a full manual pass:
 
 1. **Open a PDF** - `sample.pdf` shows 14 pages and the page indicator.
 2. **Double-tap zoom** - glides from 100% to 200%, 400%, 600%, then back to
@@ -195,161 +774,12 @@ are mirrored to `<repo>\build\release` after `assembleRelease` or
     focus between toolbar buttons and menu rows, and the settings dialog scrolls
     with the remote. `make-tv-banner.ps1` regenerates the banner.
 
-### Gesture notes
+## Capture
 
-`gestures.ps1` sends real Linux multitouch events, because adb cannot press two
-fingers through `input`. That needs `adb root` (the script runs it for you),
-which is available on emulators but usually not on retail phones.
+### `capture-promo.ps1`
 
-Defaults are tuned for the `pdfr_full` AVD (1080x2340, input device
-`/dev/input/event2`). On another device:
-
-```bat
-powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 pinch-out -ScreenWidth 1440 -ScreenHeight 3120
-adb shell getevent -lp
-```
-
-Use the event device whose name contains `multi_touch`.
-
-The `open-fixture.bat` route uses the app's own FileProvider: it restarts the
-app, copies the file into `cache/documents` through `run-as`, then sends the
-matching `content://com.karako.pdfr.fileprovider/...` URI. This avoids the
-scoped-storage trap where Android refuses to grant a shell-issued MediaStore
-URI. If you have a release build installed instead (no `run-as`), the script
-falls back to MediaStore; some Android builds reject that grant, in which case
-use the folder button inside the app and pick `/sdcard/Download/pdfr-fixtures/...`
-manually.
-
-### Zoom regression probe
-
-`zoom-probe.ps1` captures what the reader looks like before, during and after a
-two-finger gesture. It records the same sequence used to verify the live zoom:
-
-```bat
-tools\start-emulator.bat
-tools\install-debug.bat
-
-:: Fixed-layout PDF: pinch around the title of page 3.
-tools\open-fixture.bat sample.pdf
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterY 0.17
-
-:: Reflowable text: pinch, then pan with two fingers.
-tools\open-fixture.bat notes.txt
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pan
-
-:: Back to 100% and sharpen.
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-in -StartGap 780 -EndGap 120
-```
-
-Each run writes `-before`, `-down`, `-mid`, `-late` and `-settled` PNGs to
-`build\zoom-probe\`. Check that:
-
-- `down` still shows the old size, while `mid` already shows the page enlarged
-  under the fingers (live resize, not a snap after the gesture);
-- the touched point stays in place between `down` and `mid`;
-- `late` and `settled` score as stable (mean under 1.5, fewer than 2% of sampled
-  pixels changed): the debounced bitmap/reflow landed at exactly the live size.
-  The toolbar and the fading page badge are excluded from the comparison;
-- a two-finger `pan` moves the content without changing its size.
-
-Reflowable documents repaginate when the deferred layout lands after the finger
-lift, so `late` (still the old pages, scaled) and `settled` (new pagination)
-differ by design. Use fixed-layout `sample.pdf` for the no-jump check; for
-reflowable text, confirm that the content under the midpoint stays put during
-the gesture and that scrolling afterwards feels normal.
-
-Use `-SkipRoot` when adbd is already root (the usual emulator state). Plain
-`adb root` can restart adbd, resize the viewport for a frame and trigger an
-extra reflow, which looks like a jump between `before` and `down`.
-
-Other options: `-CenterX 0.3`, `-CenterY 0.17`, `-StartGap`, `-EndGap`,
-`-Gap`, `-StartY`, `-EndY`, `-Steps`, `-SettleMs`, `-OutDir`, `-Prefix`,
-`-EventDevice`, `-ScreenWidth` and `-ScreenHeight`. Moving `-CenterX` away from
-0.5 is the quickest way to confirm a pinch anchors on the midpoint between the
-fingers instead of drifting towards the starter finger. The same actions are
-available from the `manual-testing.bat` menu as option 11.
-
-### Reader action checks
-
-`reader-actions.ps1` covers the single-finger side of the reader: the
-long-press page menu, Select all/Copy, the overflow menu, the document-info and
-metadata dialogs, text size, the plain-text toggles, the theme and language
-settings, and scrolling.
-
-```bat
-tools\open-fixture.bat sample.pdf
-
-:: Long-press over text, then inspect the page menu.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press
-
-:: Select the whole page, then copy it.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action select-all
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action copy -Prefix copied
-
-:: Overflow menu, document info, and the editable metadata dialog.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu-mirror -Prefix sample-menu
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action print -Prefix sample-print
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action metadata -Prefix sample-metadata
-
-:: Text size and the plain-text toggles (open notes.txt or book.epub first).
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action text-size
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-single-page
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-wrap
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-align-right
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action toggle-line-numbers
-
-:: Theme and language. These match both English and Hebrew labels.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action settings
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action theme-amoled -Prefix amoled
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-hebrew -Prefix hebrew
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-system -Prefix english
-
-:: Scroll and take a plain screenshot.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action scroll
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action screenshot
-```
-
-The menu actions read `uiautomator dump` and tap the visible **Select all**,
-**Copy**, **Document info**, **Text size** or toggle label, so they do not
-hard-code a pixel position. If a build changes the labels, `-Action list` prints
-every visible text and content description. Override the press point with
-`-X`/`-Y` and the overflow button with `-MenuX`/`-MenuY`; both are screen
-fractions. `metadata-apply` and `text-size-apply` confirm the dialog and capture
-the result after the reload.
-
-Screenshots and the dumped `window.xml` land in `build\reader-actions\`. Check
-that:
-
-- the long-press menu shows only **Select all** and nothing is highlighted before
-  it is tapped;
-- after Select all, every text line on the page is highlighted and only **Copy**
-  remains;
-- Copy empties the clipboard toast and dismisses the menu;
-- on plain text the touch menu offers only Copy and Copy all, the line numbers
-  are never copied, and Copy all copies the whole document even when the
-  selection is a few words;
-- the metadata editor keeps its draft when dismissed and shows Apply/Cancel at
-  the top, and Apply reloads with the edited name;
-- the text-size dialog stays inside 5-40 pt and applies to EPUB/Markdown but not
-  to a PDF;
-- the info and metadata dialogs scroll and never cover more than three quarters
-  of the screen;
-- the page indicator starts dim and fades to nearly invisible after about five
-  seconds, then returns on the next scroll;
-- the settings dialog lists the four themes in the required order and switches
-  the palette as soon as a row is tapped;
-- switching to עברית mirrors the toolbar, menu and dialogs while plain text and
-  PDF pages keep their own direction.
-
-## Promo capture
-
-`capture-promo.ps1` produces the screenshots, the short MP4 and the poster used
-for release notes and store listings. It builds the debug APK before it touches
-the emulator, then generates fixtures, installs the app and drives the reader
-through a small tour:
+Produces the screenshots, the short MP4 and the poster used for release notes
+and store listings.
 
 ```bat
 :: Build, start the AVD, capture everything, stop the AVD.
@@ -358,12 +788,25 @@ tools\capture-promo.ps1 -StartEmulator
 :: Reuse the current build and connected device, skip the video.
 tools\capture-promo.ps1 -SkipBuild -SkipVideo
 
-:: Re-compose the poster from screenshots you already have.
-tools\make-poster.ps1 -OutDir build\promo
-tools\make-poster.ps1 -OutDir build\promo -Images 02-pdf-cover.png,04-overflow.png,06-epub.png
+:: Print-dialog capture on a machine without a print service.
+tools\capture-promo.ps1 -SkipPrint
+
+:: Leave the emulator running for another capture.
+tools\capture-promo.ps1 -KeepEmulator
 ```
 
-The capture uses `gutenberg/gutenberg-color.pdf`, a six-page A4 sampler built by
+| Option | Meaning |
+| --- | --- |
+| `-OutDir` | output folder, default `build\promo` |
+| `-StartEmulator` | start the AVD after the build, then stop it at the end |
+| `-SkipBuild` | reuse the existing debug APK |
+| `-SkipVideo` | skip the scrolling MP4 |
+| `-SkipPrint` | skip the print-dialog screenshot |
+| `-KeepEmulator` | do not stop an emulator that the script started |
+
+It builds the debug APK before it touches the emulator, then generates
+fixtures, installs the app and drives the reader through a small tour. The
+capture uses `gutenberg/gutenberg-color.pdf`, a six-page A4 sampler built by
 `make_test_files.js` from public-domain Gutenberg excerpts. Its large colour
 areas survive video compression and make the reading UI easy to see in a
 thumbnail. `SOURCES.txt` records the source eBooks.
@@ -382,145 +825,48 @@ Output in `build\promo\`:
 | `poster.png` | 3-4 screenshots composed into a shareable poster. |
 | `README.txt` | A short index of the captured assets. |
 
-`make-poster.ps1` uses `System.Drawing`, so it needs no ImageMagick or ffmpeg.
-Pass `-Columns 1` for a vertical strip, `-Width` for a larger canvas, and
-`-Title`/`-Subtitle` to change the heading. The same steps are available from
-`manual-testing.bat` as options 14 and 15.
+The same steps are available from `manual-testing.bat` as options 14 and 15.
 
-## Test-fixture generator
+### `make-poster.ps1`
 
-Generates the documents used for manual testing. It writes them to
-`build/test-fixtures/` (`../build/test-fixtures/` from the script's point of
-view).
-
-Everything except the encrypted PDF is produced with Node's built-in modules.
-The encrypted PDF needs `qpdf` on `PATH` or next to the script.
-
-### Windows
+Composes 3-4 screenshots into `poster.png` with a dark gradient, rounded cards
+and a title, using `System.Drawing` (no ImageMagick or ffmpeg).
 
 ```bat
-tools\make_test_files.cmd
+tools\make-poster.ps1 -OutDir build\promo
+tools\make-poster.ps1 -OutDir build\promo -Images 02-pdf-cover.png,04-overflow.png,06-epub.png
+tools\make-poster.ps1 -OutDir build\promo -Columns 1 -Width 1000
 ```
 
-`make_test_files.cmd` downloads Node and qpdf into `tools/` when they are
-missing from the folder or `PATH`. It uses `curl` and `7z`, which are assumed to
-be available.
-
-### Other systems
-
-You need `node` (20.15+ or 22.2+, for `zlib.crc32`) and `qpdf` either next to
-the script or on `PATH`.
-
-```bash
-node tools/make_test_files.js --out build/test-fixtures
-python3 tools/fetch_gutenberg.py --out build/test-fixtures/gutenberg
-```
-
-The JavaScript generator also downloads the Gutenberg books itself unless you
-pass `--no-gutenberg`. `fetch_gutenberg.py` is the standalone equivalent and
-uses only the Python standard library.
-
-### Output
-
-| File | Contents |
-| --- | --- |
-| `sample.pdf` | 14 letter-size pages labelled `Sample page 1` ... `Sample page 14`. |
-| `dummy.pdf` | A one-page PDF. |
-| `dummy-encrypted.pdf` | A one-page PDF encrypted with AES-256 (password `secret`). |
-| `notes.txt` | Plain text with long lines, indentation and literal angle brackets. |
-| `README.nfo` | A small ASCII-art readme that exercises the `.nfo` plain-text path. |
-| `book.text` | Long reflowable paragraphs for the `.text` plain-text path. |
-| `alice.epub` | A minimal two-chapter EPUB 3 book. |
-| `sample.cbz` | Three solid-colour PNG pages. |
-| `guide.md` | Markdown headings, lists, a link, a code block, a quote and a long paragraph. |
-| `guide.markdown` | Same content with a suffix MuPDF does not know, to exercise the temporary `.md` alias. |
-| `config.yaml` | A small YAML file, opened through the temporary `.txt` text path. |
-| `main.c` | A small C source file, also opened as plain text. |
-| `image.png` | A 480x320 solid-colour image, one page when opened. |
-| `image.ppm` | A 480x320 binary PPM, exercising the PNM/PAM handler. |
-| `gutenberg/` | Public-domain EPUB, TXT and HTML books from Project Gutenberg, plus `SOURCES.txt` listing each URL and eBook id. |
-| `gutenberg/gutenberg-color.pdf` | Six colourful A4 pages built from Project Gutenberg excerpts, used for screenshots and promo recordings. |
-
-The generated PDFs are real, text-extractable documents (base-14 Helvetica), so
-selection, reordering, rotation and qpdf linearization all work on them.
-
-### Gutenberg fixtures
-
-| File | Book | Format |
+| Option | Default | Meaning |
 | --- | --- | --- |
-| `alice-gutenberg.epub` | *Alice's Adventures in Wonderland* | EPUB |
-| `pride-and-prejudice.epub` | *Pride and Prejudice* | EPUB with images |
-| `sherlock-holmes.txt` | *The Adventures of Sherlock Holmes* | plain text |
-| `yellow-wallpaper.html` | *The Yellow Wallpaper* | HTML |
+| `-OutDir` | `build\promo` | folder with the screenshots |
+| `-Images` | preferred four | comma-separated or array of file names |
+| `-OutputName` | `poster.png` | output file |
+| `-Title` / `-Subtitle` | `PDFr` / `Read anything. Print anything.` | heading text |
+| `-Width` | `1600` | canvas width |
+| `-Columns` | `2` | `1` gives a vertical strip |
+| `-Background` / `-BackgroundEnd` | `#0F1720` / `#22384D` | gradient |
+| `-Accent` / `-Foreground` | `#E0A526` / `#F5F1E8` | highlight and text colours |
 
-They are public-domain works downloaded from `https://www.gutenberg.org/`. Each
-file's source URL is recorded in `gutenberg/SOURCES.txt`. Downloads are skipped
-(with a warning) when offline, so fixture generation still succeeds without a
-network.
+Without `-Images` it picks `02-pdf-cover`, `03-pdf-colour`, `04-overflow` and
+`06-epub`, falling back to the PNGs that exist.
 
-### Options
+Result: `poster.png` in the chosen folder, with the screenshots cropped to a
+common card size rather than stretched.
 
-```text
---out DIR                output directory (default: <repo>/build/test-fixtures)
---pages N                number of pages in sample.pdf (default 14)
---password TEXT          password for dummy-encrypted.pdf (default secret)
---no-encrypted           skip dummy-encrypted.pdf
---no-gutenberg            skip the Project Gutenberg downloads
---gutenberg-timeout MS   per-download timeout in milliseconds (default 30000)
-```
+### `make-tv-banner.ps1`
 
-`fetch_gutenberg.py` additionally supports `--list` and `--only <slug>`
-(`alice`, `pride`, `sherlock`, `yellow`).
-
-### Used in testing
-
-- `adb.exe` pushes the fixtures to the device.
-- `tools\push-fixtures.bat` runs the generator and copies the results to
-  `/sdcard/Download/pdfr-fixtures/`.
-- The instrumented tests generate their own tiny PDFs at runtime instead of
-  reading these files.
-
-## Creating the test AVD
-
-`create-test-avd.bat` creates an AVD named `pdfr_full` on a fresh machine:
+Draws the 320x180 Android TV banner (document sheet, `PDFr`, `Read anything`)
+with `System.Drawing`.
 
 ```bat
-tools\create-test-avd.bat
+tools\make-tv-banner.ps1
+tools\make-tv-banner.ps1 -OutFile C:\tmp\banner.png
 ```
 
-It looks for the SDK in `ANDROID_SDK_ROOT`, `ANDROID_HOME` or
-`%LOCALAPPDATA%\Android\Sdk`, installs
-`system-images;android-35;default;x86_64` when needed, then creates a Pixel 5
-AVD with 1536 MB RAM and a 512 MB SD card. Optional arguments override the name
-and RAM:
+Without `-OutFile` it writes
+`app\src\main\res\drawable-nodpi\tv_banner.png`.
 
-```bat
-tools\create-test-avd.bat pdfr_full 1536
-```
-
-Re-running the script recreates the AVD with the same name.
-
-## Creating the TV AVD
-
-`create-tv-avd.bat` creates the Android TV emulator used for the D-pad and
-leanback checks:
-
-```bat
-tools\create-tv-avd.bat
-tools\start-emulator.bat pdfr_tv
-tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest
-```
-
-It installs `system-images;android-34;android-tv;x86_64` when needed (a large
-download on the first run), creates a 1080p TV AVD named `pdfr_tv`, and enables
-the D-pad and a keyboard in the generated config. The same APK installs on a
-phone and on TV: the leanback launcher entry is an extra intent filter, and the
-TV features are declared optional. The accessibility tests run unchanged on
-this AVD because `hw.keyboard=yes` gives them the Tab key.
-
-Pass `-SkipInstall` to fail instead of downloading a missing image, or
-`-Name`/`-RamMb` to override the defaults:
-
-```bat
-powershell -ExecutionPolicy Bypass -File tools\create-tv-avd.ps1 -Name pdfr_tv -RamMb 2048
-```
+Result: the banner used by the leanback launcher. Re-run it after changing the
+app's colours or name, then rebuild the APK.
