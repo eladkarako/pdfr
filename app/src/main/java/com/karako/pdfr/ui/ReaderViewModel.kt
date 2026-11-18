@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.util.UUID
 
 sealed interface ReaderState {
     data object Empty : ReaderState
@@ -425,22 +426,36 @@ class ReaderViewModel(
         }
 
         _busy.value = true
+        val app = getApplication<Application>()
+        var target: File? = null
         return try {
-            val app = getApplication<Application>()
-            val target = withContext(Dispatchers.IO) {
-                DocumentStore.derivedFile(app, "print.pdf")
+            // Every job gets its own file. A second print must not truncate a
+            // copy the spooler is still reading, and the UUID also keeps a
+            // cancelled job from colliding with the next one.
+            val printFile = withContext(Dispatchers.IO) {
+                DocumentStore.derivedFile(app, "print-${UUID.randomUUID()}.pdf")
             }
+            target = printFile
             val pageCount = if (ready.info.isPdf) {
-                decryptForPrint(ready, target)
+                decryptForPrint(ready, printFile)
             } else {
-                withContext(MuPdf.dispatcher) { convertToPdf(ready, target) }
+                withContext(MuPdf.dispatcher) { convertToPdf(ready, printFile) }
             }
             if (pageCount != null && pageCount > 0) {
-                PrintSource(target, ready.displayName, pageCount, temporary = true)
+                PrintSource(printFile, ready.displayName, pageCount, temporary = true)
             } else {
-                withContext(Dispatchers.IO) { DocumentStore.discard(target) }
+                withContext(Dispatchers.IO) { DocumentStore.discard(printFile) }
                 null
             }
+        } catch (e: CancellationException) {
+            target?.let { runCatching { DocumentStore.discard(it) } }
+            throw e
+        } catch (_: Exception) {
+            // A decrypt or PDF rewrite can fail for reasons the user cannot
+            // act on. Return null so the caller shows the normal print error
+            // instead of letting the exception escape the coroutine.
+            target?.let { runCatching { DocumentStore.discard(it) } }
+            null
         } finally {
             _busy.value = false
         }

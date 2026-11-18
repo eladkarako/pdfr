@@ -232,17 +232,29 @@ fun ReaderApp(
         }
     }
     val printDocument = {
-        val activity = context.findActivity()
-        if (activity != null) {
-            scope.launch {
-                val source = viewModel.printSource()
-                val shown = source != null && DocumentPrinter.print(activity, source)
-                if (!shown) {
-                    Toast.makeText(
-                        context,
-                        R.string.print_prepare_failed,
-                        Toast.LENGTH_SHORT,
-                    ).show()
+        // A tap while another conversion is running used to reach printSource(),
+        // which returns null when busy, and produced a misleading "prepare
+        // failed" toast. The button is disabled during that time, but a queued
+        // tap can still arrive; ignore it instead of reporting a failure.
+        if (!viewModel.busy.value) {
+            val activity = context.findActivity()
+            if (activity == null) {
+                Toast.makeText(
+                    context,
+                    R.string.print_prepare_failed,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            } else {
+                scope.launch {
+                    val source = viewModel.printSource()
+                    val shown = source != null && DocumentPrinter.print(activity, source)
+                    if (!shown && !viewModel.busy.value) {
+                        Toast.makeText(
+                            context,
+                            R.string.print_prepare_failed,
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
                 }
             }
         }

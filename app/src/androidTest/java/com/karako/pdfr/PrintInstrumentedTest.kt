@@ -88,6 +88,40 @@ class PrintInstrumentedTest {
     }
 
     @Test
+    fun eachPrintJobGetsItsOwnTemporaryFile() = runBlocking {
+        val (viewModel, _) = open("print-repeat.txt") { file ->
+            file.writeText("PDFr repeat print fixture\n")
+        }
+
+        // Two jobs in a row, as when the first print is cancelled and the user
+        // prints again before the spooler has let go of the first file.
+        val first: PrintSource? = viewModel.printSource()
+        val second: PrintSource? = viewModel.printSource()
+
+        assertNotNull("the first printSource() returned null", first)
+        assertNotNull("the second printSource() returned null", second)
+        first!!
+        second!!
+        assertNotEquals(
+            "a second job must not reuse the file the spooler may still read",
+            first.file,
+            second.file,
+        )
+        assertTrue(first.file.exists())
+        assertTrue(second.file.exists())
+        assertPdf(first.file)
+        assertPdf(second.file)
+
+        // Finishing or cancelling one job must leave the other one intact.
+        first.discard()
+        assertFalse(first.file.exists())
+        assertTrue("discarding the first job must not touch the second", second.file.exists())
+
+        second.discard()
+        assertFalse(second.file.exists())
+    }
+
+    @Test
     fun imageIsConvertedToATemporaryPdf() = runBlocking {
         val (viewModel, _) = open("print-image.png") { file ->
             val bitmap = Bitmap.createBitmap(64, 48, Bitmap.Config.ARGB_8888)

@@ -13,7 +13,6 @@ import android.print.PrintManager
 import com.karako.pdfr.data.DocumentStore
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 
 /**
  * A PDF ready for the print spooler.
@@ -62,7 +61,7 @@ object DocumentPrinter {
                 PrintAttributes.Builder().build(),
             )
             true
-        } catch (e: RuntimeException) {
+        } catch (_: RuntimeException) {
             source.discard()
             false
         }
@@ -97,12 +96,21 @@ object DocumentPrinter {
             cancellationSignal: CancellationSignal?,
             callback: WriteResultCallback,
         ) {
+            if (cancellationSignal?.isCanceled == true) {
+                callback.onWriteCancelled()
+                return
+            }
+
             try {
                 // The spooler may ask for a subset of pages, but it renders the
                 // PDF itself, so handing it the whole file is both correct and
                 // simpler than slicing it here.
                 FileInputStream(source.file).use { input ->
-                    FileOutputStream(destination.fileDescriptor).use { output ->
+                    // Let the ParcelFileDescriptor own its descriptor. Wrapping
+                    // the raw fd in FileOutputStream closes it twice, and the
+                    // second close can fail with EBADF when the spooler is done
+                    // with the job.
+                    ParcelFileDescriptor.AutoCloseOutputStream(destination).use { output ->
                         input.copyTo(output)
                     }
                 }
