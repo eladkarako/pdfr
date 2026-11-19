@@ -41,7 +41,6 @@ class AccessibilityInstrumentedTest {
 
             val expected = listOf(
                 R.string.share_document,
-                R.string.print_document,
                 R.string.document_info,
                 R.string.open_another,
                 R.string.save_as,
@@ -68,7 +67,7 @@ class AccessibilityInstrumentedTest {
                 )
             }
 
-            // Share, Print, Info, Open, Save, Menu must stay in this order.
+            // Share, Info, Open, Save, Menu must stay in this order.
             val lefts = nodes.map { node ->
                 val bounds = android.graphics.Rect()
                 node.getBoundsInScreen(bounds)
@@ -91,7 +90,6 @@ class AccessibilityInstrumentedTest {
             }
 
             assertFalse(enabled(R.string.share_document))
-            assertFalse(enabled(R.string.print_document))
             assertFalse(enabled(R.string.document_info))
             assertFalse(enabled(R.string.save_as))
             // Open and the menu stay usable with no document.
@@ -151,7 +149,6 @@ class AccessibilityInstrumentedTest {
 
             val expected = listOf(
                 R.string.share_document,
-                R.string.print_document,
                 R.string.document_info,
                 R.string.open_another,
                 R.string.save_as,

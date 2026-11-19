@@ -266,7 +266,7 @@ the device.
 
 ```bat
 tools\run-instrumented-tests.bat
-tools\run-instrumented-tests.bat com.karako.pdfr.PrintInstrumentedTest
+tools\run-instrumented-tests.bat com.karako.pdfr.AccessibilityInstrumentedTest
 tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest --start-emulator
 ```
 
@@ -325,7 +325,7 @@ Actions, grouped by what they exercise:
 | Group | Actions |
 | --- | --- |
 | Page menu and selection | `long-press`, `tap`, `select-all`, `copy` |
-| Overflow menu and dialogs | `menu`, `menu-mirror`, `print`, `info`, `metadata`, `metadata-apply` |
+| Overflow menu and dialogs | `menu`, `menu-mirror`, `info`, `metadata`, `metadata-apply` |
 | Text and plain-text toggles | `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers` |
 | Settings | `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language-hebrew`, `language-system` |
 | Inspection | `scroll`, `screenshot`, `list` |
@@ -342,7 +342,7 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-p
 :: A phone with another toolbar layout.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu -MenuX 0.93 -MenuY 0.06
 
-:: Print what the current screen exposes when a label cannot be found.
+:: List what the current screen exposes when a label cannot be found.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action list
 ```
 
@@ -615,8 +615,8 @@ tools\show-cache.bat
 `run-as` listing of `cache/documents`, including the per-import folders.
 
 Result: the cache file names and sizes. Use it after reordering, rotating,
-normalizing, fixing or printing: the new copy should be there, the replaced one
-should be gone, and print copies should disappear once the job finishes.
+normalizing or fixing: the new copy should be there and the replaced one
+should be gone.
 
 ### `logcat-app.bat`
 
@@ -627,7 +627,7 @@ tools\logcat-app.bat
 Prints the last 400 log lines for the app PID, or recent `AndroidRuntime`
 crashes when the process is not running.
 
-Result: a readable excerpt on the console. Useful after a failed print, a
+Result: a readable excerpt on the console. Useful after a failed conversion, a
 native qpdf/MuPDF error, or a crash that does not reach the UI.
 
 ## Manual walkthrough
@@ -642,7 +642,7 @@ tools\manual-testing.bat
 ```
 
 The menu covers pushing fixtures, opening each format, zoom probes, selection,
-printing, the overflow mirror, promo capture, settings, Hebrew, the TV banner
+the overflow mirror, promo capture, settings, Hebrew, the TV banner
 and the cache/log helpers. Choose a number and follow the prompt.
 
 Result: the chosen scenario runs on the connected device. The checklist below is
@@ -719,57 +719,49 @@ the same route, in order, for a full manual pass:
 20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
-21. **Print every format** - open `sample.pdf`, `alice.epub`, `notes.txt`,
-    `image.png` and `sample.cbz` in turn and choose **Print**. The toolbar
-    button and the overflow entry open the system print dialog with a PDF
-    preview in every case; reflowable documents print at A4. An encrypted
-    `dummy-encrypted.pdf` prints without asking for the password again (qpdf
-    decrypts it; MuPDF is the fallback). With no document open, Print is
-    disabled. `reader-actions.ps1 -Action print` opens the dialog from the
-    overflow menu.
-22. **Overflow mirror** - open any document and tap the overflow button. The
-    first five entries are the toolbar actions in the same left-to-right order:
-    **Share**, **Print**, **Document info**, **Open**, **Save as**, each with its
+21. **Overflow mirror** - open any document and tap the overflow button. The
+    first four entries are the toolbar actions in the same left-to-right order:
+    **Share**, **Document info**, **Open**, **Save as**, each with its
     leading icon, followed by a divider and the document actions. With no
     document open the mirrored entries are disabled except **Open**.
     `reader-actions.ps1 -Action menu-mirror` captures the menu.
-23. **Promo capture** - `capture-promo.ps1` rebuilds, generates the colourful
+22. **Promo capture** - `capture-promo.ps1` rebuilds, generates the colourful
     Gutenberg sampler, records the screenshots and MP4, and composes the poster.
     Check that `gutenberg-color.pdf` opens with six A4 pages of readable text
     and that the poster shows the chosen screenshots without stretching.
-24. **Page size** - open `sample.pdf` and choose overflow -> **Page size…**.
+23. **Page size** - open `sample.pdf` and choose overflow -> **Page size…**.
     Keep the default `1-e` and A4: the new `sample (page size).pdf` opens with
     every page box at 595.28 x 841.89 pt while the text stays where it was.
     Repeat with `2-3` and A5 to resize only those pages, and with a custom
     size in each unit (mm, cm, in, pt, px, em) to check the point summary.
     Open `image.png`, choose **Page size** and confirm the image is fitted and
     centred on the chosen sheet. The entry is absent for EPUB, CBZ and text.
-25. **Exit** - the overflow menu ends with a divider, **Settings…** and **Exit**,
+24. **Exit** - the overflow menu ends with a divider, **Settings…** and **Exit**,
     with or without a document open. Choosing Exit removes the task from recents
     and stops the process: `adb shell pidof com.karako.pdfr` prints nothing
     afterwards.
-26. **Theme** - overflow -> **Settings…** -> **Theme**. The four rows are ordered
+25. **Theme** - overflow -> **Settings…** -> **Theme**. The four rows are ordered
     **Same as system**, **Light**, **Dark**, **AMOLED black**. A row applies
     immediately: Light stays light with the device in dark mode, Dark uses grey
     surfaces, and AMOLED black uses pure black backgrounds and surfaces. The
     status/navigation bar icons stay readable in each mode. Reopen the app and
     the choice is still there. `reader-actions.ps1 -Action theme-amoled`
     captures the result.
-27. **Language** - overflow -> **Settings…** -> **Language**. Choose **עברית**:
+26. **Language** - overflow -> **Settings…** -> **Language**. Choose **עברית**:
     the activity reloads and the whole UI, menus and dialogs are Hebrew with a
-    right-to-left layout. The toolbar keeps Share → Print → Info → Open → Save →
+    right-to-left layout. The toolbar keeps Share → Info → Open → Save →
     Menu left-to-right in both languages; only the menu captions, dialogs and
     other text mirror. Open `notes.txt`: the text still starts left-aligned
     unless **Align right** is on. Choose **English** or **System default** to
     switch back. `reader-actions.ps1 -Action language-hebrew` and `-Action
     language-system` repeat both switches.
-28. **Keyboard and mouse** - with a hardware keyboard, Tab moves through the
-    toolbar in Share, Print, Info, Open, Save, Menu order in every language (the
+27. **Keyboard and mouse** - with a hardware keyboard, Tab moves through the
+    toolbar in Share, Info, Open, Save, Menu order in every language (the
     toolbar does not mirror), and then into the reader and dialogs; Shift+Tab
     reverses it. The focused button gets a primary-coloured ring, hovering with
     a mouse shows the same ring, and pressing shows a coloured ripple. Arrow keys
     work in the settings and metadata dialogs.
-29. **Android TV** - install the same APK on a TV or the TV emulator. PDFr
+28. **Android TV** - install the same APK on a TV or the TV emulator. PDFr
     appears in the leanback launcher with its 320x180 banner, the D-pad moves
     focus between toolbar buttons and menu rows, and the settings dialog scrolls
     with the remote. `make-tv-banner.ps1` regenerates the banner.
@@ -788,9 +780,6 @@ tools\capture-promo.ps1 -StartEmulator
 :: Reuse the current build and connected device, skip the video.
 tools\capture-promo.ps1 -SkipBuild -SkipVideo
 
-:: Print-dialog capture on a machine without a print service.
-tools\capture-promo.ps1 -SkipPrint
-
 :: Leave the emulator running for another capture.
 tools\capture-promo.ps1 -KeepEmulator
 ```
@@ -801,7 +790,6 @@ tools\capture-promo.ps1 -KeepEmulator
 | `-StartEmulator` | start the AVD after the build, then stop it at the end |
 | `-SkipBuild` | reuse the existing debug APK |
 | `-SkipVideo` | skip the scrolling MP4 |
-| `-SkipPrint` | skip the print-dialog screenshot |
 | `-KeepEmulator` | do not stop an emulator that the script started |
 
 It builds the debug APK before it touches the emulator, then generates
@@ -820,12 +808,11 @@ Output in `build\promo\`:
 | `04-overflow.png` | The overflow menu with the mirrored toolbar entries. |
 | `05-info.png` | The document-info editor. |
 | `06-epub.png` | A reflowable EPUB. |
-| `07-print.png` | The system print dialog, when the image has a print service. |
 | `pdfr-promo.mp4` | Scrolling and the overflow menu, scaled to 720 px wide. |
 | `poster.png` | 3-4 screenshots composed into a shareable poster. |
 | `README.txt` | A short index of the captured assets. |
 
-The same steps are available from `manual-testing.bat` as options 14 and 15.
+The same steps are available from `manual-testing.bat` as options 13 and 14.
 
 ### `make-poster.ps1`
 
@@ -843,7 +830,7 @@ tools\make-poster.ps1 -OutDir build\promo -Columns 1 -Width 1000
 | `-OutDir` | `build\promo` | folder with the screenshots |
 | `-Images` | preferred four | comma-separated or array of file names |
 | `-OutputName` | `poster.png` | output file |
-| `-Title` / `-Subtitle` | `PDFr` / `Read anything. Print anything.` | heading text |
+| `-Title` / `-Subtitle` | `PDFr` / `Read anything.` | heading text |
 | `-Width` | `1600` | canvas width |
 | `-Columns` | `2` | `1` gives a vertical strip |
 | `-Background` / `-BackgroundEnd` | `#0F1720` / `#22384D` | gradient |

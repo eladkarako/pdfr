@@ -1,3 +1,6 @@
+26.11.19
+* removed **Print**. **Share** already reaches every target and **Save as** keeps a single file, so the toolbar button, overflow entry, qpdf decrypt helper, temporary conversion path and their tests, tools and docs are gone. Image conversion remains available through **Page size**.
+
 26.11.16
 + added a complete Hebrew translation (`values-iw`, Android's legacy qualifier for Hebrew) and removed the forced left-to-right application flag: with a right-to-left language the overflow menu, dialogs and settings mirror and their captions right-align, while the toolbar keeps its fixed **Share**, **Print**, **Info**, **Open**, **Save**, **Menu** left-to-right order. PDF pages, images and plain text keep their own direction; plain text still opens left-to-right unless **Align right** is enabled.
 + added **Settings…** above **Exit** in the overflow menu: a theme picker ordered **Same as system**, **Light**, **Dark** and **AMOLED black**, and a language picker populated with the languages in this build (system default, English, עברית). Theme changes apply immediately; a language change recreates the activity so Android resolves the new resources, and the choice is stored in shared preferences.

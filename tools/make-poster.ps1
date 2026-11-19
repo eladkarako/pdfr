@@ -22,7 +22,7 @@ param(
     [string[]]$Images = @(),
     [string]$OutputName = 'poster.png',
     [string]$Title = 'PDFr',
-    [string]$Subtitle = 'Read anything. Print anything.',
+    [string]$Subtitle = 'Read anything.',
     [int]$Width = 1600,
     [int]$Columns = 2,
     [string]$Background = '#0F1720',

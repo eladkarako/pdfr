@@ -225,7 +225,7 @@ class MuPdfDocument private constructor(
             val output = DocumentWriter(
                 temp.absolutePath,
                 "pdf",
-                MuPdfConfig.PRINT_WRITE_OPTIONS,
+                MuPdfConfig.PDF_WRITE_OPTIONS,
             )
             writer = output
 

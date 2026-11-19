@@ -46,7 +46,4 @@ object QpdfMessages {
 
     /** Fallback when Fix fails without a native message. */
     const val FIX_FAILED = "qpdf could not fix this PDF."
-
-    /** Fallback when Decrypt fails without a native message. */
-    const val DECRYPT_FAILED = "qpdf could not decrypt this PDF."
 }

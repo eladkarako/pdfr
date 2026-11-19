@@ -45,9 +45,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 sealed interface ReaderState {
     data object Empty : ReaderState
@@ -432,119 +429,22 @@ class ReaderViewModel(
     }
 
     /**
-     * Prepares the current document for the print spooler.
+     * Reopens [ready] and writes it as a PDF at the requested page size.
      *
-     * The spooler only accepts PDF. An unencrypted PDF is handed over as-is.
-     * Encrypted PDFs are decrypted into a temporary cache file (qpdf first,
-     * MuPDF as the fallback), and every other format is converted to PDF
-     * first, with reflowable documents laid out at A4. Temporary files are
-     * deleted once the spooler has read them. Returns null when the copy
-     * could not be written.
+     * Used by the page-size dialog for images, which cannot be rewritten in
+     * place the way a PDF can. Must be called on [MuPdf.dispatcher].
      */
-    suspend fun printSource(): PrintSource? {
-        val ready = _state.value as? ReaderState.Ready ?: return null
-        if (_busy.value) return null
-
-        if (ready.info.isPdf && !ready.info.encrypted) {
-            return PrintSource(ready.file, ready.displayName, ready.pageCount)
-        }
-
-        _busy.value = true
-        val app = getApplication<Application>()
-        var target: File? = null
-        return try {
-            // Every job gets its own file. A second print must not truncate a
-            // copy the spooler is still reading, and the timestamp keeps a
-            // cancelled job from colliding with the next one. Each call also
-            // gets its own cache directory, so two jobs in the same second
-            // still cannot share a path.
-            val printFile = withContext(Dispatchers.IO) {
-                val stamp = SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(Date())
-                DocumentStore.derivedFile(app, "print-$stamp.pdf")
-            }
-            target = printFile
-            val pageCount = if (ready.info.isPdf) {
-                decryptForPrint(ready, printFile)
-            } else {
-                withContext(MuPdf.dispatcher) { convertToPdf(ready, printFile) }
-            }
-            if (pageCount != null && pageCount > 0) {
-                PrintSource(printFile, ready.displayName, pageCount, temporary = true)
-            } else {
-                withContext(Dispatchers.IO) { DocumentStore.discard(printFile) }
-                null
-            }
-        } catch (e: CancellationException) {
-            target?.let { runCatching { DocumentStore.discard(it) } }
-            throw e
-        } catch (_: Exception) {
-            // A decrypt or PDF rewrite can fail for reasons the user cannot
-            // act on. Return null so the caller shows the normal print error
-            // instead of letting the exception escape the coroutine.
-            target?.let { runCatching { DocumentStore.discard(it) } }
-            null
-        } finally {
-            _busy.value = false
-        }
-    }
-
-    /**
-     * Writes an unencrypted copy of [ready] for the print spooler.
-     *
-     * qpdf handles the usual encryption handlers and also clears
-     * digital-signature restrictions, without waking MuPDF's crypto code.
-     * MuPDF stays as the fallback for files qpdf rejects.
-     */
-    private suspend fun decryptForPrint(ready: ReaderState.Ready, target: File): Int? {
-        val decrypted = withContext(Qpdf.dispatcher) {
-            Qpdf.decrypt(ready.file, target, password) == null
-        }
-        if (decrypted) return ready.pageCount
-
-        target.delete()
-        return withContext(MuPdf.dispatcher) {
-            // The spooler opens the file on its own and cannot ask for the
-            // password, so write a decrypted copy.
-            if (
-                MuPdfDocument.savePdfCopy(
-                    source = ready.file,
-                    password = password,
-                    destination = target,
-                    pageIndices = null,
-                    options = MuPdfDocument.PDF_REWRITE_OPTIONS,
-                )
-            ) {
-                ready.pageCount
-            } else {
-                null
-            }
-        }
-    }
-
-    /**
-     * Reopens [ready] and writes it as a PDF, because the print spooler does
-     * not understand EPUB, CBZ, images or plain text. Reflowable formats are
-     * laid out at A4 so the printed pages do not inherit the phone-width
-     * reader layout. Must be called on [MuPdf.dispatcher].
-     */
-    private fun convertToPdf(
+    private fun convertImageToPdf(
         ready: ReaderState.Ready,
         target: File,
-        widthPt: Float? = null,
-        heightPt: Float? = null,
+        widthPt: Float,
+        heightPt: Float,
     ): Int? {
         val doc = runCatching {
             MuPdfDocument.open(ready.file, ready.displayName, password, ready.mimeType)
         }.getOrNull() ?: return null
 
         return try {
-            if (doc.isReflowable) {
-                doc.layout(
-                    widthPt ?: MuPdfConfig.PRINT_PAGE_WIDTH_PT,
-                    heightPt ?: MuPdfConfig.PRINT_PAGE_HEIGHT_PT,
-                    MuPdfConfig.PRINT_EM,
-                )
-            }
             val pages = doc.countPages()
             if (pages > 0 && doc.saveAsPdf(target, widthPt, heightPt)) pages else null
         } finally {
@@ -1215,7 +1115,7 @@ class ReaderViewModel(
                                     pageHeightPt = size.heightPt,
                                 )
 
-                                else -> convertToPdf(
+                                else -> convertImageToPdf(
                                     ready,
                                     target,
                                     size.widthPt,

@@ -36,21 +36,11 @@ object MuPdfConfig {
     const val MAX_EM = 96f
 
     // -----------------------------------------------------------------------
-    // Print conversion
+    // Generated PDFs
     // -----------------------------------------------------------------------
 
-    /**
-     * A4 page size in points, used when a reflowable document is converted to
-     * PDF for the print spooler. Fixed-layout documents keep their own size.
-     */
-    const val PRINT_PAGE_WIDTH_PT = 595f
-    const val PRINT_PAGE_HEIGHT_PT = 842f
-
-    /** Reflow font size for printed reflowable documents, in points. */
-    const val PRINT_EM = 11f
-
-    /** MuPDF PDF-writer options for the temporary print conversion. */
-    const val PRINT_WRITE_OPTIONS = "compress"
+    /** MuPDF PDF-writer options for generated copies (page size, conversions). */
+    const val PDF_WRITE_OPTIONS = "compress"
 
     // -----------------------------------------------------------------------
     // Rasterisation

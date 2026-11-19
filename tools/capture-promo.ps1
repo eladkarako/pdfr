@@ -15,7 +15,6 @@
       04-overflow.png    the overflow menu with the mirrored toolbar entries
       05-info.png        the document-info editor
       06-epub.png        a reflowable EPUB
-      07-print.png       the system print dialog, when a print service exists
       pdfr-promo.mp4     scrolling and the overflow menu
       poster.png         3-4 screenshots composed into a shareable poster
 
@@ -33,7 +32,6 @@ param(
     [switch]$StartEmulator,
     [switch]$SkipBuild,
     [switch]$SkipVideo,
-    [switch]$SkipPrint,
     [switch]$KeepEmulator
 )
 
@@ -292,33 +290,6 @@ function Capture-Screenshots {
     Open-Fixture 'alice.epub'
     Start-Sleep -Seconds 4
     Save-Shot '06-epub'
-
-    if (-not $SkipPrint) {
-        $spooler = (Invoke-Adb shell pm list packages | Out-String)
-        if ($spooler -match 'printspooler') {
-            Tap-Node 'Print document'
-            # The print spooler starts on first use and can take a few seconds,
-            # so wait for its window instead of a fixed delay.
-            $printOpen = $false
-            for ($attempt = 1; $attempt -le 20; $attempt++) {
-                $windows = (Invoke-Adb shell dumpsys window windows | Out-String)
-                if ($windows -match 'printspooler') {
-                    $printOpen = $true
-                    break
-                }
-                Start-Sleep -Milliseconds 500
-            }
-            if ($printOpen) {
-                Save-Shot '07-print'
-            } else {
-                Write-Host '  the print dialog did not appear; skipped 07-print.png'
-            }
-            Invoke-Adb shell input keyevent 4 | Out-Null
-            Start-Sleep -Seconds 1
-        } else {
-            Write-Host '  no print spooler on this image; skipped 07-print.png'
-        }
-    }
 }
 
 function Capture-Video {
@@ -386,7 +357,6 @@ function Write-Readme {
         '  04-overflow.png    mirrored toolbar entries in the overflow menu',
         '  05-info.png        document-info editor',
         '  06-epub.png        reflowable EPUB',
-        '  07-print.png       system print dialog (when available)',
         '',
         'Video:',
         '  pdfr-promo.mp4     scrolling and the overflow menu',

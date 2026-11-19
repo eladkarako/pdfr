@@ -233,8 +233,6 @@
     <string name="fix_pdf_unavailable">qpdf недоступен в этой сборке.</string>
     <string name="fix_pdf_only_pdf">Исправлять можно только файлы PDF.</string>
 
-    <string name="print_document">Печать документа</string>
-    <string name="print_prepare_failed">Не удалось подготовить документ к печати.</string>
     <string name="no_text_to_copy">Нет текста для копирования.</string>
 
     <string name="rewrite_failed">Не удалось создать новый PDF.</string>

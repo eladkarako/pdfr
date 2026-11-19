@@ -16,9 +16,9 @@ Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/q
 
 | Format | Extension(s) | Definition | Key traits |
 |--------|--------------|------------|------------|
-| 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for printing and scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
+| 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
 | 📘 EPUB | `.epub` | An open, reflowable ebook standard maintained by the IDPF. It is a ZIP container holding HTML, CSS, images, and metadata. | The most widely supported ebook format, and the one most publishers use. Text adapts to the screen, and readers can change fonts and sizes. |
-| 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a print and document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
+| 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
 | 🦸 CBZ / CBT (comic book archive) | `.cbz`, `.cbt` | A comic archive: a ZIP (CBZ) or TAR (CBT) file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
 | 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
 | 📚 MOBI / PalmDoc | `.mobi`, `.prc`, `.pdb` | Older Amazon and Palm ebook containers, including the Mobipocket format that predates KF8 and AZW3. | Readable but reflowed without DRM support. Most modern Kindle books use AZW3/KFX, which MuPDF does not open. |
@@ -78,13 +78,6 @@ intact wherever the target provider allows its timestamp to be updated.
 - 💾 **Save as** next to **Open**: choose a destination and keep the current
   format, filename, extension and, where the provider supports it, the original
   modification time.
-- 🖨️ **Print** next to **Share**, for every supported format: PDFs go straight
-  to the system print service, where Android's spooler renders the preview and
-  pagination. An encrypted PDF is decrypted into a temporary cache copy first
-  (qpdf, with MuPDF as the fallback for encryption handlers qpdf rejects);
-  EPUB, CBZ, images, text and other formats are converted to a temporary PDF,
-  with reflowable documents laid out at A4. Temporary copies are deleted once
-  the spooler has read them.
 - ✂️ **Text selection and copying** - long-press a PDF page to open the page
   menu, then choose **Select all** to highlight every text block on that page
   and expose **Copy** and **Copy all**. Copy takes the current page's selection;
@@ -95,7 +88,7 @@ intact wherever the target provider allows its timestamp to be updated.
 - 📋 **Copy all** is also in the overflow menu, below the mirrored toolbar
   actions and above a divider: the entries below it only change how the
   document is shown.
-- 🧭 **The overflow menu mirrors the toolbar first**: Share, Print, Info, Open
+- 🧭 **The overflow menu mirrors the toolbar first**: Share, Info, Open
   and Save appear in the same left-to-right order, disabled when no document is
   loaded (Open stays available). A divider separates them from the document
   actions that follow.
@@ -126,7 +119,7 @@ intact wherever the target provider allows its timestamp to be updated.
   navigation bar icons.
 - ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries and settings rows
   show a focus/hover ring, presses use a primary-coloured ripple, and Tab follows
-  Share → Print → Info → Open → Save → Menu in that order in every language (the
+  Share → Info → Open → Save → Menu in that order in every language (the
   toolbar never mirrors). Android TV is supported through the leanback launcher
   entry and a 320x180 banner, and the dialogs scroll with a D-pad remote.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
@@ -205,7 +198,6 @@ app/src/main/java/com/karako/pdfr/
 ├── ui/
 │   ├── ReaderApp.kt         # 🖥️ Compose continuous-scroll reader + dialogs
 │   ├── ReaderViewModel.kt   # 🧠 reader state, viewport, selection, reflow
-│   ├── DocumentPrinter.kt   # 🖨️ PDF hand-off to the system print spooler
 │   ├── ReaderConfig.kt      # ⚙️ reader timings, saved-state keys and colours
 │   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
 │   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
@@ -335,7 +327,7 @@ Three layers, all runnable from the repository root:
   rotates, normalizes and repairs through qpdf, unlocks AES-256 PDFs, rewrites
   metadata and toggles plain-text monospace on real MuPDF. It also checks the
   accessibility tree (labels, 48dp targets, Tab order), the Hebrew toolbar, the
-  leanback/banner manifest entries and every `printSource()` conversion path.
+  leanback/banner manifest entries and every image-to-PDF conversion path.
 - 📄 `tools/README.md` - AVD creation (phone and TV), emulator/install helpers,
   fixture pushing, the manual checklist, the raw-multitouch pinch helper, and
   the dependency-free fixture generator/Project Gutenberg downloader.

@@ -225,8 +225,6 @@
     <string name="fix_pdf_unavailable">qpdf אינו זמין בגרסה הזו.</string>
     <string name="fix_pdf_only_pdf">רק קובצי PDF ניתנים לתיקון.</string>
 
-    <string name="print_document">הדפסת מסמך</string>
-    <string name="print_prepare_failed">לא ניתן היה להכין את המסמך להדפסה.</string>
     <string name="no_text_to_copy">אין טקסט להעתקה.</string>
 
     <string name="rewrite_failed">לא ניתן היה ליצור את ה-PDF החדש.</string>

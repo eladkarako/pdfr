@@ -511,48 +511,6 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun qpdfDecryptsEncryptedPdf() {
-        val plain = pdf("decrypt-source.pdf", 2)
-        val encrypted = File(dir, "decrypt-encrypted.pdf")
-        val decrypted = File(dir, "decrypted.pdf")
-
-        assertTrue(onMuPdf { encryptWithMuPdf(plain, encrypted, PASSWORD) })
-        assertTrue(Qpdf.isAvailable())
-
-        val error = runBlocking(Qpdf.dispatcher) {
-            Qpdf.decrypt(encrypted, decrypted, PASSWORD)
-        }
-        assertNull(error)
-        assertTrue(decrypted.length() > 0L)
-
-        // Opening without a password proves the output is unencrypted.
-        val doc = open(decrypted)
-        try {
-            assertEquals(2, onMuPdf { doc.countPages() })
-            assertFalse(onMuPdf { doc.info().encrypted })
-            assertTrue(textOf(doc, 0).contains("Fixture page 1"))
-        } finally {
-            close(doc)
-        }
-    }
-
-    @Test
-    fun qpdfDecryptRejectsWrongPassword() {
-        val plain = pdf("decrypt-wrong-source.pdf", 1)
-        val encrypted = File(dir, "decrypt-wrong.pdf")
-        val decrypted = File(dir, "decrypted-wrong.pdf")
-
-        assertTrue(onMuPdf { encryptWithMuPdf(plain, encrypted, PASSWORD) })
-        assertTrue(Qpdf.isAvailable())
-
-        val error = runBlocking(Qpdf.dispatcher) {
-            Qpdf.decrypt(encrypted, decrypted, "not-the-password")
-        }
-        assertNotNull(error)
-        assertFalse(decrypted.exists())
-    }
-
-    @Test
     fun encryptedPdfRequiresTheRightPassword() {
         val plain = pdf("plain-to-encrypt.pdf", 2)
         val encrypted = File(dir, "encrypted.pdf")
@@ -646,19 +604,19 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun saveAsPdfConvertsReflowableTextAtA4() {
-        val source = File(dir, "print-fixture.txt").apply {
+    fun saveAsPdfWritesReflowableTextAtTheRequestedPageSize() {
+        val source = File(dir, "conversion-fixture.txt").apply {
             writeText(
                 """
-                Print conversion fixture
-                =======================
+                PDF conversion fixture
+                ======================
 
                 The quick brown fox jumps over the lazy dog.
                 Pack my box with five dozen liquor jugs.
                 """.trimIndent(),
             )
         }
-        val target = File(dir, "print-fixture.pdf")
+        val target = File(dir, "conversion-fixture.pdf")
 
         val doc = open(source)
         val pages = try {
@@ -682,7 +640,7 @@ class MuPdfDocumentInstrumentedTest {
             assertNotNull(bounds)
             assertEquals(595f, bounds!!.width, 1f)
             assertEquals(842f, bounds.height, 1f)
-            assertTrue(textOf(converted, 0).contains("Print conversion fixture"))
+            assertTrue(textOf(converted, 0).contains("PDF conversion fixture"))
         } finally {
             close(converted)
         }
@@ -824,8 +782,8 @@ class MuPdfDocumentInstrumentedTest {
     }
 
     @Test
-    fun saveAsPdfConvertsImageToSinglePage() {
-        val source = File(dir, "print-image.png")
+    fun saveAsPdfWritesAnImageOnOnePage() {
+        val source = File(dir, "convert-image.png")
         val bitmap = Bitmap.createBitmap(32, 24, Bitmap.Config.ARGB_8888)
         try {
             bitmap.eraseColor(Color.rgb(200, 90, 40))
@@ -836,7 +794,7 @@ class MuPdfDocumentInstrumentedTest {
             bitmap.recycle()
         }
 
-        val target = File(dir, "print-image.pdf")
+        val target = File(dir, "convert-image.pdf")
         val doc = open(source)
         try {
             assertEquals(1, onMuPdf { doc.countPages() })

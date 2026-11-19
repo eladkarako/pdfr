@@ -225,8 +225,6 @@
     <string name="fix_pdf_unavailable">qpdf ist in dieser Version nicht verfügbar.</string>
     <string name="fix_pdf_only_pdf">Nur PDF-Dateien können repariert werden.</string>
 
-    <string name="print_document">Dokument drucken</string>
-    <string name="print_prepare_failed">Das Dokument konnte nicht zum Drucken vorbereitet werden.</string>
     <string name="no_text_to_copy">Kein Text zum Kopieren.</string>
 
     <string name="rewrite_failed">Das neue PDF konnte nicht erstellt werden.</string>

@@ -210,7 +210,7 @@ fun ReaderApp(
     val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
 
     // The toolbar keeps a fixed left-to-right icon order in every language, so
-    // Share, Print, Info, Open, Save and Menu never move. The title row below is
+    // Share, Info, Open, Save and Menu never move. The title row below is
     // forced to LTR for that reason; the overflow menu gets the real direction
     // back so its captions still align right in a right-to-left language. Tab
     // and D-pad then follow the row's composition order, skipping the buttons
@@ -229,34 +229,6 @@ fun ReaderApp(
                 displayName = ready.displayName,
                 lastModified = ready.lastModified,
             )
-        }
-    }
-    val printDocument = {
-        // A tap while another conversion is running used to reach printSource(),
-        // which returns null when busy, and produced a misleading "prepare
-        // failed" toast. The button is disabled during that time, but a queued
-        // tap can still arrive; ignore it instead of reporting a failure.
-        if (!viewModel.busy.value) {
-            val activity = context.findActivity()
-            if (activity == null) {
-                Toast.makeText(
-                    context,
-                    R.string.print_prepare_failed,
-                    Toast.LENGTH_SHORT,
-                ).show()
-            } else {
-                scope.launch {
-                    val source = viewModel.printSource()
-                    val shown = source != null && DocumentPrinter.print(activity, source)
-                    if (!shown && !viewModel.busy.value) {
-                        Toast.makeText(
-                            context,
-                            R.string.print_prepare_failed,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                    }
-                }
-            }
         }
     }
     val editInfo = {
@@ -343,9 +315,9 @@ fun ReaderApp(
             // are without pretending there is a file to act on.
             TopAppBar(
                 title = {
-                    // Share and print on the left; info, open and save together
-                    // in the middle; menu on the right. The title row is forced
-                    // to LTR so this order never flips in an RTL language.
+                    // Share on the left; info, open and save together in the
+                    // middle; menu on the right. The title row is forced to LTR
+                    // so this order never flips in an RTL language.
                     CompositionLocalProvider(
                         LocalLayoutDirection provides LayoutDirection.Ltr,
                     ) {
@@ -362,16 +334,6 @@ fun ReaderApp(
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_share),
-                                        contentDescription = null,
-                                    )
-                                }
-                                AccessibleIconButton(
-                                    contentDescription = stringResource(R.string.print_document),
-                                    onClick = printDocument,
-                                    enabled = state is ReaderState.Ready && !busy,
-                                ) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_print),
                                         contentDescription = null,
                                     )
                                 }
@@ -447,15 +409,6 @@ fun ReaderApp(
                                             onClick = {
                                                 showOverflowMenu = false
                                                 shareDocument()
-                                            },
-                                            enabled = canAct,
-                                        )
-                                        AccessibleDropdownMenuItem(
-                                            text = { Text(stringResource(R.string.print_document)) },
-                                            leadingIcon = { MenuIcon(R.drawable.ic_print) },
-                                            onClick = {
-                                                showOverflowMenu = false
-                                                printDocument()
                                             },
                                             enabled = canAct,
                                         )

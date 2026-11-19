@@ -241,8 +241,6 @@
     <string name="fix_pdf_unavailable">qpdf غير متوفر في هذه النسخة.</string>
     <string name="fix_pdf_only_pdf">يمكن إصلاح ملفات PDF فقط.</string>
 
-    <string name="print_document">طباعة المستند</string>
-    <string name="print_prepare_failed">تعذّر تحضير المستند للطباعة.</string>
     <string name="no_text_to_copy">لا يوجد نص للنسخ.</string>
 
     <string name="rewrite_failed">تعذّر إنشاء ملف PDF الجديد.</string>
