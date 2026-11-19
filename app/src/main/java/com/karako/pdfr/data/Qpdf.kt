@@ -94,6 +94,26 @@ object Qpdf {
             failure = QpdfMessages.FIX_FAILED,
         )
 
+    /**
+     * Writes a decrypted copy of [source] to [destination].
+     *
+     * The output is unencrypted and carries no editing restrictions, so the
+     * reader can save, share or rewrite the document without asking for the
+     * password again. This is a normal document operation and is independent
+     * of any viewer action.
+     *
+     * Must be called on [dispatcher]. Returns null on success, or a
+     * human-readable error. The destination is removed on failure.
+     */
+    fun decrypt(source: File, destination: File, password: String?): String? =
+        rewrite(
+            source = source,
+            destination = destination,
+            password = password,
+            operation = ::nativeDecrypt,
+            failure = QpdfMessages.DECRYPT_FAILED,
+        )
+
     private fun rewrite(
         source: File,
         destination: File,
@@ -158,6 +178,12 @@ object Qpdf {
     ): String?
 
     private external fun nativeFixPdf(
+        inputPath: String,
+        outputPath: String,
+        password: String?,
+    ): String?
+
+    private external fun nativeDecrypt(
         inputPath: String,
         outputPath: String,
         password: String?,
