@@ -1,7 +1,6 @@
 @echo off
 chcp 65001 1>nul 2>nul
 pushd "%~dp0.."
-if not exist "build\logs" mkdir "build\logs"
 
 set "LANG=en_US.UTF-8"
 set "LANGUAGE=en_US"
@@ -28,9 +27,30 @@ timeout /t 2
 
 set "NO_COLOR=1"
 
+
+::-----------------------------------------------------------------------------------------------------------------
+set "TIMESTAMP="
+for /F "usebackq delims=" %%E IN (`powershell.exe -NoProfile -Command "Get-Date -Format 'yyyyMMddHHmmss'"`) do (
+  set "TIMESTAMP=%%E"
+  goto EXIT_LOOP_TIMESTAMP
+)
+:EXIT_LOOP_TIMESTAMP
+::-----------------------------------------------------------------------------------------------------------------
+
+
+::---------------------- "remove" old build folder.
+ren "build" "build_%TIMESTAMP%" 1>nul 2>nul
+
+::---------------------- place for logs. re-creates the build folder path.
+mkdir "build\logs" 1>nul 2>nul
+
 ::---------------------- cleanup log file.
 echo.>"build\logs\__clean_hard.log"
 
+::---------------------- where did old build folder was renamed to.
+echo note: old [build] folder renamed to [build_%TIMESTAMP%] >>"build\logs\__clean_hard.log"
+
+::---------------------- removing .gradle folder(s)
 title .gradle folder (local)
 pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.gradle' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"
 echo.>>"build\logs\__clean_hard.log"
@@ -41,6 +61,8 @@ pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Rec
 echo.>>"build\logs\__clean_hard.log"
 echo.>>"build\logs\__clean_hard.log"
 
+
+::---------------------- removing .kotlin folder(s)
 title .\.kotlin
 title .\build\app
 pwsh -NoProfile -Command "$PSStyle.OutputRendering='PlainText'; Remove-Item -Recurse -Force '.\.kotlin' -Verbose -ErrorAction SilentlyContinue" 2>&1 | "tee.exe" --append "build\logs\__clean_hard.log"

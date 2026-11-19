@@ -16,6 +16,7 @@ keystore/release.jks
 .idea/
 .DS_Store
 build/
+/build*
 captures/
 .externalNativeBuild/
 .cxx/
