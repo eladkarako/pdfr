@@ -36,6 +36,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 | `ImageMetadataInstrumentedTest.kt` | Reads and writes JPEG/PNG/WebP metadata through the real Android `ExifInterface`, checks XMP/IPTC/ICC fallbacks and sidecar behaviour, and verifies that unsupported formats stay read-only.                                                                                                                |
 | `DocumentStoreInstrumentedTest.kt` | Imports a document through `ContentResolver`, checks the cache layout, safe names and timestamps, stale-document cleanup, empty-file rejection, derived rewrite files, share copies and discard (including the metadata sidecar).                                                                           |
 | `AppSettingsInstrumentedTest.kt`   | Stores and repairs the theme and language preferences, and checks that the locale-wrapped context selects the real Hebrew resources with an RTL layout direction (and English with LTR).                                                                                                                    |
+| `LanguageResourcesInstrumentedTest.kt` | Walks the whole language catalog: every tag round-trips through preferences, wraps its canonical locale, and selects its own resources; checks the Japanese, Chinese, Korean, Hindi, Portuguese, French, Spanish and British English captions and the LTR/RTL layout of each family.                    |
 | `AccessibilityInstrumentedTest.kt` | Reads the real accessibility tree: every toolbar button has a label and a 48dp target, the fixed left-to-right order holds in Hebrew, only the document actions are disabled with no file, and Tab reaches the overflow menu and opens it with the D-pad select key.                                        |
 | `TvSupportInstrumentedTest.kt`     | Checks the leanback launcher entry, the 320x180 banner, `supportsRtl`, and that the phone launcher entry still exists, so one APK serves phones and TV.                                                                                                                                                     |
 
@@ -85,6 +86,10 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
   KEYCODE_DPAD_CENTER opening it.
 - Hebrew UI: the toolbar keeps its left-to-right order while its labels come
   from `values-iw`, and the overflow menu shows the translated entry.
+- Every offered language: the stored tag is canonical, the wrapped context
+  selects that locale, the close/share captions come from the right folder, the
+  regional overlays win over their base language, and Hebrew and Arabic are RTL
+  while Japanese, Chinese, Korean and Hindi stay LTR.
 - TV: `LEANBACK_LAUNCHER` resolves to `MainActivity`, the phone launcher entry
   remains, the banner is exactly 320x180, and `android:supportsRtl` stays on.
 
