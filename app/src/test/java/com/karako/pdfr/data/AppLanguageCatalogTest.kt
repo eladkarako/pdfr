@@ -69,10 +69,10 @@ class AppLanguageCatalogTest {
     }
 
     @Test
-    fun resourceCodesMatchTheAndroidFolderNames() {
+    fun resourceCodesMatchTheStoredTagsExceptForHebrew() {
         offered.forEach { language ->
             val expected = if (language.tag == "he") "iw" else language.tag
-            assertEquals("folder for ${language.tag}", expected, language.code)
+            assertEquals("code for ${language.tag}", expected, language.code)
         }
     }
 

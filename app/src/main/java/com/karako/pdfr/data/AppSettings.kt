@@ -31,12 +31,12 @@ enum class ThemeMode {
  * One language offered by the settings dialog.
  *
  * [tag] is the value stored in preferences and passed to [Locale.forLanguageTag];
- * an empty string means "follow the system". [code] is the short resource
- * qualifier shown in the picker. Hebrew deliberately displays `iw`, because
- * that is the folder Android resolves (the modern `he` tag is still what gets
- * stored). [englishName] lets a speaker of any language recognise the row, and
- * [endonym] is the language's own name. [labelRes] replaces the three columns
- * for the system-default row, whose label is translated.
+ * an empty string means "follow the system". [code] is the short code shown in
+ * the picker; it usually matches [tag], except Hebrew, which displays `iw`
+ * because that is the folder Android resolves (the modern `he` tag is still
+ * what gets stored). [englishName] lets a speaker of any language recognise the
+ * row, and [endonym] is the language's own name. [labelRes] replaces the three
+ * columns for the system-default row, whose label is translated.
  */
 data class AppLanguage(
     val tag: String,
