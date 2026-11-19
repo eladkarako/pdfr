@@ -655,8 +655,8 @@ tools\manual-testing.bat
 ```
 
 The menu covers pushing fixtures, opening each format, zoom probes, selection,
-the overflow mirror, promo capture, settings, Hebrew, the TV banner
-and the cache/log helpers. Choose a number and follow the prompt.
+the overflow mirror, promo capture, settings, every offered language, the TV
+banner and the cache/log helpers. Choose a number and follow the prompt.
 
 Result: the chosen scenario runs on the connected device. The checklist below is
 the same route, in order, for a full manual pass:
@@ -776,7 +776,8 @@ the same route, in order, for a full manual pass:
     **System default** clears the override. `reader-actions.ps1 -Action language
     -Language ja` (any tag from the list, plus `system`) drives the combo from
     the current UI language; `-Action language-hebrew` and `-Action
-    language-system` remain shortcuts.
+    language-system` remain shortcuts, and `manual-testing.bat` option 19
+    prompts for any tag.
 27. **Keyboard and mouse** - with a hardware keyboard, Tab moves through the
     toolbar in Share, Info, Open, Save, Menu order in every language (the
     toolbar does not mirror), and then into the reader and dialogs; Shift+Tab

@@ -27,11 +27,13 @@ echo  15. Open Settings (theme + language)
 echo  16. Switch the UI to Hebrew (RTL)
 echo  17. Return the UI to the system language
 echo  18. Regenerate the Android TV banner
+echo  19. Switch the UI to another language (enter a tag)
 echo   0. Exit
 echo.
 set "ACTION="
 set /p "ACTION=Choose an action: "
 
+if "%ACTION%"=="19" goto language-other
 if "%ACTION%"=="18" goto banner
 if "%ACTION%"=="17" goto language-system
 if "%ACTION%"=="16" goto language-hebrew
@@ -152,6 +154,15 @@ goto pause
 
 :language-system
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language-system
+goto pause
+
+:language-other
+echo Tags: system, en, en-GB, he, ar, fr, fr-CA, de, es, es-419,
+echo       pt, pt-BR, ru, ja, zh-CN, zh-TW, ko, hi
+set "LANGTAG="
+set /p "LANGTAG=Language tag: "
+if not defined LANGTAG goto menu
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language -Language "%LANGTAG%"
 goto pause
 
 :banner

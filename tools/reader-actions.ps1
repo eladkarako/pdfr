@@ -237,27 +237,28 @@ $script:SettingsPattern = '^(Settings…|הגדרות…|Paramètres…|Einstell
 $script:LanguageTriggerPattern = '(English|Hebrew|Arabic|French|German|Spanish|Portuguese|Russian|Japanese|Chinese|Korean|Hindi|עברית|العربية|Français|Deutsch|Español|Português|Русский|日本語|简体中文|繁體中文|한국어|हिन्दी|System default|Langue du système|Systemstandard|Predeterminado del sistema|Predefinido do sistema|Padrão do sistema|Системный язык|システムの既定|系统默认|系統預設|시스템 기본값|सिस्टम डिफ़ॉल्ट|ברירת המחדל של המערכת|الافتراضي للنظام)'
 
 # Full-row patterns for the three-column captions (English name, code, native
-# name). Anchoring both ends keeps "English" from also matching "English (UK)".
+# name). Anchoring both ends keeps "English" from also matching "English (UK)";
+# (?s) and .* cope with whichever separator the merged accessibility text uses.
 function Get-LanguageRowPattern([string]$Tag) {
     switch ($Tag) {
-        'system' { return '^(System default|Langue du système|Systemstandard|Predeterminado del sistema|Predefinido do sistema|Padrão do sistema|Системный язык|システムの既定|系统默认|系統預設|시스템 기본값|सिस्टम डिफ़ॉल्ट|ברירת המחדל של המערכת|الافتراضي للنظام)$' }
-        'en'     { return '^English.*\ben\b.*English$' }
-        'en-GB'  { return '^English \(UK\).*\ben-GB\b.*English \(UK\)$' }
-        'he'     { return '^Hebrew.*\biw\b.*עברית$' }
-        'ar'     { return '^Arabic.*\bar\b.*العربية$' }
-        'fr'     { return '^French.*\bfr\b.*Français$' }
-        'fr-CA'  { return '^French \(Canada\).*\bfr-CA\b.*Français \(Canada\)$' }
-        'de'     { return '^German.*\bde\b.*Deutsch$' }
-        'es'     { return '^Spanish.*\bes\b.*Español$' }
-        'es-419' { return '^Spanish \(LatAm\).*\bes-419\b.*Español \(LatAm\)$' }
-        'pt'     { return '^Portuguese \(PT\).*\bpt\b.*Português \(PT\)$' }
-        'pt-BR'  { return '^Portuguese \(BR\).*\bpt-BR\b.*Português \(BR\)$' }
-        'ru'     { return '^Russian.*\bru\b.*Русский$' }
-        'ja'     { return '^Japanese.*\bja\b.*日本語$' }
-        'zh-CN'  { return '^Chinese \(Simp\.\).*\bzh-CN\b.*简体中文$' }
-        'zh-TW'  { return '^Chinese \(Trad\.\).*\bzh-TW\b.*繁體中文$' }
-        'ko'     { return '^Korean.*\bko\b.*한국어$' }
-        'hi'     { return '^Hindi.*\bhi\b.*हिन्दी$' }
+        'system' { return '(?s)^\s*(System default|Langue du système|Systemstandard|Predeterminado del sistema|Predefinido do sistema|Padrão do sistema|Системный язык|システムの既定|系统默认|系統預設|시스템 기본값|सिस्टम डिफ़ॉल्ट|ברירת המחדל של המערכת|الافتراضي للنظام)\s*$' }
+        'en'     { return '(?s)^English.*en.*English$' }
+        'en-GB'  { return '(?s)^English \(UK\).*en-GB.*English \(UK\)$' }
+        'he'     { return '(?s)^Hebrew.*iw.*עברית$' }
+        'ar'     { return '(?s)^Arabic.*ar.*العربية$' }
+        'fr'     { return '(?s)^French.*fr.*Français$' }
+        'fr-CA'  { return '(?s)^French \(Canada\).*fr-CA.*Français \(Canada\)$' }
+        'de'     { return '(?s)^German.*de.*Deutsch$' }
+        'es'     { return '(?s)^Spanish.*es.*Español$' }
+        'es-419' { return '(?s)^Spanish \(LatAm\).*es-419.*Español \(LatAm\)$' }
+        'pt'     { return '(?s)^Portuguese \(PT\).*pt.*Português \(PT\)$' }
+        'pt-BR'  { return '(?s)^Portuguese \(BR\).*pt-BR.*Português \(BR\)$' }
+        'ru'     { return '(?s)^Russian.*ru.*Русский$' }
+        'ja'     { return '(?s)^Japanese.*ja.*日本語$' }
+        'zh-CN'  { return '(?s)^Chinese \(Simp\.\).*zh-CN.*简体中文$' }
+        'zh-TW'  { return '(?s)^Chinese \(Trad\.\).*zh-TW.*繁體中文$' }
+        'ko'     { return '(?s)^Korean.*ko.*한국어$' }
+        'hi'     { return '(?s)^Hindi.*hi.*हिन्दी$' }
         default  { throw "Unknown language tag '$Tag'." }
     }
 }
