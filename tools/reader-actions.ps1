@@ -38,13 +38,18 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language-hebrew -Prefix hebrew
 
+.EXAMPLE
+  powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language -Language ja
+
 .NOTES
   Run tools\open-fixture.bat first so a document is open. The long-press point
   should be over readable text; the default (centre of the screen) is fine for
   the first page of sample.pdf. The text-size and toggle actions need a
-  reflowable document (for example notes.txt or book.epub). The theme and
-  language actions match both the English and Hebrew labels, so they also work
-  after the UI has been switched to Hebrew.
+  reflowable document (for example notes.txt or book.epub). The theme actions
+  match both the English and Hebrew labels. The language actions work from any
+  UI language: they find the combo box by its current caption, open it and tap
+  the row by its native name, so the three-column combo does not have to be
+  translated for this script.
 #>
 [CmdletBinding()]
 param(
@@ -69,6 +74,7 @@ param(
         'theme-light',
         'theme-dark',
         'theme-amoled',
+        'language',
         'language-hebrew',
         'language-system',
         'scroll',
@@ -95,6 +101,13 @@ param(
     [ValidateSet('up', 'down')]
     [string]$ScrollDirection = 'up',
     [double]$ScrollDistance = 0.45,
+
+    # Tag for -Action language. Empty (or "system") clears the override.
+    [ValidateSet(
+        'system', 'en', 'en-GB', 'he', 'ar', 'fr', 'fr-CA', 'de', 'es', 'es-419',
+        'pt', 'pt-BR', 'ru', 'ja', 'zh-CN', 'zh-TW', 'ko', 'hi'
+    )]
+    [string]$Language = 'system',
 
     [string]$OutDir,
     [string]$Prefix = 'actions'
@@ -216,6 +229,48 @@ function Open-OverflowMenu {
     Start-Sleep -Milliseconds $script:WaitMs
 }
 
+# The overflow entry that opens Settings, in every UI language this build ships.
+$script:SettingsPattern = '^(Settings…|הגדרות…|Paramètres…|Einstellungen…|Ajustes…|Configuración…|Definições…|Configurações…|Настройки…|設定…|设置…|설정…|सेटिंग्स…|الإعدادات…)$'
+
+# The combo trigger shows the current language caption. The dropdown is closed
+# when this is used, so the only matching node is the trigger itself.
+$script:LanguageTriggerPattern = '(English|Hebrew|Arabic|French|German|Spanish|Portuguese|Russian|Japanese|Chinese|Korean|Hindi|עברית|العربية|Français|Deutsch|Español|Português|Русский|日本語|简体中文|繁體中文|한국어|हिन्दी|System default|Langue du système|Systemstandard|Predeterminado del sistema|Predefinido do sistema|Padrão do sistema|Системный язык|システムの既定|系统默认|系統預設|시스템 기본값|सिस्टम डिफ़ॉल्ट|ברירת המחדל של המערכת|الافتراضي للنظام)'
+
+# Full-row patterns for the three-column captions (English name, code, native
+# name). Anchoring both ends keeps "English" from also matching "English (UK)".
+function Get-LanguageRowPattern([string]$Tag) {
+    switch ($Tag) {
+        'system' { return '^(System default|Langue du système|Systemstandard|Predeterminado del sistema|Predefinido do sistema|Padrão do sistema|Системный язык|システムの既定|系统默认|系統預設|시스템 기본값|सिस्टम डिफ़ॉल्ट|ברירת המחדל של המערכת|الافتراضي للنظام)$' }
+        'en'     { return '^English.*\ben\b.*English$' }
+        'en-GB'  { return '^English \(UK\).*\ben-GB\b.*English \(UK\)$' }
+        'he'     { return '^Hebrew.*\biw\b.*עברית$' }
+        'ar'     { return '^Arabic.*\bar\b.*العربية$' }
+        'fr'     { return '^French.*\bfr\b.*Français$' }
+        'fr-CA'  { return '^French \(Canada\).*\bfr-CA\b.*Français \(Canada\)$' }
+        'de'     { return '^German.*\bde\b.*Deutsch$' }
+        'es'     { return '^Spanish.*\bes\b.*Español$' }
+        'es-419' { return '^Spanish \(LatAm\).*\bes-419\b.*Español \(LatAm\)$' }
+        'pt'     { return '^Portuguese \(PT\).*\bpt\b.*Português \(PT\)$' }
+        'pt-BR'  { return '^Portuguese \(BR\).*\bpt-BR\b.*Português \(BR\)$' }
+        'ru'     { return '^Russian.*\bru\b.*Русский$' }
+        'ja'     { return '^Japanese.*\bja\b.*日本語$' }
+        'zh-CN'  { return '^Chinese \(Simp\.\).*\bzh-CN\b.*简体中文$' }
+        'zh-TW'  { return '^Chinese \(Trad\.\).*\bzh-TW\b.*繁體中文$' }
+        'ko'     { return '^Korean.*\bko\b.*한국어$' }
+        'hi'     { return '^Hindi.*\bhi\b.*हिन्दी$' }
+        default  { throw "Unknown language tag '$Tag'." }
+    }
+}
+
+function Select-Language([string]$Tag) {
+    Open-OverflowMenu
+    Tap-Node $script:SettingsPattern
+    Tap-Node $script:LanguageTriggerPattern
+    Tap-Node (Get-LanguageRowPattern $Tag)
+    # The activity recreates, so wait for the new window before capturing.
+    Start-Sleep -Milliseconds 1800
+}
+
 $pointX = [int]($ScreenWidth * $X)
 $pointY = [int]($ScreenHeight * $Y)
 $menuX = [int]($ScreenWidth * $MenuX)
@@ -332,52 +387,50 @@ switch ($Action) {
     'settings' {
         Write-Host "[PDFr] Opening Settings from the overflow menu..."
         Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node $script:SettingsPattern
         Save-Shot 'settings'
     }
     'theme-system' {
         Write-Host "[PDFr] Choosing the system theme..."
         Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node $script:SettingsPattern
         Tap-Node '^(Same as system|לפי המערכת)$'
         Save-Shot 'theme-system'
     }
     'theme-light' {
         Write-Host "[PDFr] Choosing the light theme..."
         Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node $script:SettingsPattern
         Tap-Node '^(Light|בהיר)$'
         Save-Shot 'theme-light'
     }
     'theme-dark' {
         Write-Host "[PDFr] Choosing the dark theme..."
         Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node $script:SettingsPattern
         Tap-Node '^(Dark|כהה)$'
         Save-Shot 'theme-dark'
     }
     'theme-amoled' {
         Write-Host "[PDFr] Choosing the AMOLED black theme..."
         Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
+        Tap-Node $script:SettingsPattern
         Tap-Node '^(AMOLED black|שחור AMOLED)$'
         Save-Shot 'theme-amoled'
     }
+    'language' {
+        Write-Host "[PDFr] Switching the UI to $Language..."
+        Select-Language $Language
+        Save-Shot "language-$Language"
+    }
     'language-hebrew' {
         Write-Host "[PDFr] Switching the UI to Hebrew..."
-        Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
-        Tap-Node '^עברית$'
-        # The activity recreates, so wait for the new window before capturing.
-        Start-Sleep -Milliseconds 1800
+        Select-Language 'he'
         Save-Shot 'language-hebrew'
     }
     'language-system' {
         Write-Host "[PDFr] Returning the UI to the system language..."
-        Open-OverflowMenu
-        Tap-Node '^(Settings…|הגדרות…)$'
-        Tap-Node '^(System default|ברירת המחדל של המערכת)$'
-        Start-Sleep -Milliseconds 1800
+        Select-Language 'system'
         Save-Shot 'language-system'
     }
     'scroll' {

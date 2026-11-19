@@ -327,7 +327,7 @@ Actions, grouped by what they exercise:
 | Page menu and selection | `long-press`, `tap`, `select-all`, `copy` |
 | Overflow menu and dialogs | `menu`, `menu-mirror`, `info`, `metadata`, `metadata-apply` |
 | Text and plain-text toggles | `text-size`, `text-size-apply`, `toggle-single-page`, `toggle-line-wrap`, `toggle-align-right`, `toggle-line-numbers` |
-| Settings | `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language-hebrew`, `language-system` |
+| Settings | `settings`, `theme-system`, `theme-light`, `theme-dark`, `theme-amoled`, `language`, `language-hebrew`, `language-system` |
 | Inspection | `scroll`, `screenshot`, `list` |
 
 Useful variations:
@@ -344,12 +344,22 @@ powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu -
 
 :: List what the current screen exposes when a label cannot be found.
 powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action list
+
+:: Switch the UI to any offered language, from any current UI language.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language -Language pt-BR
+
+:: Clear the override and follow the system language again.
+powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language -Language system
 ```
 
 The menu actions find the visible **Select all**, **Copy**, **Document info**,
 **Text size** or toggle label through `uiautomator`, so they do not hard-code a
-pixel position. Theme and language actions match both the English and Hebrew
-labels. `-ScreenWidth`/`-ScreenHeight` match the coordinates to the device.
+pixel position. Theme actions match both the English and Hebrew labels. The
+`language` action reads the combo's current caption to open it and then taps the
+row by its native name, so it works after any earlier language switch; its
+`-Language` values are `system`, `en`, `en-GB`, `he`, `ar`, `fr`, `fr-CA`, `de`,
+`es`, `es-419`, `pt`, `pt-BR`, `ru`, `ja`, `zh-CN`, `zh-TW`, `ko` and `hi`.
+`-ScreenWidth`/`-ScreenHeight` match the coordinates to the device.
 
 Result: a PNG (and, for menu actions, the `window.xml` used to find the button)
 in `build\reader-actions\`. Check that:
@@ -373,7 +383,10 @@ in `build\reader-actions\`. Check that:
 - the settings dialog lists the four themes in the required order and switches
   the palette as soon as a row is tapped;
 - switching to עברית mirrors the toolbar, menu and dialogs while plain text and
-  PDF pages keep their own direction.
+  PDF pages keep their own direction;
+- the language combo aligns the English name, code and native name columns, and
+  a switch to any of the other languages reloads with translated captions
+  (Japanese and Chinese keep their own left-to-right layout).
 
 ### `zoom-probe.ps1 <action>`
 
@@ -747,14 +760,23 @@ the same route, in order, for a full manual pass:
     status/navigation bar icons stay readable in each mode. Reopen the app and
     the choice is still there. `reader-actions.ps1 -Action theme-amoled`
     captures the result.
-26. **Language** - overflow -> **Settings…** -> **Language**. Choose **עברית**:
-    the activity reloads and the whole UI, menus and dialogs are Hebrew with a
-    right-to-left layout. The toolbar keeps Share → Info → Open → Save →
-    Menu left-to-right in both languages; only the menu captions, dialogs and
-    other text mirror. Open `notes.txt`: the text still starts left-aligned
-    unless **Align right** is on. Choose **English** or **System default** to
-    switch back. `reader-actions.ps1 -Action language-hebrew` and `-Action
-    language-system` repeat both switches.
+26. **Language** - overflow -> **Settings…** -> **Language**. The language row is
+    a closed combo box: it shows the current choice, and opening it lists every
+    language in three aligned columns - English name, resource code and native
+    name - so a row can be recognised whichever UI language is active. Hebrew
+    shows the code `iw` because that is the folder Android resolves, but the
+    modern `he` tag is what gets stored. Choosing **עברית** reloads the activity
+    and the whole UI, menus and dialogs are Hebrew with a right-to-left layout;
+    the toolbar keeps Share → Info → Open → Save → Menu left-to-right, and
+    `notes.txt` still starts left-aligned unless **Align right** is on. The same
+    reload happens for **English**, **English (UK)**, **Arabic**, **French**,
+    **French (Canada)**, **German**, **Spanish**, **Spanish (LatAm)**,
+    **Portuguese (PT)**, **Portuguese (BR)**, **Russian**, **Japanese**,
+    **Chinese (Simp.)**, **Chinese (Trad.)**, **Korean** and **Hindi**.
+    **System default** clears the override. `reader-actions.ps1 -Action language
+    -Language ja` (any tag from the list, plus `system`) drives the combo from
+    the current UI language; `-Action language-hebrew` and `-Action
+    language-system` remain shortcuts.
 27. **Keyboard and mouse** - with a hardware keyboard, Tab moves through the
     toolbar in Share, Info, Open, Save, Menu order in every language (the
     toolbar does not mirror), and then into the reader and dialogs; Shift+Tab
