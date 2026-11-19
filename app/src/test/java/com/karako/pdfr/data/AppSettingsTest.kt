@@ -29,7 +29,10 @@ class AppSettingsTest {
         val languages = AppSettings.languages
         assertEquals(AppSettings.SYSTEM_LANGUAGE, languages.first().tag)
         assertEquals(
-            listOf("", "en", "he", "ar", "fr", "ru", "de"),
+            listOf(
+                "", "en", "en-GB", "he", "ar", "fr", "fr-CA", "de", "es", "es-419",
+                "pt", "pt-BR", "ru", "ja", "zh-CN", "zh-TW", "ko", "hi",
+            ),
             languages.map { it.tag },
         )
         assertEquals(languages.size, languages.map { it.tag }.distinct().size)
