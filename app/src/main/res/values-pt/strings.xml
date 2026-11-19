@@ -10,7 +10,7 @@
     <string name="save_failed">Não foi possível guardar a cópia.</string>
 
     <string name="empty_title">Nada aberto</string>
-    <string name="empty_body">Abra um PDF, um EPUB, um documento Markdown, uma imagem, um arquivo de banda desenhada ou um ficheiro de texto para começar a ler. O PDFr também aparece nos menus «Abrir com» e «Partilhar» de outras aplicações.</string>
+    <string name="empty_body">Abra um PDF, um EPUB, um documento Markdown, uma imagem, um ficheiro de banda desenhada ou um ficheiro de texto para começar a ler. O PDFr também aparece nos menus «Abrir com» e «Partilhar» de outras aplicações.</string>
 
     <string name="loading">A abrir…</string>
     <string name="error_title">Não foi possível abrir esse ficheiro</string>
