@@ -364,14 +364,15 @@ class TranslationResourcesTest {
     }
 
     private fun moduleRoot(): File {
-        val cwd = File(System.getProperty("user.dir") ?: ".")
-        val candidates = listOfNotNull(
-            cwd,
-            File(cwd, "app"),
-            cwd.parentFile?.let { File(it, "app") },
-        )
-        return candidates.firstOrNull { File(it, "src/main/res/values/strings.xml").isFile }
-            ?: error("Could not locate app/src/main/res from $cwd")
+        var directory: File? = File(System.getProperty("user.dir") ?: ".")
+        while (directory != null) {
+            if (File(directory, "src/main/res/values/strings.xml").isFile) return directory
+            if (File(directory, "app/src/main/res/values/strings.xml").isFile) {
+                return File(directory, "app")
+            }
+            directory = directory.parentFile
+        }
+        error("Could not locate app/src/main/res from ${System.getProperty("user.dir")}")
     }
 
     private fun document(folder: String): Document {
