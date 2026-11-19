@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">दस्तावेज़ खोलें</string>
+    <string name="open_another">दस्तावेज़ खोलें</string>
+    <string name="share_document">दस्तावेज़ साझा करें</string>
+    <string name="save_as">इस रूप में सहेजें</string>
+    <string name="saved_as">%1$s में सहेजा गया।</string>
+    <string name="save_failed">प्रतिलिपि सहेजी नहीं जा सकी।</string>
+
+    <string name="empty_title">कुछ भी खुला नहीं है</string>
+    <string name="empty_body">पढ़ना शुरू करने के लिए PDF, EPUB, Markdown दस्तावेज़, चित्र, कॉमिक संग्रह या टेक्स्ट फ़ाइल खोलें। PDFr अन्य ऐप्स के “इसके साथ खोलें” और “साझा करें” मेन्यू में भी दिखता है।</string>
+
+    <string name="loading">खुल रहा है…</string>
+    <string name="error_title">वह फ़ाइल खोली नहीं जा सकी</string>
+    <string name="error_generic">इस फ़ाइल को पढ़ते समय कुछ गड़बड़ हुई।</string>
+    <string name="error_no_pages">उस दस्तावेज़ में कोई पढ़ने योग्य पृष्ठ नहीं है।</string>
+    <string name="error_file_unreadable">वह फ़ाइल पढ़ी नहीं जा सकी। इसकी कोई दूसरी प्रतिलिपि आज़माएँ।</string>
+    <string name="error_file_empty">वह फ़ाइल खाली है।</string>
+    <string name="error_location_not_writable">चुनी गई जगह में लिखा नहीं जा सकता।</string>
+    <string name="try_another">दूसरी फ़ाइल आज़माएँ</string>
+
+    <string name="document_info">दस्तावेज़ जानकारी</string>
+    <string name="file_name">फ़ाइल नाम</string>
+    <string name="file_size">फ़ाइल आकार</string>
+    <string name="document_type">प्रकार</string>
+    <string name="document_format">प्रारूप</string>
+    <string name="page_count">पृष्ठ</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d पृष्ठ</item>
+        <item quantity="other">%1$d पृष्ठ</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">पासवर्ड से सुरक्षित</string>
+    <string name="yes">हाँ</string>
+    <string name="no">नहीं</string>
+    <string name="close">बंद करें</string>
+    <string name="exit">बाहर निकलें</string>
+
+    <string name="document_metadata">दस्तावेज़ मेटाडेटा</string>
+    <string name="file_properties">फ़ाइल गुण</string>
+    <string name="metadata_title">शीर्षक</string>
+    <string name="metadata_author">लेखक</string>
+    <string name="metadata_subject">विषय</string>
+    <string name="metadata_keywords">कीवर्ड</string>
+    <string name="metadata_creator">निर्माता</string>
+    <string name="metadata_producer">उत्पादक</string>
+    <string name="metadata_created">बनाया गया</string>
+    <string name="metadata_modified">संशोधित</string>
+    <string name="metadata_make">ब्रांड</string>
+    <string name="metadata_model">मॉडल</string>
+    <string name="metadata_lens_model">लेंस मॉडल</string>
+    <string name="metadata_datetime_original">खींचने की तिथि</string>
+    <string name="metadata_datetime">संशोधन तिथि</string>
+    <string name="metadata_exposure_time">एक्सपोज़र समय</string>
+    <string name="metadata_f_number">F-संख्या</string>
+    <string name="metadata_iso">ISO संवेदनशीलता</string>
+    <string name="metadata_focal_length">फ़ोकल लंबाई</string>
+    <string name="metadata_orientation">दिशा</string>
+    <string name="metadata_image_width">चित्र चौड़ाई</string>
+    <string name="metadata_image_length">चित्र ऊँचाई</string>
+    <string name="metadata_x_resolution">X रिज़ॉल्यूशन</string>
+    <string name="metadata_y_resolution">Y रिज़ॉल्यूशन</string>
+    <string name="metadata_color_space">रंग स्थान</string>
+    <string name="metadata_software">सॉफ़्टवेयर</string>
+    <string name="metadata_gps_latitude">GPS अक्षांश</string>
+    <string name="metadata_gps_longitude">GPS देशांतर</string>
+    <string name="metadata_gps_altitude">GPS ऊँचाई</string>
+    <string name="metadata_caption">कैप्शन / सार</string>
+    <string name="metadata_copyright">कॉपीराइट सूचना</string>
+    <string name="metadata_headline">शीर्षक पंक्ति</string>
+    <string name="metadata_city">शहर</string>
+    <string name="metadata_country">देश</string>
+    <string name="metadata_rating">रेटिंग</string>
+    <string name="metadata_icc_profile">ICC प्रोफ़ाइल</string>
+    <string name="metadata_icc_profile_size">ICC प्रोफ़ाइल (%1$d बाइट)</string>
+    <string name="file_created">फ़ाइल बनाई गई</string>
+    <string name="file_modified">फ़ाइल संशोधित</string>
+    <string name="file_extension">एक्सटेंशन</string>
+    <string name="file_extension_hint">केवल अक्षर और अंक, अधिकतम 8.</string>
+    <string name="file_name_required">फ़ाइल नाम दर्ज करें।</string>
+    <string name="metadata_empty_hint">खाली वाले सहित सभी दस्तावेज़ गुण सूचीबद्ध हैं। कोई मान साफ़ करने पर, यदि प्रारूप अनुमति देता है तो वह दस्तावेज़ से हट जाता है; अन्यथा खाली मान फ़ाइल के बगल में सहेजा जाता है।</string>
+    <string name="metadata_applied">मेटाडेटा अपडेट हुआ।</string>
+    <string name="metadata_partially_applied">मेटाडेटा अपडेट हुआ। कुछ मान फ़ाइल के बगल में रखे गए हैं क्योंकि यह प्रारूप उन्हें संग्रहीत नहीं कर सकता।</string>
+    <string name="metadata_failed">मेटाडेटा अपडेट नहीं हुआ।</string>
+
+    <string name="apply">लागू करें</string>
+    <string name="ok">ठीक है</string>
+    <string name="pick_date">तिथि</string>
+    <string name="pick_time">समय</string>
+    <string name="clear_value">साफ़ करें</string>
+    <string name="time_picker_title">समय चुनें</string>
+    <string name="date_invalid">yyyy-MM-ddThh:mm:ss का उपयोग करें।</string>
+
+    <string name="text_size_menu">पाठ आकार: %1$d pt</string>
+    <string name="text_size_title">पाठ आकार</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5 से 40 pt. यह टेक्स्ट दस्तावेज़ों पर लागू होता है; PDF और चित्र अपना ज़ूम रखते हैं।</string>
+
+    <string name="single_page_on">एकल पृष्ठ: चालू</string>
+    <string name="single_page_off">एकल पृष्ठ: बंद</string>
+    <string name="line_wrap_on">पंक्ति रैप: चालू</string>
+    <string name="line_wrap_off">पंक्ति रैप: बंद</string>
+    <string name="align_right_on">दाईं ओर संरेखित: चालू</string>
+    <string name="align_right_off">दाईं ओर संरेखित: बंद</string>
+    <string name="line_numbers_on">पंक्ति संख्याएँ: चालू</string>
+    <string name="line_numbers_off">पंक्ति संख्याएँ: बंद</string>
+
+    <string name="copy">कॉपी करें</string>
+    <string name="copy_all">सभी कॉपी करें</string>
+    <string name="select_all">सभी चुनें</string>
+    <string name="copied">क्लिपबोर्ड पर कॉपी किया गया</string>
+    <string name="copied_all">सारा पाठ क्लिपबोर्ड पर कॉपी किया गया</string>
+
+    <string name="password_title">पासवर्ड आवश्यक</string>
+    <string name="password_body">“%1$s” सुरक्षित है। खोलने के लिए इसका पासवर्ड दर्ज करें।</string>
+    <string name="password_label">पासवर्ड</string>
+    <string name="password_wrong">वह पासवर्ड काम नहीं आया।</string>
+    <string name="unlock">अनलॉक करें</string>
+    <string name="cancel">रद्द करें</string>
+    <string name="enter_password">पासवर्ड दर्ज करें</string>
+    <string name="password_required_title">यह दस्तावेज़ लॉक है</string>
+    <string name="password_required_body">पढ़ने के लिए दस्तावेज़ का पासवर्ड दर्ज करें। MuPDF इसे मेमोरी में डिक्रिप्ट करता है; PDFr डिक्रिप्ट की गई प्रतिलिपि नहीं लिखता।</string>
+
+    <string name="more_options">अधिक विकल्प</string>
+    <string name="monospace_on">मोनोस्पेस: चालू</string>
+    <string name="monospace_off">मोनोस्पेस: बंद</string>
+
+    <string name="settings_open">सेटिंग्स…</string>
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="settings_theme">थीम</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_note">बदलाव तुरंत सहेजे जाते हैं। नई भाषा स्क्रीन को फिर से लोड करती है।</string>
+    <string name="theme_system">सिस्टम जैसा</string>
+    <string name="theme_light">हल्का</string>
+    <string name="theme_dark">गहरा</string>
+    <string name="theme_amoled">AMOLED काला</string>
+    <string name="language_system">सिस्टम डिफ़ॉल्ट</string>
+
+    <string name="reorder_pages">पृष्ठों को पुनः क्रमित करें…</string>
+    <string name="reorder_title">पृष्ठों को पुनः क्रमित करें</string>
+    <string name="reorder_body">रखने वाले पृष्ठों को अपनी इच्छित क्रम में सूचीबद्ध करें। छोड़े गए पृष्ठ हटा दिए जाते हैं। पृष्ठ संख्याएँ अभी खुले PDF को संदर्भित करती हैं।</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">पृष्ठों को कॉमा से अलग करें। सीमा के लिए हाइफ़न और अंतिम पृष्ठ के लिए e का उपयोग करें। रिक्त स्थान अनदेखे किए जाते हैं; क्रम और पुनरावृत्तियाँ बनी रहती हैं।</string>
+    <string name="reorder_apply">पुनः क्रमित करें</string>
+    <string name="rewrite_replace_note">नया PDF वर्तमान दस्तावेज़ को बदल देता है। मूल पर लौटने के लिए इसे फिर से खोलें।</string>
+    <string name="reorder_done">पुनः क्रमित PDF बनाया गया।</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">%1$d पृष्ठ रखा जा रहा है</item>
+        <item quantity="other">%1$d पृष्ठ रखे जा रहे हैं</item>
+    </plurals>
+
+    <string name="rotate_pages">180° घुमाएँ…</string>
+    <string name="rotate_title">180° घुमाएँ</string>
+    <string name="rotate_body">सूचीबद्ध पृष्ठों को उल्टा करें। पृष्ठ संख्याएँ अभी खुले PDF को संदर्भित करती हैं।</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">घुमाएँ</string>
+    <string name="rotate_done">घुमाया गया PDF बनाया गया।</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">%1$d पृष्ठ घुमाया जा रहा है</item>
+        <item quantity="other">%1$d पृष्ठ घुमाए जा रहे हैं</item>
+    </plurals>
+
+    <string name="page_size">पृष्ठ आकार…</string>
+    <string name="page_size_title">पृष्ठ आकार</string>
+    <string name="page_size_body">सूचीबद्ध पृष्ठों के लिए कागज़ का आकार सेट करें। PDF अपनी सामग्री वर्तमान आकार और स्थिति में रखता है; चित्र नए पृष्ठ में फ़िट होकर PDF के रूप में सहेजा जाता है।</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">कागज़</string>
+    <string name="page_size_custom">कस्टम</string>
+    <string name="page_size_width">चौड़ाई</string>
+    <string name="page_size_height">ऊँचाई</string>
+    <string name="page_size_points">%1$s x %2$s pt</string>
+    <string name="page_size_error">14400 pt (लगभग 5080 mm) तक धनात्मक आकार दर्ज करें।</string>
+    <string name="page_size_apply">आकार सेट करें</string>
+    <string name="page_size_done">नए पृष्ठ आकार वाला PDF बनाया गया।</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">%1$d पृष्ठ का आकार बदला जा रहा है</item>
+        <item quantity="other">%1$d पृष्ठों का आकार बदला जा रहा है</item>
+    </plurals>
+
+    <string name="page_error_empty">पृष्ठ संख्याएँ दर्ज करें, उदाहरण 1-3,7,9-e।</string>
+    <string name="page_error_empty_entry">अतिरिक्त कॉमा हटाएँ।</string>
+    <string name="page_error_token">“%1$s” पढ़ा नहीं जा सकता। पृष्ठ संख्याएँ, सीमाएँ और e का उपयोग करें।</string>
+    <string name="page_error_range">पृष्ठ %1$d मौजूद नहीं है। इस दस्तावेज़ में %2$d पृष्ठ हैं।</string>
+    <string name="page_error_reversed">सीमा शुरू होने से पहले समाप्त नहीं हो सकती।</string>
+    <string name="page_error_too_many">उस चयन में बहुत अधिक पृष्ठ हैं।</string>
+
+    <string name="normalize">अनुकूलित करें…</string>
+    <string name="normalize_title">PDF अनुकूलित करें</string>
+    <string name="normalize_body">चुने गए qpdf अनुकूलनों को एक ही पास में ऐसे क्रम में लागू करता है जिससे परिणाम मान्य रहता है। समायोजित प्रतिलिपि वर्तमान दस्तावेज़ को बदल देती है।</string>
+    <string name="normalize_apply">अनुकूलित करें</string>
+    <string name="normalize_done">अनुकूलित PDF बनाया गया।</string>
+    <string name="normalize_unavailable">इस बिल्ड में qpdf उपलब्ध नहीं है।</string>
+    <string name="normalize_section_streams">स्ट्रीम</string>
+    <string name="normalize_compress_streams">स्ट्रीम संपीड़ित करें</string>
+    <string name="normalize_compress_streams_desc">जो स्ट्रीम पहले से संपीड़ित नहीं हैं उन्हें संपीड़ित करें।</string>
+    <string name="normalize_decode_all">सभी स्ट्रीम डिकोड करें</string>
+    <string name="normalize_decode_all_desc">JPEG चित्रों सहित सभी समर्थित स्ट्रीम को अनकंप्रेस करें। चित्र अनुकूलन के साथ मिलाना सर्वोत्तम है।</string>
+    <string name="normalize_recompress_flate">Flate पुनः संपीड़ित करें</string>
+    <string name="normalize_recompress_flate_desc">Flate स्ट्रीम को अनकंप्रेस और पुनः संपीड़ित करें। संपीड़न स्तर बदलने से पहले आवश्यक है।</string>
+    <string name="normalize_compression_level">अधिकतम संपीड़न (स्तर 9)</string>
+    <string name="normalize_compression_level_desc">qpdf का उच्चतम Flate संपीड़न स्तर उपयोग करें।</string>
+    <string name="normalize_section_images">चित्र</string>
+    <string name="normalize_optimize_images">चित्र अनुकूलित करें</string>
+    <string name="normalize_optimize_images_desc">qpdf के कुशल संपीड़न से चित्रों को फिर से एनकोड करें। JPEG गुणवत्ता 100 से कम होने पर हानि हो सकती है।</string>
+    <string name="normalize_jpeg_quality">JPEG गुणवत्ता</string>
+    <string name="normalize_jpeg_quality_desc">0 (सबसे छोटा) से 100 (सर्वोत्तम)। केवल चित्र अनुकूलित करते समय उपयोग होता है।</string>
+    <string name="normalize_quality_error">0 से 100 के बीच गुणवत्ता दर्ज करें।</string>
+    <string name="normalize_section_structure">संरचना</string>
+    <string name="normalize_newline">endstream से पहले नई पंक्ति</string>
+    <string name="normalize_newline_desc">प्रत्येक endstream से पहले नई पंक्ति जोड़ें। qpdf को PDF/A सुरक्षित रखने में मदद करता है।</string>
+    <string name="normalize_remove_resources">असंदर्भित संसाधन हटाएँ</string>
+    <string name="normalize_remove_resources_desc">पृष्ठ के उन संसाधनों को छोड़ें जिनका पृष्ठ पर कोई सामग्री उपयोग नहीं करती।</string>
+    <string name="normalize_externalize_images">इनलाइन चित्रों को बाहरी बनाएँ</string>
+    <string name="normalize_externalize_images_desc">सामग्री स्ट्रीम में एम्बेडेड चित्रों को सामान्य चित्र ऑब्जेक्ट में ले जाएँ।</string>
+    <string name="normalize_section_output">आउटपुट</string>
+    <string name="normalize_linearize">रैखिक बनाएँ</string>
+    <string name="normalize_linearize_desc">ऐसा वेब-अनुकूलित PDF लिखें जो बाकी पढ़े जाने से पहले पहला पृष्ठ दिखा सके।</string>
+    <string name="normalize_pdfa">PDF/A-2b (भरसक प्रयास)</string>
+    <string name="normalize_pdfa_desc">PDF/A-2b पहचान और sRGB आउटपुट इरादा जोड़ता है। फ़ॉन्ट और सामग्री परिवर्तित नहीं होते; संग्रह करने से पहले परिणाम जाँचें।</string>
+
+    <string name="fix_pdf">PDF ठीक करें</string>
+    <string name="fix_pdf_done">ठीक किया गया PDF बनाया गया।</string>
+    <string name="fix_pdf_unavailable">इस बिल्ड में qpdf उपलब्ध नहीं है।</string>
+    <string name="fix_pdf_only_pdf">केवल PDF फ़ाइलें ठीक की जा सकती हैं।</string>
+
+    <string name="no_text_to_copy">कॉपी करने के लिए कोई पाठ नहीं है।</string>
+
+    <string name="rewrite_failed">नया PDF नहीं बनाया जा सका।</string>
+    <string name="working">काम हो रहा है…</string>
+    <string name="working_body">दस्तावेज़ पर काम हो रहा है…</string>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- British English only overrides the spellings that differ from the base
+     English resources; everything else falls back to values/strings.xml. -->
+<resources>
+    <string name="normalize">Normalise…</string>
+    <string name="normalize_title">Normalise PDF</string>
+    <string name="normalize_apply">Normalise</string>
+    <string name="normalize_done">Created the normalised PDF.</string>
+    <string name="normalize_linearize">Linearise</string>
+</resources>

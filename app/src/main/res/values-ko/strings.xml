@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">문서 열기</string>
+    <string name="open_another">문서 열기</string>
+    <string name="share_document">문서 공유</string>
+    <string name="save_as">다른 이름으로 저장</string>
+    <string name="saved_as">%1$s에 저장했습니다.</string>
+    <string name="save_failed">복사본을 저장하지 못했습니다.</string>
+
+    <string name="empty_title">열린 항목 없음</string>
+    <string name="empty_body">PDF, EPUB, Markdown 문서, 이미지, 만화 압축 파일 또는 텍스트 파일을 열어 읽기를 시작하세요. PDFr은 다른 앱의 “연결 프로그램” 및 “공유” 메뉴에도 나타납니다.</string>
+
+    <string name="loading">여는 중…</string>
+    <string name="error_title">해당 파일을 열 수 없습니다</string>
+    <string name="error_generic">이 파일을 읽는 중 문제가 발생했습니다.</string>
+    <string name="error_no_pages">해당 문서에는 읽을 수 있는 페이지가 없습니다.</string>
+    <string name="error_file_unreadable">해당 파일을 읽을 수 없습니다. 다른 복사본을 사용해 보세요.</string>
+    <string name="error_file_empty">해당 파일이 비어 있습니다.</string>
+    <string name="error_location_not_writable">선택한 위치에 쓸 수 없습니다.</string>
+    <string name="try_another">다른 파일 시도</string>
+
+    <string name="document_info">문서 정보</string>
+    <string name="file_name">파일 이름</string>
+    <string name="file_size">파일 크기</string>
+    <string name="document_type">유형</string>
+    <string name="document_format">형식</string>
+    <string name="page_count">페이지</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d페이지</item>
+        <item quantity="other">%1$d페이지</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">비밀번호로 보호됨</string>
+    <string name="yes">예</string>
+    <string name="no">아니요</string>
+    <string name="close">닫기</string>
+    <string name="exit">종료</string>
+
+    <string name="document_metadata">문서 메타데이터</string>
+    <string name="file_properties">파일 속성</string>
+    <string name="metadata_title">제목</string>
+    <string name="metadata_author">작성자</string>
+    <string name="metadata_subject">주제</string>
+    <string name="metadata_keywords">키워드</string>
+    <string name="metadata_creator">만든 앱</string>
+    <string name="metadata_producer">생성 앱</string>
+    <string name="metadata_created">만든 날짜</string>
+    <string name="metadata_modified">수정한 날짜</string>
+    <string name="metadata_make">제조사</string>
+    <string name="metadata_model">모델</string>
+    <string name="metadata_lens_model">렌즈 모델</string>
+    <string name="metadata_datetime_original">촬영 날짜</string>
+    <string name="metadata_datetime">수정한 날짜</string>
+    <string name="metadata_exposure_time">노출 시간</string>
+    <string name="metadata_f_number">F 값</string>
+    <string name="metadata_iso">ISO 감도</string>
+    <string name="metadata_focal_length">초점 거리</string>
+    <string name="metadata_orientation">방향</string>
+    <string name="metadata_image_width">이미지 너비</string>
+    <string name="metadata_image_length">이미지 높이</string>
+    <string name="metadata_x_resolution">X 해상도</string>
+    <string name="metadata_y_resolution">Y 해상도</string>
+    <string name="metadata_color_space">색 공간</string>
+    <string name="metadata_software">소프트웨어</string>
+    <string name="metadata_gps_latitude">GPS 위도</string>
+    <string name="metadata_gps_longitude">GPS 경도</string>
+    <string name="metadata_gps_altitude">GPS 고도</string>
+    <string name="metadata_caption">캡션 / 요약</string>
+    <string name="metadata_copyright">저작권 고지</string>
+    <string name="metadata_headline">헤드라인</string>
+    <string name="metadata_city">도시</string>
+    <string name="metadata_country">국가</string>
+    <string name="metadata_rating">평가</string>
+    <string name="metadata_icc_profile">ICC 프로필</string>
+    <string name="metadata_icc_profile_size">ICC 프로필(%1$d바이트)</string>
+    <string name="file_created">파일 만든 날짜</string>
+    <string name="file_modified">파일 수정한 날짜</string>
+    <string name="file_extension">확장자</string>
+    <string name="file_extension_hint">영문자와 숫자만, 최대 8자.</string>
+    <string name="file_name_required">파일 이름을 입력하세요.</string>
+    <string name="metadata_empty_hint">비어 있는 항목을 포함해 모든 문서 속성이 표시됩니다. 값을 지우면 형식이 지원하는 경우 문서에서 제거되고, 그렇지 않으면 빈 값이 파일 옆에 저장됩니다.</string>
+    <string name="metadata_applied">메타데이터를 업데이트했습니다.</string>
+    <string name="metadata_partially_applied">메타데이터를 업데이트했습니다. 일부 값은 이 형식이 저장할 수 없어 파일 옆에 보관됩니다.</string>
+    <string name="metadata_failed">메타데이터를 업데이트하지 못했습니다.</string>
+
+    <string name="apply">적용</string>
+    <string name="ok">확인</string>
+    <string name="pick_date">날짜</string>
+    <string name="pick_time">시간</string>
+    <string name="clear_value">지우기</string>
+    <string name="time_picker_title">시간 선택</string>
+    <string name="date_invalid">yyyy-MM-ddThh:mm:ss 형식을 사용하세요.</string>
+
+    <string name="text_size_menu">글자 크기: %1$d pt</string>
+    <string name="text_size_title">글자 크기</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5~40 pt. 텍스트 문서에 적용됩니다. PDF와 이미지는 자체 확대/축소를 유지합니다.</string>
+
+    <string name="single_page_on">한 페이지: 켬</string>
+    <string name="single_page_off">한 페이지: 끔</string>
+    <string name="line_wrap_on">줄 바꿈: 켬</string>
+    <string name="line_wrap_off">줄 바꿈: 끔</string>
+    <string name="align_right_on">오른쪽 정렬: 켬</string>
+    <string name="align_right_off">오른쪽 정렬: 끔</string>
+    <string name="line_numbers_on">줄 번호: 켬</string>
+    <string name="line_numbers_off">줄 번호: 끔</string>
+
+    <string name="copy">복사</string>
+    <string name="copy_all">모두 복사</string>
+    <string name="select_all">모두 선택</string>
+    <string name="copied">클립보드에 복사했습니다</string>
+    <string name="copied_all">모든 텍스트를 클립보드에 복사했습니다</string>
+
+    <string name="password_title">비밀번호 필요</string>
+    <string name="password_body">“%1$s” 파일은 보호되어 있습니다. 열려면 비밀번호를 입력하세요.</string>
+    <string name="password_label">비밀번호</string>
+    <string name="password_wrong">비밀번호가 올바르지 않습니다.</string>
+    <string name="unlock">잠금 해제</string>
+    <string name="cancel">취소</string>
+    <string name="enter_password">비밀번호 입력</string>
+    <string name="password_required_title">이 문서는 잠겨 있습니다</string>
+    <string name="password_required_body">읽으려면 문서 비밀번호를 입력하세요. MuPDF가 메모리에서 복호화하며 PDFr은 복호화된 복사본을 저장하지 않습니다.</string>
+
+    <string name="more_options">추가 옵션</string>
+    <string name="monospace_on">고정폭 글꼴: 켬</string>
+    <string name="monospace_off">고정폭 글꼴: 끔</string>
+
+    <string name="settings_open">설정…</string>
+    <string name="settings_title">설정</string>
+    <string name="settings_theme">테마</string>
+    <string name="settings_language">언어</string>
+    <string name="settings_note">변경 사항은 즉시 저장됩니다. 언어를 변경하면 화면이 다시 로드됩니다.</string>
+    <string name="theme_system">시스템과 동일</string>
+    <string name="theme_light">밝게</string>
+    <string name="theme_dark">어둡게</string>
+    <string name="theme_amoled">AMOLED 검정</string>
+    <string name="language_system">시스템 기본값</string>
+
+    <string name="reorder_pages">페이지 순서 변경…</string>
+    <string name="reorder_title">페이지 순서 변경</string>
+    <string name="reorder_body">유지할 페이지를 원하는 순서대로 나열하세요. 나열하지 않은 페이지는 삭제됩니다. 페이지 번호는 현재 열린 PDF를 기준으로 합니다.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">페이지는 쉼표로 구분합니다. 범위에는 하이픈을, 마지막 페이지에는 e를 사용합니다. 공백은 무시되며 순서와 중복은 유지됩니다.</string>
+    <string name="reorder_apply">순서 변경</string>
+    <string name="rewrite_replace_note">새 PDF가 현재 문서를 대체합니다. 원본으로 돌아가려면 다시 여세요.</string>
+    <string name="reorder_done">순서를 변경한 PDF를 만들었습니다.</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">%1$d페이지 유지 중</item>
+        <item quantity="other">%1$d페이지 유지 중</item>
+    </plurals>
+
+    <string name="rotate_pages">180° 회전…</string>
+    <string name="rotate_title">180° 회전</string>
+    <string name="rotate_body">나열한 페이지를 거꾸로 뒤집습니다. 페이지 번호는 현재 열린 PDF를 기준으로 합니다.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">회전</string>
+    <string name="rotate_done">회전한 PDF를 만들었습니다.</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">%1$d페이지 회전 중</item>
+        <item quantity="other">%1$d페이지 회전 중</item>
+    </plurals>
+
+    <string name="page_size">페이지 크기…</string>
+    <string name="page_size_title">페이지 크기</string>
+    <string name="page_size_body">나열한 페이지의 용지 크기를 설정합니다. PDF는 내용을 현재 크기와 위치에 유지하고, 이미지는 새 페이지에 맞춰 PDF로 저장됩니다.</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">용지</string>
+    <string name="page_size_custom">사용자 지정</string>
+    <string name="page_size_width">너비</string>
+    <string name="page_size_height">높이</string>
+    <string name="page_size_points">%1$s x %2$s pt</string>
+    <string name="page_size_error">14400 pt(약 5080 mm) 이하의 양수 크기를 입력하세요.</string>
+    <string name="page_size_apply">크기 설정</string>
+    <string name="page_size_done">새 페이지 크기로 PDF를 만들었습니다.</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">%1$d페이지 크기 조정 중</item>
+        <item quantity="other">%1$d페이지 크기 조정 중</item>
+    </plurals>
+
+    <string name="page_error_empty">페이지 번호를 입력하세요(예: 1-3,7,9-e).</string>
+    <string name="page_error_empty_entry">불필요한 쉼표를 제거하세요.</string>
+    <string name="page_error_token">“%1$s”을(를) 읽을 수 없습니다. 페이지 번호, 범위 및 e를 사용하세요.</string>
+    <string name="page_error_range">%1$d페이지가 없습니다. 이 문서는 %2$d페이지입니다.</string>
+    <string name="page_error_reversed">범위의 끝은 시작보다 앞설 수 없습니다.</string>
+    <string name="page_error_too_many">선택한 범위에 페이지가 너무 많습니다.</string>
+
+    <string name="normalize">최적화…</string>
+    <string name="normalize_title">PDF 최적화</string>
+    <string name="normalize_body">선택한 qpdf 최적화를 결과가 유효하게 유지되는 순서로 한 번에 적용합니다. 조정된 복사본이 현재 문서를 대체합니다.</string>
+    <string name="normalize_apply">최적화</string>
+    <string name="normalize_done">최적화한 PDF를 만들었습니다.</string>
+    <string name="normalize_unavailable">이 빌드에서는 qpdf를 사용할 수 없습니다.</string>
+    <string name="normalize_section_streams">스트림</string>
+    <string name="normalize_compress_streams">스트림 압축</string>
+    <string name="normalize_compress_streams_desc">아직 압축되지 않은 스트림을 압축합니다.</string>
+    <string name="normalize_decode_all">모든 스트림 디코딩</string>
+    <string name="normalize_decode_all_desc">JPEG 이미지를 포함해 지원되는 모든 스트림의 압축을 풉니다. 이미지 최적화와 함께 사용하는 것이 좋습니다.</string>
+    <string name="normalize_recompress_flate">Flate 재압축</string>
+    <string name="normalize_recompress_flate_desc">Flate 스트림의 압축을 풀고 다시 압축합니다. 압축 수준을 변경하기 전에 필요합니다.</string>
+    <string name="normalize_compression_level">최대 압축(수준 9)</string>
+    <string name="normalize_compression_level_desc">qpdf의 가장 높은 Flate 압축 수준을 사용합니다.</string>
+    <string name="normalize_section_images">이미지</string>
+    <string name="normalize_optimize_images">이미지 최적화</string>
+    <string name="normalize_optimize_images_desc">qpdf의 효율적인 압축으로 이미지를 다시 인코딩합니다. JPEG 품질이 100 미만이면 손실이 발생할 수 있습니다.</string>
+    <string name="normalize_jpeg_quality">JPEG 품질</string>
+    <string name="normalize_jpeg_quality_desc">0(최소)~100(최고). 이미지를 최적화할 때만 사용됩니다.</string>
+    <string name="normalize_quality_error">0~100 사이의 품질을 입력하세요.</string>
+    <string name="normalize_section_structure">구조</string>
+    <string name="normalize_newline">endstream 앞에 줄 바꿈</string>
+    <string name="normalize_newline_desc">각 endstream 앞에 줄 바꿈을 추가합니다. qpdf가 PDF/A를 유지하는 데 도움이 됩니다.</string>
+    <string name="normalize_remove_resources">참조되지 않은 리소스 제거</string>
+    <string name="normalize_remove_resources_desc">페이지의 어떤 콘텐츠도 사용하지 않는 페이지 리소스를 삭제합니다.</string>
+    <string name="normalize_externalize_images">인라인 이미지 외부화</string>
+    <string name="normalize_externalize_images_desc">콘텐츠 스트림에 포함된 이미지를 일반 이미지 객체로 옮깁니다.</string>
+    <string name="normalize_section_output">출력</string>
+    <string name="normalize_linearize">선형화</string>
+    <string name="normalize_linearize_desc">나머지를 읽기 전에 첫 페이지를 표시할 수 있는 웹 최적화 PDF를 작성합니다.</string>
+    <string name="normalize_pdfa">PDF/A-2b(최선 노력)</string>
+    <string name="normalize_pdfa_desc">PDF/A-2b 식별 정보와 sRGB 출력 의도를 추가합니다. 글꼴과 콘텐츠는 변환되지 않으므로 보관하기 전에 결과를 확인하세요.</string>
+
+    <string name="fix_pdf">PDF 복구</string>
+    <string name="fix_pdf_done">복구한 PDF를 만들었습니다.</string>
+    <string name="fix_pdf_unavailable">이 빌드에서는 qpdf를 사용할 수 없습니다.</string>
+    <string name="fix_pdf_only_pdf">PDF 파일만 복구할 수 있습니다.</string>
+
+    <string name="no_text_to_copy">복사할 텍스트가 없습니다.</string>
+
+    <string name="rewrite_failed">새 PDF를 만들지 못했습니다.</string>
+    <string name="working">처리 중…</string>
+    <string name="working_body">문서를 처리하는 중…</string>
+</resources>

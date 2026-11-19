@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">ドキュメントを開く</string>
+    <string name="open_another">ドキュメントを開く</string>
+    <string name="share_document">ドキュメントを共有</string>
+    <string name="save_as">名前を付けて保存</string>
+    <string name="saved_as">%1$s に保存しました。</string>
+    <string name="save_failed">コピーを保存できませんでした。</string>
+
+    <string name="empty_title">何も開かれていません</string>
+    <string name="empty_body">PDF、EPUB、Markdown ドキュメント、画像、コミックアーカイブ、テキストファイルを開いて読書を始めましょう。PDFr は他のアプリの「アプリで開く」や「共有」メニューにも表示されます。</string>
+
+    <string name="loading">開いています…</string>
+    <string name="error_title">そのファイルを開けませんでした</string>
+    <string name="error_generic">このファイルの読み込み中に問題が発生しました。</string>
+    <string name="error_no_pages">そのドキュメントには読めるページがありません。</string>
+    <string name="error_file_unreadable">そのファイルを読み込めませんでした。別のコピーをお試しください。</string>
+    <string name="error_file_empty">そのファイルは空です。</string>
+    <string name="error_location_not_writable">選択した場所には書き込めません。</string>
+    <string name="try_another">別のファイルを試す</string>
+
+    <string name="document_info">ドキュメント情報</string>
+    <string name="file_name">ファイル名</string>
+    <string name="file_size">ファイルサイズ</string>
+    <string name="document_type">種類</string>
+    <string name="document_format">形式</string>
+    <string name="page_count">ページ</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d ページ</item>
+        <item quantity="other">%1$d ページ</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">パスワードで保護</string>
+    <string name="yes">はい</string>
+    <string name="no">いいえ</string>
+    <string name="close">閉じる</string>
+    <string name="exit">終了</string>
+
+    <string name="document_metadata">ドキュメントのメタデータ</string>
+    <string name="file_properties">ファイルのプロパティ</string>
+    <string name="metadata_title">タイトル</string>
+    <string name="metadata_author">作成者</string>
+    <string name="metadata_subject">件名</string>
+    <string name="metadata_keywords">キーワード</string>
+    <string name="metadata_creator">作成アプリ</string>
+    <string name="metadata_producer">生成アプリ</string>
+    <string name="metadata_created">作成日時</string>
+    <string name="metadata_modified">更新日時</string>
+    <string name="metadata_make">メーカー</string>
+    <string name="metadata_model">モデル</string>
+    <string name="metadata_lens_model">レンズモデル</string>
+    <string name="metadata_datetime_original">撮影日時</string>
+    <string name="metadata_datetime">更新日時</string>
+    <string name="metadata_exposure_time">露出時間</string>
+    <string name="metadata_f_number">F値</string>
+    <string name="metadata_iso">ISO感度</string>
+    <string name="metadata_focal_length">焦点距離</string>
+    <string name="metadata_orientation">向き</string>
+    <string name="metadata_image_width">画像の幅</string>
+    <string name="metadata_image_length">画像の高さ</string>
+    <string name="metadata_x_resolution">X解像度</string>
+    <string name="metadata_y_resolution">Y解像度</string>
+    <string name="metadata_color_space">色空間</string>
+    <string name="metadata_software">ソフトウェア</string>
+    <string name="metadata_gps_latitude">GPS緯度</string>
+    <string name="metadata_gps_longitude">GPS経度</string>
+    <string name="metadata_gps_altitude">GPS高度</string>
+    <string name="metadata_caption">キャプション / 概要</string>
+    <string name="metadata_copyright">著作権表示</string>
+    <string name="metadata_headline">見出し</string>
+    <string name="metadata_city">都市</string>
+    <string name="metadata_country">国</string>
+    <string name="metadata_rating">評価</string>
+    <string name="metadata_icc_profile">ICCプロファイル</string>
+    <string name="metadata_icc_profile_size">ICCプロファイル (%1$d バイト)</string>
+    <string name="file_created">ファイル作成日時</string>
+    <string name="file_modified">ファイル更新日時</string>
+    <string name="file_extension">拡張子</string>
+    <string name="file_extension_hint">英数字のみ、最大8文字。</string>
+    <string name="file_name_required">ファイル名を入力してください。</string>
+    <string name="metadata_empty_hint">空のものを含め、すべてのドキュメントプロパティが表示されます。値を消去すると、形式が対応していればドキュメントから削除され、対応していなければ空の値がファイルの横に保存されます。</string>
+    <string name="metadata_applied">メタデータを更新しました。</string>
+    <string name="metadata_partially_applied">メタデータを更新しました。この形式では保存できない一部の値は、ファイルの横に保存されます。</string>
+    <string name="metadata_failed">メタデータを更新できませんでした。</string>
+
+    <string name="apply">適用</string>
+    <string name="ok">OK</string>
+    <string name="pick_date">日付</string>
+    <string name="pick_time">時刻</string>
+    <string name="clear_value">消去</string>
+    <string name="time_picker_title">時刻を選択</string>
+    <string name="date_invalid">yyyy-MM-ddThh:mm:ss の形式で入力してください。</string>
+
+    <string name="text_size_menu">文字サイズ: %1$d pt</string>
+    <string name="text_size_title">文字サイズ</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5～40 pt。テキストドキュメントに適用されます。PDFと画像は独自のズームを維持します。</string>
+
+    <string name="single_page_on">1ページ表示: オン</string>
+    <string name="single_page_off">1ページ表示: オフ</string>
+    <string name="line_wrap_on">行の折り返し: オン</string>
+    <string name="line_wrap_off">行の折り返し: オフ</string>
+    <string name="align_right_on">右揃え: オン</string>
+    <string name="align_right_off">右揃え: オフ</string>
+    <string name="line_numbers_on">行番号: オン</string>
+    <string name="line_numbers_off">行番号: オフ</string>
+
+    <string name="copy">コピー</string>
+    <string name="copy_all">すべてコピー</string>
+    <string name="select_all">すべて選択</string>
+    <string name="copied">クリップボードにコピーしました</string>
+    <string name="copied_all">すべてのテキストをクリップボードにコピーしました</string>
+
+    <string name="password_title">パスワードが必要です</string>
+    <string name="password_body">「%1$s」は保護されています。開くにはパスワードを入力してください。</string>
+    <string name="password_label">パスワード</string>
+    <string name="password_wrong">パスワードが正しくありません。</string>
+    <string name="unlock">ロック解除</string>
+    <string name="cancel">キャンセル</string>
+    <string name="enter_password">パスワードを入力</string>
+    <string name="password_required_title">このドキュメントはロックされています</string>
+    <string name="password_required_body">読むにはドキュメントのパスワードを入力してください。MuPDF がメモリ内で復号します。PDFr は復号したコピーを書き込みません。</string>
+
+    <string name="more_options">その他のオプション</string>
+    <string name="monospace_on">等幅フォント: オン</string>
+    <string name="monospace_off">等幅フォント: オフ</string>
+
+    <string name="settings_open">設定…</string>
+    <string name="settings_title">設定</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_note">変更はすぐに保存されます。言語を変更すると画面が再読み込みされます。</string>
+    <string name="theme_system">システムと同じ</string>
+    <string name="theme_light">ライト</string>
+    <string name="theme_dark">ダーク</string>
+    <string name="theme_amoled">AMOLEDブラック</string>
+    <string name="language_system">システムの既定</string>
+
+    <string name="reorder_pages">ページを並べ替え…</string>
+    <string name="reorder_title">ページの並べ替え</string>
+    <string name="reorder_body">残すページを希望の順序で指定します。省略したページは削除されます。ページ番号は現在開いているPDFを基準にします。</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">ページはカンマで区切ります。範囲にはハイフン、最後のページには e を使います。空白は無視され、順序と重複は保持されます。</string>
+    <string name="reorder_apply">並べ替え</string>
+    <string name="rewrite_replace_note">新しいPDFが現在のドキュメントを置き換えます。元に戻すには、もう一度開いてください。</string>
+    <string name="reorder_done">並べ替えたPDFを作成しました。</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">%1$d ページを保持</item>
+        <item quantity="other">%1$d ページを保持</item>
+    </plurals>
+
+    <string name="rotate_pages">180°回転…</string>
+    <string name="rotate_title">180°回転</string>
+    <string name="rotate_body">指定したページを上下逆にします。ページ番号は現在開いているPDFを基準にします。</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">回転</string>
+    <string name="rotate_done">回転したPDFを作成しました。</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">%1$d ページを回転中</item>
+        <item quantity="other">%1$d ページを回転中</item>
+    </plurals>
+
+    <string name="page_size">ページサイズ…</string>
+    <string name="page_size_title">ページサイズ</string>
+    <string name="page_size_body">指定したページの用紙サイズを設定します。PDFは内容を現在のサイズと位置のまま保持し、画像は新しいページに合わせてPDFとして保存されます。</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">用紙</string>
+    <string name="page_size_custom">カスタム</string>
+    <string name="page_size_width">幅</string>
+    <string name="page_size_height">高さ</string>
+    <string name="page_size_points">%1$s x %2$s pt</string>
+    <string name="page_size_error">14400 pt（約5080 mm）までの正のサイズを入力してください。</string>
+    <string name="page_size_apply">サイズを設定</string>
+    <string name="page_size_done">新しいページサイズのPDFを作成しました。</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">%1$d ページのサイズを変更中</item>
+        <item quantity="other">%1$d ページのサイズを変更中</item>
+    </plurals>
+
+    <string name="page_error_empty">ページ番号を入力してください（例: 1-3,7,9-e）。</string>
+    <string name="page_error_empty_entry">余分なカンマを削除してください。</string>
+    <string name="page_error_token">「%1$s」を読み取れません。ページ番号、範囲、e を使用してください。</string>
+    <string name="page_error_range">ページ %1$d は存在しません。このドキュメントは %2$d ページです。</string>
+    <string name="page_error_reversed">範囲の終了は開始より前にできません。</string>
+    <string name="page_error_too_many">その選択にはページが多すぎます。</string>
+
+    <string name="normalize">最適化…</string>
+    <string name="normalize_title">PDFを最適化</string>
+    <string name="normalize_body">選択した qpdf の最適化を、結果が有効なままになる順序で1回の処理で適用します。調整後のコピーが現在のドキュメントを置き換えます。</string>
+    <string name="normalize_apply">最適化</string>
+    <string name="normalize_done">最適化したPDFを作成しました。</string>
+    <string name="normalize_unavailable">このビルドでは qpdf を利用できません。</string>
+    <string name="normalize_section_streams">ストリーム</string>
+    <string name="normalize_compress_streams">ストリームを圧縮</string>
+    <string name="normalize_compress_streams_desc">まだ圧縮されていないストリームを圧縮します。</string>
+    <string name="normalize_decode_all">すべてのストリームをデコード</string>
+    <string name="normalize_decode_all_desc">JPEG画像を含む対応ストリームをすべて展開します。画像の最適化と組み合わせるのが効果的です。</string>
+    <string name="normalize_recompress_flate">Flateを再圧縮</string>
+    <string name="normalize_recompress_flate_desc">Flateストリームを展開して再圧縮します。圧縮レベルを変更する前に必要です。</string>
+    <string name="normalize_compression_level">最大圧縮（レベル9）</string>
+    <string name="normalize_compression_level_desc">qpdf の最高Flate圧縮レベルを使用します。</string>
+    <string name="normalize_section_images">画像</string>
+    <string name="normalize_optimize_images">画像を最適化</string>
+    <string name="normalize_optimize_images_desc">qpdf の効率的な圧縮で画像を再エンコードします。JPEG品質が100未満の場合、非可逆になることがあります。</string>
+    <string name="normalize_jpeg_quality">JPEG品質</string>
+    <string name="normalize_jpeg_quality_desc">0（最小）～100（最高）。画像を最適化するときだけ使用されます。</string>
+    <string name="normalize_quality_error">0～100の品質を入力してください。</string>
+    <string name="normalize_section_structure">構造</string>
+    <string name="normalize_newline">endstream の前に改行</string>
+    <string name="normalize_newline_desc">各 endstream の前に改行を追加します。qpdf が PDF/A を保持するのに役立ちます。</string>
+    <string name="normalize_remove_resources">未参照のリソースを削除</string>
+    <string name="normalize_remove_resources_desc">ページ上のどのコンテンツも使用していないページリソースを削除します。</string>
+    <string name="normalize_externalize_images">インライン画像を外部化</string>
+    <string name="normalize_externalize_images_desc">コンテンツストリームに埋め込まれた画像を通常の画像オブジェクトに移動します。</string>
+    <string name="normalize_section_output">出力</string>
+    <string name="normalize_linearize">リニアライズ</string>
+    <string name="normalize_linearize_desc">残りを読み込む前に最初のページを表示できる、Web向けに最適化されたPDFを書き出します。</string>
+    <string name="normalize_pdfa">PDF/A-2b（ベストエフォート）</string>
+    <string name="normalize_pdfa_desc">PDF/A-2b の識別情報と sRGB 出力インテントを追加します。フォントとコンテンツは変換されません。アーカイブする前に結果を確認してください。</string>
+
+    <string name="fix_pdf">PDFを修復</string>
+    <string name="fix_pdf_done">修復したPDFを作成しました。</string>
+    <string name="fix_pdf_unavailable">このビルドでは qpdf を利用できません。</string>
+    <string name="fix_pdf_only_pdf">修復できるのはPDFファイルだけです。</string>
+
+    <string name="no_text_to_copy">コピーするテキストがありません。</string>
+
+    <string name="rewrite_failed">新しいPDFを作成できませんでした。</string>
+    <string name="working">処理中…</string>
+    <string name="working_body">ドキュメントを処理しています…</string>
+</resources>

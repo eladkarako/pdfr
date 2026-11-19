@@ -1,5 +1,6 @@
 26.11.19
 * removed **Print**. **Share** already reaches every target and **Save as** keeps a single file, so the toolbar button, overflow entry, qpdf decrypt helper, temporary conversion path and their tests, tools and docs are gone. Image conversion remains available through **Page size**.
++ added full translations for **Portuguese (Portugal)**, **Portuguese (Brazil)**, **Japanese**, **Simplified Chinese**, **Traditional Chinese**, **Korean** and **Hindi**, plus regional overlays for **British English**, **Canadian French** and **Latin American Spanish**. The settings language combo now lists every language with its English name, resource code and native name, and Hebrew still shows `iw` while storing the modern `he` tag.
 
 26.11.16
 + added a complete Hebrew translation (`values-iw`, Android's legacy qualifier for Hebrew) and removed the forced left-to-right application flag: with a right-to-left language the overflow menu, dialogs and settings mirror and their captions right-align, while the toolbar keeps its fixed **Share**, **Print**, **Info**, **Open**, **Save**, **Menu** left-to-right order. PDF pages, images and plain text keep their own direction; plain text still opens left-to-right unless **Align right** is enabled.

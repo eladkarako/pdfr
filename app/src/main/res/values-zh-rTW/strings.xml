@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">開啟文件</string>
+    <string name="open_another">開啟文件</string>
+    <string name="share_document">分享文件</string>
+    <string name="save_as">另存新檔</string>
+    <string name="saved_as">已儲存至 %1$s。</string>
+    <string name="save_failed">無法儲存副本。</string>
+
+    <string name="empty_title">尚未開啟任何內容</string>
+    <string name="empty_body">開啟 PDF、EPUB、Markdown 文件、圖片、漫畫壓縮檔或文字檔即可開始閱讀。PDFr 也會出現在其他應用程式的「開啟方式」與「分享」選單中。</string>
+
+    <string name="loading">正在開啟…</string>
+    <string name="error_title">無法開啟該檔案</string>
+    <string name="error_generic">讀取此檔案時發生問題。</string>
+    <string name="error_no_pages">該文件沒有可讀取的頁面。</string>
+    <string name="error_file_unreadable">無法讀取該檔案。請嘗試其他副本。</string>
+    <string name="error_file_empty">該檔案是空的。</string>
+    <string name="error_location_not_writable">所選位置無法寫入。</string>
+    <string name="try_another">嘗試其他檔案</string>
+
+    <string name="document_info">文件資訊</string>
+    <string name="file_name">檔案名稱</string>
+    <string name="file_size">檔案大小</string>
+    <string name="document_type">類型</string>
+    <string name="document_format">格式</string>
+    <string name="page_count">頁數</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d 頁</item>
+        <item quantity="other">%1$d 頁</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">受密碼保護</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="close">關閉</string>
+    <string name="exit">結束</string>
+
+    <string name="document_metadata">文件中繼資料</string>
+    <string name="file_properties">檔案屬性</string>
+    <string name="metadata_title">標題</string>
+    <string name="metadata_author">作者</string>
+    <string name="metadata_subject">主旨</string>
+    <string name="metadata_keywords">關鍵字</string>
+    <string name="metadata_creator">建立者</string>
+    <string name="metadata_producer">產生者</string>
+    <string name="metadata_created">建立時間</string>
+    <string name="metadata_modified">修改時間</string>
+    <string name="metadata_make">製造商</string>
+    <string name="metadata_model">型號</string>
+    <string name="metadata_lens_model">鏡頭型號</string>
+    <string name="metadata_datetime_original">拍攝時間</string>
+    <string name="metadata_datetime">修改時間</string>
+    <string name="metadata_exposure_time">曝光時間</string>
+    <string name="metadata_f_number">光圈值</string>
+    <string name="metadata_iso">ISO 感光度</string>
+    <string name="metadata_focal_length">焦距</string>
+    <string name="metadata_orientation">方向</string>
+    <string name="metadata_image_width">影像寬度</string>
+    <string name="metadata_image_length">影像高度</string>
+    <string name="metadata_x_resolution">X 解析度</string>
+    <string name="metadata_y_resolution">Y 解析度</string>
+    <string name="metadata_color_space">色彩空間</string>
+    <string name="metadata_software">軟體</string>
+    <string name="metadata_gps_latitude">GPS 緯度</string>
+    <string name="metadata_gps_longitude">GPS 經度</string>
+    <string name="metadata_gps_altitude">GPS 海拔</string>
+    <string name="metadata_caption">說明 / 摘要</string>
+    <string name="metadata_copyright">著作權聲明</string>
+    <string name="metadata_headline">新聞標題</string>
+    <string name="metadata_city">城市</string>
+    <string name="metadata_country">國家/地區</string>
+    <string name="metadata_rating">評分</string>
+    <string name="metadata_icc_profile">ICC 設定檔</string>
+    <string name="metadata_icc_profile_size">ICC 設定檔（%1$d 位元組）</string>
+    <string name="file_created">檔案建立時間</string>
+    <string name="file_modified">檔案修改時間</string>
+    <string name="file_extension">副檔名</string>
+    <string name="file_extension_hint">僅限字母和數字，最多 8 個。</string>
+    <string name="file_name_required">請輸入檔案名稱。</string>
+    <string name="metadata_empty_hint">列出所有文件屬性，包括空白屬性。清除某個值時，如果格式允許，會從文件中刪除該值；否則空白值會儲存在檔案旁邊。</string>
+    <string name="metadata_applied">中繼資料已更新。</string>
+    <string name="metadata_partially_applied">中繼資料已更新。部分值儲存在檔案旁邊，因為此格式無法儲存它們。</string>
+    <string name="metadata_failed">未更新中繼資料。</string>
+
+    <string name="apply">套用</string>
+    <string name="ok">確定</string>
+    <string name="pick_date">日期</string>
+    <string name="pick_time">時間</string>
+    <string name="clear_value">清除</string>
+    <string name="time_picker_title">選擇時間</string>
+    <string name="date_invalid">請使用 yyyy-MM-ddThh:mm:ss。</string>
+
+    <string name="text_size_menu">文字大小：%1$d pt</string>
+    <string name="text_size_title">文字大小</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5 到 40 pt。這會影響文字文件；PDF 和圖片保留各自的縮放。</string>
+
+    <string name="single_page_on">單頁：開</string>
+    <string name="single_page_off">單頁：關</string>
+    <string name="line_wrap_on">自動換行：開</string>
+    <string name="line_wrap_off">自動換行：關</string>
+    <string name="align_right_on">靠右對齊：開</string>
+    <string name="align_right_off">靠右對齊：關</string>
+    <string name="line_numbers_on">行號：開</string>
+    <string name="line_numbers_off">行號：關</string>
+
+    <string name="copy">複製</string>
+    <string name="copy_all">全部複製</string>
+    <string name="select_all">全選</string>
+    <string name="copied">已複製到剪貼簿</string>
+    <string name="copied_all">已將所有文字複製到剪貼簿</string>
+
+    <string name="password_title">需要密碼</string>
+    <string name="password_body">「%1$s」受保護。請輸入密碼以開啟。</string>
+    <string name="password_label">密碼</string>
+    <string name="password_wrong">該密碼無效。</string>
+    <string name="unlock">解鎖</string>
+    <string name="cancel">取消</string>
+    <string name="enter_password">輸入密碼</string>
+    <string name="password_required_title">此文件已鎖定</string>
+    <string name="password_required_body">請輸入文件密碼以閱讀。MuPDF 會在記憶體中解密；PDFr 不會寫入解密副本。</string>
+
+    <string name="more_options">更多選項</string>
+    <string name="monospace_on">等寬字型：開</string>
+    <string name="monospace_off">等寬字型：關</string>
+
+    <string name="settings_open">設定…</string>
+    <string name="settings_title">設定</string>
+    <string name="settings_theme">主題</string>
+    <string name="settings_language">語言</string>
+    <string name="settings_note">變更會立即儲存。切換語言會重新載入畫面。</string>
+    <string name="theme_system">跟隨系統</string>
+    <string name="theme_light">淺色</string>
+    <string name="theme_dark">深色</string>
+    <string name="theme_amoled">AMOLED 純黑</string>
+    <string name="language_system">系統預設</string>
+
+    <string name="reorder_pages">重新排列頁面…</string>
+    <string name="reorder_title">重新排列頁面</string>
+    <string name="reorder_body">依所需順序列出要保留的頁面。未列出的頁面將被刪除。頁碼指的是目前開啟的 PDF。</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">以逗號分隔頁面。用連字號表示範圍，用 e 表示最後一頁。空格會被忽略；順序和重複項會保留。</string>
+    <string name="reorder_apply">重新排列</string>
+    <string name="rewrite_replace_note">新 PDF 將取代目前文件。若要返回原始檔案，請重新開啟它。</string>
+    <string name="reorder_done">已建立重新排列的 PDF。</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">保留 %1$d 頁</item>
+        <item quantity="other">保留 %1$d 頁</item>
+    </plurals>
+
+    <string name="rotate_pages">旋轉 180°…</string>
+    <string name="rotate_title">旋轉 180°</string>
+    <string name="rotate_body">將列出的頁面上下翻轉。頁碼指的是目前開啟的 PDF。</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">旋轉</string>
+    <string name="rotate_done">已建立旋轉後的 PDF。</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">正在旋轉 %1$d 頁</item>
+        <item quantity="other">正在旋轉 %1$d 頁</item>
+    </plurals>
+
+    <string name="page_size">頁面大小…</string>
+    <string name="page_size_title">頁面大小</string>
+    <string name="page_size_body">為列出的頁面設定紙張大小。PDF 會在目前大小和位置保留內容；圖片會調整至新頁面並儲存為 PDF。</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">紙張</string>
+    <string name="page_size_custom">自訂</string>
+    <string name="page_size_width">寬度</string>
+    <string name="page_size_height">高度</string>
+    <string name="page_size_points">%1$s x %2$s pt</string>
+    <string name="page_size_error">請輸入不超過 14400 pt（約 5080 mm）的正數大小。</string>
+    <string name="page_size_apply">設定大小</string>
+    <string name="page_size_done">已建立具有新頁面大小的 PDF。</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">正在調整 %1$d 頁的大小</item>
+        <item quantity="other">正在調整 %1$d 頁的大小</item>
+    </plurals>
+
+    <string name="page_error_empty">請輸入頁碼，例如 1-3,7,9-e。</string>
+    <string name="page_error_empty_entry">請刪除多餘的逗號。</string>
+    <string name="page_error_token">無法讀取「%1$s」。請使用頁碼、範圍和 e。</string>
+    <string name="page_error_range">第 %1$d 頁不存在。此文件共有 %2$d 頁。</string>
+    <string name="page_error_reversed">範圍的結束不能早於開始。</string>
+    <string name="page_error_too_many">所選內容包含太多頁面。</string>
+
+    <string name="normalize">最佳化…</string>
+    <string name="normalize_title">最佳化 PDF</string>
+    <string name="normalize_body">依可保持結果有效的順序，在一次處理中套用所選的 qpdf 最佳化。調整後的副本將取代目前文件。</string>
+    <string name="normalize_apply">最佳化</string>
+    <string name="normalize_done">已建立最佳化後的 PDF。</string>
+    <string name="normalize_unavailable">此版本中 qpdf 無法使用。</string>
+    <string name="normalize_section_streams">串流</string>
+    <string name="normalize_compress_streams">壓縮串流</string>
+    <string name="normalize_compress_streams_desc">壓縮尚未壓縮的串流。</string>
+    <string name="normalize_decode_all">解碼所有串流</string>
+    <string name="normalize_decode_all_desc">解壓縮所有支援的串流，包括 JPEG 影像。最好與影像最佳化搭配使用。</string>
+    <string name="normalize_recompress_flate">重新壓縮 Flate</string>
+    <string name="normalize_recompress_flate_desc">解壓縮並重新壓縮 Flate 串流。變更壓縮等級前需要執行此操作。</string>
+    <string name="normalize_compression_level">最大壓縮（等級 9）</string>
+    <string name="normalize_compression_level_desc">使用 qpdf 的最高 Flate 壓縮等級。</string>
+    <string name="normalize_section_images">影像</string>
+    <string name="normalize_optimize_images">最佳化影像</string>
+    <string name="normalize_optimize_images_desc">使用 qpdf 的高效率壓縮重新編碼影像。當 JPEG 品質低於 100 時可能會有損。</string>
+    <string name="normalize_jpeg_quality">JPEG 品質</string>
+    <string name="normalize_jpeg_quality_desc">0（最小）到 100（最佳）。僅在最佳化影像時使用。</string>
+    <string name="normalize_quality_error">請輸入 0 到 100 之間的品質。</string>
+    <string name="normalize_section_structure">結構</string>
+    <string name="normalize_newline">endstream 前換行</string>
+    <string name="normalize_newline_desc">在每個 endstream 前新增換行。有助於 qpdf 保留 PDF/A。</string>
+    <string name="normalize_remove_resources">移除未參照的資源</string>
+    <string name="normalize_remove_resources_desc">捨棄頁面上沒有任何內容使用的頁面資源。</string>
+    <string name="normalize_externalize_images">外部化內嵌影像</string>
+    <string name="normalize_externalize_images_desc">將內嵌在內容串流中的影像移至一般影像物件。</string>
+    <string name="normalize_section_output">輸出</string>
+    <string name="normalize_linearize">線性化</string>
+    <string name="normalize_linearize_desc">寫入經過網頁最佳化的 PDF，可在讀取其餘部分之前顯示第一頁。</string>
+    <string name="normalize_pdfa">PDF/A-2b（盡力而為）</string>
+    <string name="normalize_pdfa_desc">新增 PDF/A-2b 識別和 sRGB 輸出意圖。字型和內容不會轉換；封存前請檢查結果。</string>
+
+    <string name="fix_pdf">修復 PDF</string>
+    <string name="fix_pdf_done">已建立修復後的 PDF。</string>
+    <string name="fix_pdf_unavailable">此版本中 qpdf 無法使用。</string>
+    <string name="fix_pdf_only_pdf">只能修復 PDF 檔案。</string>
+
+    <string name="no_text_to_copy">沒有可複製的文字。</string>
+
+    <string name="rewrite_failed">無法建立新 PDF。</string>
+    <string name="working">正在處理…</string>
+    <string name="working_body">正在處理文件…</string>
+</resources>

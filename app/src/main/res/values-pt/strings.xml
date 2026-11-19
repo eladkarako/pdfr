@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PDFr</string>
+
+    <string name="open_document">Abrir um documento</string>
+    <string name="open_another">Abrir documento</string>
+    <string name="share_document">Partilhar documento</string>
+    <string name="save_as">Guardar como</string>
+    <string name="saved_as">Guardado em %1$s.</string>
+    <string name="save_failed">Não foi possível guardar a cópia.</string>
+
+    <string name="empty_title">Nada aberto</string>
+    <string name="empty_body">Abra um PDF, um EPUB, um documento Markdown, uma imagem, um arquivo de banda desenhada ou um ficheiro de texto para começar a ler. O PDFr também aparece nos menus «Abrir com» e «Partilhar» de outras aplicações.</string>
+
+    <string name="loading">A abrir…</string>
+    <string name="error_title">Não foi possível abrir esse ficheiro</string>
+    <string name="error_generic">Ocorreu um erro ao ler este ficheiro.</string>
+    <string name="error_no_pages">Esse documento não tem páginas legíveis.</string>
+    <string name="error_file_unreadable">Não foi possível ler esse ficheiro. Experimente outra cópia.</string>
+    <string name="error_file_empty">Esse ficheiro está vazio.</string>
+    <string name="error_location_not_writable">O local selecionado não permite escrita.</string>
+    <string name="try_another">Experimentar outro ficheiro</string>
+
+    <string name="document_info">Informações do documento</string>
+    <string name="file_name">Nome do ficheiro</string>
+    <string name="file_size">Tamanho do ficheiro</string>
+    <string name="document_type">Tipo</string>
+    <string name="document_format">Formato</string>
+    <string name="page_count">Páginas</string>
+    <plurals name="page_count_value">
+        <item quantity="one">%1$d página</item>
+        <item quantity="other">%1$d páginas</item>
+    </plurals>
+    <string name="page_of">%1$d / %2$d</string>
+    <string name="password_protected">Protegido por palavra-passe</string>
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="close">Fechar</string>
+    <string name="exit">Sair</string>
+
+    <string name="document_metadata">Metadados do documento</string>
+    <string name="file_properties">Propriedades do ficheiro</string>
+    <string name="metadata_title">Título</string>
+    <string name="metadata_author">Autor</string>
+    <string name="metadata_subject">Assunto</string>
+    <string name="metadata_keywords">Palavras-chave</string>
+    <string name="metadata_creator">Criador</string>
+    <string name="metadata_producer">Produtor</string>
+    <string name="metadata_created">Criado</string>
+    <string name="metadata_modified">Modificado</string>
+    <string name="metadata_make">Marca</string>
+    <string name="metadata_model">Modelo</string>
+    <string name="metadata_lens_model">Modelo da objetiva</string>
+    <string name="metadata_datetime_original">Data de captura</string>
+    <string name="metadata_datetime">Data de modificação</string>
+    <string name="metadata_exposure_time">Tempo de exposição</string>
+    <string name="metadata_f_number">Número f</string>
+    <string name="metadata_iso">Sensibilidade ISO</string>
+    <string name="metadata_focal_length">Distância focal</string>
+    <string name="metadata_orientation">Orientação</string>
+    <string name="metadata_image_width">Largura da imagem</string>
+    <string name="metadata_image_length">Altura da imagem</string>
+    <string name="metadata_x_resolution">Resolução X</string>
+    <string name="metadata_y_resolution">Resolução Y</string>
+    <string name="metadata_color_space">Espaço de cor</string>
+    <string name="metadata_software">Software</string>
+    <string name="metadata_gps_latitude">Latitude GPS</string>
+    <string name="metadata_gps_longitude">Longitude GPS</string>
+    <string name="metadata_gps_altitude">Altitude GPS</string>
+    <string name="metadata_caption">Legenda / Resumo</string>
+    <string name="metadata_copyright">Aviso de direitos de autor</string>
+    <string name="metadata_headline">Manchete</string>
+    <string name="metadata_city">Cidade</string>
+    <string name="metadata_country">País</string>
+    <string name="metadata_rating">Classificação</string>
+    <string name="metadata_icc_profile">Perfil ICC</string>
+    <string name="metadata_icc_profile_size">Perfil ICC (%1$d bytes)</string>
+    <string name="file_created">Ficheiro criado</string>
+    <string name="file_modified">Ficheiro modificado</string>
+    <string name="file_extension">Extensão</string>
+    <string name="file_extension_hint">Apenas letras e dígitos, até 8.</string>
+    <string name="file_name_required">Introduza um nome de ficheiro.</string>
+    <string name="metadata_empty_hint">Todas as propriedades do documento são apresentadas, incluindo as vazias. Limpar um valor remove-o do documento quando o formato o permite; caso contrário, o valor vazio é guardado junto ao ficheiro.</string>
+    <string name="metadata_applied">Metadados atualizados.</string>
+    <string name="metadata_partially_applied">Metadados atualizados. Alguns valores são guardados junto ao ficheiro porque este formato não os pode armazenar.</string>
+    <string name="metadata_failed">Os metadados não foram atualizados.</string>
+
+    <string name="apply">Aplicar</string>
+    <string name="ok">OK</string>
+    <string name="pick_date">Data</string>
+    <string name="pick_time">Hora</string>
+    <string name="clear_value">Limpar</string>
+    <string name="time_picker_title">Escolher hora</string>
+    <string name="date_invalid">Use yyyy-MM-ddThh:mm:ss.</string>
+
+    <string name="text_size_menu">Tamanho do texto: %1$d pt</string>
+    <string name="text_size_title">Tamanho do texto</string>
+    <string name="text_size_value">%1$d pt</string>
+    <string name="text_size_range">5 a 40 pt. Afeta os documentos de texto; os PDF e as imagens mantêm o seu próprio zoom.</string>
+
+    <string name="single_page_on">Página única: ativada</string>
+    <string name="single_page_off">Página única: desativada</string>
+    <string name="line_wrap_on">Quebra de linha: ativada</string>
+    <string name="line_wrap_off">Quebra de linha: desativada</string>
+    <string name="align_right_on">Alinhar à direita: ativado</string>
+    <string name="align_right_off">Alinhar à direita: desativado</string>
+    <string name="line_numbers_on">Números de linha: ativados</string>
+    <string name="line_numbers_off">Números de linha: desativados</string>
+
+    <string name="copy">Copiar</string>
+    <string name="copy_all">Copiar tudo</string>
+    <string name="select_all">Selecionar tudo</string>
+    <string name="copied">Copiado para a área de transferência</string>
+    <string name="copied_all">Todo o texto copiado para a área de transferência</string>
+
+    <string name="password_title">Palavra-passe necessária</string>
+    <string name="password_body">«%1$s» está protegido. Introduza a palavra-passe para o abrir.</string>
+    <string name="password_label">Palavra-passe</string>
+    <string name="password_wrong">Essa palavra-passe não funcionou.</string>
+    <string name="unlock">Desbloquear</string>
+    <string name="cancel">Cancelar</string>
+    <string name="enter_password">Introduzir palavra-passe</string>
+    <string name="password_required_title">Este documento está bloqueado</string>
+    <string name="password_required_body">Introduza a palavra-passe do documento para o ler. O MuPDF desencripta-o em memória; o PDFr não escreve qualquer cópia desencriptada.</string>
+
+    <string name="more_options">Mais opções</string>
+    <string name="monospace_on">Monoespaçado: ativado</string>
+    <string name="monospace_off">Monoespaçado: desativado</string>
+
+    <string name="settings_open">Definições…</string>
+    <string name="settings_title">Definições</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_note">As alterações são guardadas imediatamente. Um novo idioma recarrega o ecrã.</string>
+    <string name="theme_system">Igual ao sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="theme_amoled">Preto AMOLED</string>
+    <string name="language_system">Predefinido do sistema</string>
+
+    <string name="reorder_pages">Reordenar páginas…</string>
+    <string name="reorder_title">Reordenar páginas</string>
+    <string name="reorder_body">Indique as páginas a manter, pela ordem desejada. As páginas omitidas são eliminadas. Os números de página referem-se ao PDF aberto agora.</string>
+    <string name="reorder_hint">1-3,7,9-e</string>
+    <string name="reorder_help">Separe as páginas com vírgulas. Use um hífen para um intervalo e e para a última página. Os espaços são ignorados; a ordem e as repetições são mantidas.</string>
+    <string name="reorder_apply">Reordenar</string>
+    <string name="rewrite_replace_note">O novo PDF substitui o documento atual. Para voltar ao original, abra-o novamente.</string>
+    <string name="reorder_done">PDF reordenado criado.</string>
+    <plurals name="reorder_selected">
+        <item quantity="one">A manter %1$d página</item>
+        <item quantity="other">A manter %1$d páginas</item>
+    </plurals>
+
+    <string name="rotate_pages">Rodar 180°…</string>
+    <string name="rotate_title">Rodar 180°</string>
+    <string name="rotate_body">Vira as páginas indicadas ao contrário. Os números de página referem-se ao PDF aberto agora.</string>
+    <string name="rotate_hint">1-e</string>
+    <string name="rotate_apply">Rodar</string>
+    <string name="rotate_done">PDF rodado criado.</string>
+    <plurals name="rotate_selected">
+        <item quantity="one">A rodar %1$d página</item>
+        <item quantity="other">A rodar %1$d páginas</item>
+    </plurals>
+
+    <string name="page_size">Tamanho da página…</string>
+    <string name="page_size_title">Tamanho da página</string>
+    <string name="page_size_body">Define o tamanho do papel para as páginas indicadas. Um PDF mantém o conteúdo no tamanho e posição atuais; uma imagem é ajustada à nova página e guardada como PDF.</string>
+    <string name="page_size_hint">1-e</string>
+    <string name="page_size_paper">Papel</string>
+    <string name="page_size_custom">Personalizado</string>
+    <string name="page_size_width">Largura</string>
+    <string name="page_size_height">Altura</string>
+    <string name="page_size_points">%1$s x %2$s pt</string>
+    <string name="page_size_error">Introduza um tamanho positivo até 14400 pt (cerca de 5080 mm).</string>
+    <string name="page_size_apply">Definir tamanho</string>
+    <string name="page_size_done">PDF criado com o novo tamanho de página.</string>
+    <plurals name="page_size_selected">
+        <item quantity="one">A redimensionar %1$d página</item>
+        <item quantity="other">A redimensionar %1$d páginas</item>
+    </plurals>
+
+    <string name="page_error_empty">Introduza números de página, por exemplo 1-3,7,9-e.</string>
+    <string name="page_error_empty_entry">Remova a vírgula extra.</string>
+    <string name="page_error_token">Não é possível ler «%1$s». Use números de página, intervalos e e.</string>
+    <string name="page_error_range">A página %1$d não existe. Este documento tem %2$d páginas.</string>
+    <string name="page_error_reversed">Um intervalo não pode terminar antes de começar.</string>
+    <string name="page_error_too_many">Essa seleção tem demasiadas páginas.</string>
+
+    <string name="normalize">Normalizar…</string>
+    <string name="normalize_title">Normalizar PDF</string>
+    <string name="normalize_body">Aplica as otimizações qpdf selecionadas numa única passagem, numa ordem que mantém o resultado válido. A cópia ajustada substitui o documento atual.</string>
+    <string name="normalize_apply">Normalizar</string>
+    <string name="normalize_done">PDF normalizado criado.</string>
+    <string name="normalize_unavailable">O qpdf não está disponível nesta versão.</string>
+    <string name="normalize_section_streams">Fluxos</string>
+    <string name="normalize_compress_streams">Comprimir fluxos</string>
+    <string name="normalize_compress_streams_desc">Comprime os fluxos que ainda não estão comprimidos.</string>
+    <string name="normalize_decode_all">Descodificar todos os fluxos</string>
+    <string name="normalize_decode_all_desc">Descomprime todos os fluxos suportados, incluindo imagens JPEG. É melhor combinar com a otimização de imagens.</string>
+    <string name="normalize_recompress_flate">Recomprimir Flate</string>
+    <string name="normalize_recompress_flate_desc">Descomprime e volta a comprimir os fluxos Flate. Necessário antes de alterar o nível de compressão.</string>
+    <string name="normalize_compression_level">Compressão máxima (nível 9)</string>
+    <string name="normalize_compression_level_desc">Usa o nível de compressão Flate mais alto do qpdf.</string>
+    <string name="normalize_section_images">Imagens</string>
+    <string name="normalize_optimize_images">Otimizar imagens</string>
+    <string name="normalize_optimize_images_desc">Volta a codificar as imagens com a compressão eficiente do qpdf. Pode haver perdas quando a qualidade JPEG é inferior a 100.</string>
+    <string name="normalize_jpeg_quality">Qualidade JPEG</string>
+    <string name="normalize_jpeg_quality_desc">0 (menor) a 100 (melhor). Usado apenas ao otimizar imagens.</string>
+    <string name="normalize_quality_error">Introduza uma qualidade de 0 a 100.</string>
+    <string name="normalize_section_structure">Estrutura</string>
+    <string name="normalize_newline">Nova linha antes de endstream</string>
+    <string name="normalize_newline_desc">Adiciona uma nova linha antes de cada endstream. Ajuda o qpdf a preservar PDF/A.</string>
+    <string name="normalize_remove_resources">Remover recursos não referenciados</string>
+    <string name="normalize_remove_resources_desc">Descarta os recursos de página que nenhum conteúdo da página utiliza.</string>
+    <string name="normalize_externalize_images">Externalizar imagens inline</string>
+    <string name="normalize_externalize_images_desc">Move as imagens incorporadas nos fluxos de conteúdo para objetos de imagem normais.</string>
+    <string name="normalize_section_output">Saída</string>
+    <string name="normalize_linearize">Linearizar</string>
+    <string name="normalize_linearize_desc">Escreve um PDF otimizado para a web que pode mostrar a primeira página antes de ler o resto.</string>
+    <string name="normalize_pdfa">PDF/A-2b (melhor esforço)</string>
+    <string name="normalize_pdfa_desc">Adiciona a identificação PDF/A-2b e uma intenção de saída sRGB. As fontes e o conteúdo não são convertidos; verifique o resultado antes de arquivar.</string>
+
+    <string name="fix_pdf">Reparar PDF</string>
+    <string name="fix_pdf_done">PDF reparado criado.</string>
+    <string name="fix_pdf_unavailable">O qpdf não está disponível nesta versão.</string>
+    <string name="fix_pdf_only_pdf">Só é possível reparar ficheiros PDF.</string>
+
+    <string name="no_text_to_copy">Não há texto para copiar.</string>
+
+    <string name="rewrite_failed">Não foi possível criar o novo PDF.</string>
+    <string name="working">A processar…</string>
+    <string name="working_body">A processar o documento…</string>
+</resources>
