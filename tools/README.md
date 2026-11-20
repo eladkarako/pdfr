@@ -67,15 +67,17 @@ Variations:
 :: A larger AVD for a machine with more RAM.
 tools\create-test-avd.bat pdfr_full 4096
 
-:: Any of the PowerShell options, for a different API or image.
-powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name pdfr_api34 -Api 34
+:: Pin an older API or image when a specific level is needed.
+powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name pdfr_api36 -Api 36
 ```
 
 It looks for the SDK in `ANDROID_SDK_ROOT`, `ANDROID_HOME` or
-`%LOCALAPPDATA%\Android\Sdk`, installs
-`system-images;android-35;default;x86_64` when needed, then creates a Pixel 5
-AVD with 1536 MB RAM and a 512 MB SD card. `-Api`, `-Abi`, `-Tag` and `-Device`
-override the image and hardware profile.
+`%LOCALAPPDATA%\Android\Sdk`, then asks `sdkmanager` for the newest
+`default`/`x86_64` system image (installed or available) and installs it when
+needed. No API level is hard-coded, so the AVD follows the current SDK
+automatically. It then creates a Pixel 5 AVD with 1536 MB RAM and a 512 MB SD
+card. `-Api`, `-Abi`, `-Tag` and `-Device` override the image and hardware
+profile.
 
 Result: an AVD named `pdfr_full` (or the name you passed). Re-running the script
 recreates the AVD with the same name, so it is safe to run again after a broken
@@ -91,11 +93,12 @@ tools\start-emulator.bat pdfr_tv
 tools\run-instrumented-tests.bat com.karako.pdfr.TvSupportInstrumentedTest
 ```
 
-It installs `system-images;android-34;android-tv;x86_64` when needed (a large
-download on the first run), creates a 1080p TV AVD named `pdfr_tv`, and enables
-the D-pad and a keyboard in the generated config. Pass `-SkipInstall` to fail
-instead of downloading a missing image, or `-Name`/`-RamMb` to override the
-defaults:
+It asks `sdkmanager` for the newest `android-tv`/`x86_64` system image (currently
+`android-36`, because Android TV does not publish an x86_64 image for every
+release) and installs it when needed (a large download on the first run). It
+then creates a 1080p TV AVD named `pdfr_tv` and enables the D-pad and a keyboard
+in the generated config. Pass `-SkipInstall` to use only an already-installed
+image, or `-Name`/`-RamMb` to override the defaults:
 
 ```bat
 powershell -ExecutionPolicy Bypass -File tools\create-tv-avd.ps1 -Name pdfr_tv -RamMb 2048

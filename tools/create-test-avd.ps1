@@ -3,10 +3,11 @@
   Creates the Android emulator used by PDFr's manual and instrumented tests.
 
 .DESCRIPTION
-  Finds the Android SDK, installs the requested system image when it is
-  missing, and creates (or recreates) a Pixel 5 AVD. The default name is
-  pdfr_full and the default RAM is 1536 MB, which is enough for API 35 x86_64
-  without reserving as much memory as the old 2 GB AVD.
+  Finds the Android SDK, installs the newest system image for the requested
+  tag and ABI, and creates (or recreates) a Pixel 5 AVD. The default name is
+  pdfr_full and the default RAM is 1536 MB. No API level is hard-coded: the
+  newest image installed or offered by sdkmanager is used, so the AVD follows
+  the current SDK (currently 37) automatically.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1
@@ -18,7 +19,7 @@
 param(
     [string]$Name = 'pdfr_full',
     [int]$RamMb = 1536,
-    [string]$Api = '35',
+    [string]$Api = '',
     [string]$Abi = 'x86_64',
     [string]$Tag = 'default',
     [string]$Device = 'pixel_5'
@@ -53,6 +54,53 @@ function Find-CommandTool([string]$Sdk, [string]$FileName) {
     return $null
 }
 
+function Get-LatestSystemImageApi {
+    param(
+        [string]$Sdk,
+        [string]$Tag,
+        [string]$Abi,
+        [string]$SdkManager,
+        [switch]$InstalledOnly
+    )
+
+    $apis = New-Object System.Collections.Generic.List[string]
+
+    # Installed images are the fastest source and work offline.
+    $root = Join-Path $Sdk 'system-images'
+    if (Test-Path $root) {
+        Get-ChildItem $root -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            $api = $_.Name -replace '^android-', ''
+            if (Test-Path (Join-Path $_.FullName (Join-Path $Tag $Abi))) {
+                $apis.Add($api)
+            }
+        }
+    }
+
+    # Ask sdkmanager for images that can be installed. The tool names are
+    # stable across SDK versions, so this follows the newest release without
+    # hard-coding an API level.
+    if (-not $InstalledOnly -and $SdkManager) {
+        $list = (& $SdkManager --list 2>&1 | Out-String)
+        $list = $list -replace "`e\[[0-9;]*m", ''
+        $pattern = 'system-images[;/]android-([^;/ ]+)[;/]' +
+            [regex]::Escape($Tag) + '[;/]' + [regex]::Escape($Abi) + '(?:\s|$)'
+        foreach ($line in ($list -split "`r?`n")) {
+            $match = [regex]::Match($line, $pattern)
+            if ($match.Success) { $apis.Add($match.Groups[1].Value) }
+        }
+    }
+
+    if ($apis.Count -eq 0) { return $null }
+
+    return $apis |
+        Sort-Object -Unique |
+        Sort-Object {
+            $version = $_ -replace '[^0-9.].*$', ''
+            try { [version]$version } catch { [version]'0.0' }
+        } -Descending |
+        Select-Object -First 1
+}
+
 $sdk = Find-Sdk
 Write-Host "[PDFr] Android SDK: $sdk"
 
@@ -60,6 +108,14 @@ $sdkmanager = Find-CommandTool $sdk 'sdkmanager.bat'
 $avdmanager = Find-CommandTool $sdk 'avdmanager.bat'
 if (-not $sdkmanager -or -not $avdmanager) {
     throw 'sdkmanager.bat/avdmanager.bat not found. Install Android command-line tools.'
+}
+
+if (-not $Api) {
+    $Api = Get-LatestSystemImageApi -Sdk $sdk -Tag $Tag -Abi $Abi -SdkManager $sdkmanager
+    if (-not $Api) {
+        throw "No Android $Tag $Abi system image is available. Install one with sdkmanager, or pass -Api."
+    }
+    Write-Host "[PDFr] Newest $Tag $Abi image: android-$Api"
 }
 
 $package = "system-images;android-$Api;$Tag;$Abi"
