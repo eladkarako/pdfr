@@ -121,7 +121,7 @@
     <string name="cancel">Cancelar</string>
     <string name="enter_password">Digitar senha</string>
     <string name="password_required_title">Este documento está bloqueado</string>
-    <string name="password_required_body">Digite a senha do documento para lê-lo. O MuPDF o descriptografa na memória; o PDFr não grava nenhuma cópia descriptografada.</string>
+    <string name="password_required_body">Digite a senha do documento para lê-lo. O PDFr descriptografa uma cópia no cache privado e remove as restrições de edição; o arquivo original não é alterado.</string>
 
     <string name="more_options">Mais opções</string>
     <string name="monospace_on">Monoespaçado: ativado</string>

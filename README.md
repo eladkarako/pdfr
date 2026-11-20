@@ -60,8 +60,9 @@ fresh subdirectory of the same cache, opens it, and then deletes the previous
 copy.
 There is deliberately no undo stack and no original PDF kept around: use the
 **Open** toolbar button (or the system picker) to go back to the source file.
-⚠️ Every rewrite saves without encryption, so a rewritten encrypted PDF opens
-without a password.
+⚠️ Opening an encrypted PDF writes a decrypted cache copy (the source file is
+untouched), and every rewrite saves without encryption, so the copy opens
+without a password and without editing restrictions.
 
 💾 **Save as** copies the document that is currently open to a location you
 choose, using the same format and filename. The cached bytes are copied
@@ -148,9 +149,10 @@ intact wherever the target provider allows its timestamp to be updated.
   picker first and fixes the chosen PDF after it loads. The entry is absent for
   non-PDF documents.
 - 🔤 **Monospace** override for plain-text documents, from the overflow menu.
-- 🔐 **Password-protected documents** are unlocked in memory by MuPDF. No
-  decrypted copy is written when merely reading; any rewrite saves its
-  replacement without encryption.
+- 🔐 **Password-protected documents** are unlocked once, then rewritten through
+  qpdf into the private cache without a password and without editing
+  restrictions. The original file is never changed; later rewrites, **Save as**
+  and **Share** use the decrypted cache copy.
 - ℹ️ **Metadata editor**: the circled **i** opens the filename, extension, file
   created/modified timestamps and the document metadata the file already has.
   PDFs list every Info and XMP property; images list an ordered EXIF/XMP set

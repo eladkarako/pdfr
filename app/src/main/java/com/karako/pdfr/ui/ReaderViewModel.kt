@@ -202,6 +202,13 @@ class ReaderViewModel(
         val info: DocumentInfo,
     )
 
+    private data class OpenedDocument(
+        val document: MuPdfDocument,
+        val info: DocumentInfo,
+        val plainText: String?,
+        val layout: LayoutSpec?,
+    )
+
     init {
         val savedPath = savedState.get<String>(ReaderConfig.KEY_PATH)
         val savedFile = savedPath?.let(::File)?.takeIf { it.isFile }
@@ -481,6 +488,50 @@ class ReaderViewModel(
     }
 
     /**
+     * Opens [file] and applies the current reader layout and sidecar metadata.
+     *
+     * The caller owns the returned document and must close it. Kept separate
+     * from [load] so an encrypted PDF can be opened once to detect encryption
+     * and then reopened as the decrypted copy.
+     */
+    private suspend fun openPrepared(
+        file: File,
+        displayName: String,
+        password: String?,
+        mimeType: String,
+        sidecar: Map<String, String>?,
+    ): OpenedDocument = withContext(MuPdf.dispatcher) {
+        val doc = MuPdfDocument.open(
+            file = file,
+            displayName = displayName,
+            password = password,
+            mimeType = mimeType,
+            iccProfileLabel = iccProfileLabel,
+        )
+        try {
+            var appliedLayout: LayoutSpec? = null
+            if (doc.isReflowable) {
+                doc.applyReaderStyle(monospace)
+                val spec = layoutSpec(viewport ?: defaultViewport())
+                if (doc.layout(spec.widthPt, spec.heightPt, spec.em)) {
+                    appliedLayout = spec
+                }
+            }
+            val documentInfo = DocumentMetadataDraft.applySidecar(doc.info(), sidecar)
+            if (documentInfo.pageCount <= 0) {
+                throw IOException(
+                    localizedString(R.string.error_no_pages),
+                )
+            }
+            val text = if (doc.isPlainText) PlainText.read(file) else null
+            OpenedDocument(doc, documentInfo, text, appliedLayout)
+        } catch (t: Throwable) {
+            runCatching { doc.close() }
+            throw t
+        }
+    }
+
+    /**
      * Opens [file] and, on success, makes it the current document.
      *
      * The replacement document is opened before the previous one is closed, so
@@ -526,38 +577,81 @@ class ReaderViewModel(
         selectionJob?.cancel()
         _selection.value = null
 
+        val app = getApplication<Application>()
+        var source = file
+        var sourcePassword = password
+        var encryptedSource: File? = null
+        var decryptedCopy: File? = null
+        var decryptAttempted = false
+        var adopted = false
+
         try {
-            val (opened, info, plainText) = withContext(MuPdf.dispatcher) {
-                val doc = MuPdfDocument.open(
-                    file = file,
-                    displayName = effectiveName,
-                    password = password,
-                    mimeType = mimeType,
-                    iccProfileLabel = iccProfileLabel,
-                )
-                try {
-                    var appliedLayout: LayoutSpec? = null
-                    if (doc.isReflowable) {
-                        doc.applyReaderStyle(monospace)
-                        val spec = layoutSpec(viewport ?: defaultViewport())
-                        if (doc.layout(spec.widthPt, spec.heightPt, spec.em)) {
-                            appliedLayout = spec
-                        }
-                    }
-                    val documentInfo = DocumentMetadataDraft.applySidecar(doc.info(), sidecar)
-                    if (documentInfo.pageCount <= 0) {
-                        throw IOException(
-                            localizedString(R.string.error_no_pages),
-                        )
-                    }
-                    lastLayout = appliedLayout
-                    val text = if (doc.isPlainText) PlainText.read(file) else null
-                    Triple(doc, documentInfo, text)
+            lateinit var openedResult: OpenedDocument
+            while (true) {
+                val result = try {
+                    openPrepared(
+                        file = source,
+                        displayName = effectiveName,
+                        password = sourcePassword,
+                        mimeType = mimeType,
+                        sidecar = sidecar,
+                    )
                 } catch (t: Throwable) {
-                    runCatching { doc.close() }
+                    val copy = decryptedCopy
+                    if (copy != null) {
+                        // qpdf produced a copy MuPDF cannot open. Remove it and
+                        // keep reading the encrypted original.
+                        copy.delete()
+                        decryptedCopy = null
+                        source = file
+                        sourcePassword = password
+                        encryptedSource = null
+                        continue
+                    }
                     throw t
                 }
+
+                // qpdf removes the password and the editing restrictions that
+                // a digital signature can impose. This happens once, while the
+                // document is being opened, and is independent of any viewer
+                // action. If qpdf cannot handle the file, MuPDF keeps reading
+                // the encrypted original.
+                if (!decryptAttempted && result.info.isPdf && result.info.encrypted) {
+                    decryptAttempted = true
+                    withContext(MuPdf.dispatcher) { result.document.close() }
+
+                    val decrypted = withContext(Dispatchers.IO) {
+                        DocumentStore.derivedFile(app, "decrypted.pdf")
+                    }
+                    decryptedCopy = decrypted
+                    val error = withContext(Qpdf.dispatcher) {
+                        Qpdf.decrypt(source, decrypted, sourcePassword)
+                    }
+                    if (error != null) {
+                        withContext(Dispatchers.IO) { decrypted.delete() }
+                        decryptedCopy = null
+                        continue
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        effectiveModified?.takeIf { it > 0L }
+                            ?.let { decrypted.setLastModified(it) }
+                        sidecar?.let { MetadataSidecar.write(decrypted, it) }
+                    }
+                    encryptedSource = source
+                    source = decrypted
+                    sourcePassword = null
+                    continue
+                }
+
+                openedResult = result
+                break
             }
+
+            val opened = openedResult.document
+            val info = openedResult.info
+            val plainText = openedResult.plainText
+            lastLayout = openedResult.layout
 
             if (version != generation) {
                 withContext(MuPdf.dispatcher) { opened.close() }
@@ -570,11 +664,12 @@ class ReaderViewModel(
             val previous = document
             document = opened
             currentPage = page
+            adopted = true
 
-            this.password = if (opened.needsPasswordToOpen) password else null
+            this.password = if (opened.needsPasswordToOpen) sourcePassword else null
             monospace = opened.isPlainText && monospace
 
-            savedState[ReaderConfig.KEY_PATH] = file.absolutePath
+            savedState[ReaderConfig.KEY_PATH] = source.absolutePath
             savedState[ReaderConfig.KEY_NAME] = effectiveName
             savedState[ReaderConfig.KEY_MIME] = mimeType
             savedState[ReaderConfig.KEY_PAGE] = page
@@ -587,7 +682,7 @@ class ReaderViewModel(
             savedState[ReaderConfig.KEY_LINE_NUMBERS] = lineNumbers
 
             _state.value = ReaderState.Ready(
-                file = file,
+                file = source,
                 displayName = effectiveName,
                 mimeType = mimeType,
                 info = info.copy(fileName = effectiveName),
@@ -609,6 +704,9 @@ class ReaderViewModel(
 
             if (previous != null && previous !== opened) {
                 MuPdf.execute { previous.close() }
+            }
+            encryptedSource?.let { old ->
+                MuPdf.execute { DocumentStore.discard(old) }
             }
             return true
         } catch (e: DocumentPasswordRequiredException) {
@@ -643,6 +741,10 @@ class ReaderViewModel(
                 fail(e)
             }
             return false
+        } finally {
+            // A decrypted copy only becomes the document after it opens. On
+            // every failure path the encrypted original is still intact.
+            if (!adopted) decryptedCopy?.delete()
         }
     }
 

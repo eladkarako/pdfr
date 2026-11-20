@@ -121,7 +121,7 @@
     <string name="cancel">Annuler</string>
     <string name="enter_password">Saisir le mot de passe</string>
     <string name="password_required_title">Ce document est verrouillé</string>
-    <string name="password_required_body">Saisissez le mot de passe du document pour le lire. MuPDF le déchiffre en mémoire ; PDFr n\'écrit pas de copie déchiffrée.</string>
+    <string name="password_required_body">Saisissez le mot de passe du document pour le lire. PDFr déchiffre une copie dans son cache privé et supprime les restrictions de modification ; le fichier d’origine n’est pas modifié.</string>
 
     <string name="more_options">Plus d\'options</string>
     <string name="monospace_on">Chasse fixe : activée</string>

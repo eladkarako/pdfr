@@ -121,7 +121,7 @@
     <string name="cancel">ביטול</string>
     <string name="enter_password">הזינו סיסמה</string>
     <string name="password_required_title">המסמך הזה נעול</string>
-    <string name="password_required_body">הזינו את סיסמת המסמך כדי לקרוא אותו. MuPDF מפענח אותו בזיכרון; PDFr אינו כותב עותק מפוענח.</string>
+    <string name="password_required_body">הזן את סיסמת המסמך כדי לקרוא אותו. PDFr מפענח עותק במטמון הפרטי שלו ומסיר מגבלות עריכה; הקובץ המקורי אינו משתנה.</string>
 
     <string name="more_options">אפשרויות נוספות</string>
     <string name="monospace_on">רוחב אחיד: פועל</string>

@@ -121,7 +121,7 @@
     <string name="cancel">取消</string>
     <string name="enter_password">输入密码</string>
     <string name="password_required_title">此文档已锁定</string>
-    <string name="password_required_body">请输入文档密码以阅读。MuPDF 会在内存中解密；PDFr 不会写入解密副本。</string>
+    <string name="password_required_body">输入文档密码即可阅读。PDFr 会在私有缓存中解密副本并移除编辑限制；原始文件不会改变。</string>
 
     <string name="more_options">更多选项</string>
     <string name="monospace_on">等宽字体：开</string>

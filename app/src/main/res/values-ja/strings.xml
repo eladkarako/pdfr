@@ -121,7 +121,7 @@
     <string name="cancel">キャンセル</string>
     <string name="enter_password">パスワードを入力</string>
     <string name="password_required_title">このドキュメントはロックされています</string>
-    <string name="password_required_body">読むにはドキュメントのパスワードを入力してください。MuPDF がメモリ内で復号します。PDFr は復号したコピーを書き込みません。</string>
+    <string name="password_required_body">文書のパスワードを入力して開きます。PDFr は非公開キャッシュ内のコピーを復号し、編集制限を解除します。元のファイルは変更されません。</string>
 
     <string name="more_options">その他のオプション</string>
     <string name="monospace_on">等幅フォント: オン</string>

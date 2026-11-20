@@ -121,7 +121,7 @@
     <string name="cancel">취소</string>
     <string name="enter_password">비밀번호 입력</string>
     <string name="password_required_title">이 문서는 잠겨 있습니다</string>
-    <string name="password_required_body">읽으려면 문서 비밀번호를 입력하세요. MuPDF가 메모리에서 복호화하며 PDFr은 복호화된 복사본을 저장하지 않습니다.</string>
+    <string name="password_required_body">문서를 읽으려면 문서 암호를 입력하세요. PDFr은 비공개 캐시의 사본을 복호화하고 편집 제한을 제거합니다. 원본 파일은 변경되지 않습니다.</string>
 
     <string name="more_options">추가 옵션</string>
     <string name="monospace_on">고정폭 글꼴: 켬</string>

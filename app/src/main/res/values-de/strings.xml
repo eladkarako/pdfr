@@ -121,7 +121,7 @@
     <string name="cancel">Abbrechen</string>
     <string name="enter_password">Passwort eingeben</string>
     <string name="password_required_title">Dieses Dokument ist gesperrt</string>
-    <string name="password_required_body">Geben Sie das Dokumentpasswort ein, um es zu lesen. MuPDF entschlüsselt es im Arbeitsspeicher; PDFr schreibt keine entschlüsselte Kopie.</string>
+    <string name="password_required_body">Geben Sie das Dokumentpasswort ein, um es zu lesen. PDFr entschlüsselt eine Kopie im eigenen Cache und entfernt Bearbeitungseinschränkungen; die Originaldatei bleibt unverändert.</string>
 
     <string name="more_options">Weitere Optionen</string>
     <string name="monospace_on">Festbreitenschrift: an</string>

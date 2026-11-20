@@ -121,7 +121,7 @@
     <string name="cancel">रद्द करें</string>
     <string name="enter_password">पासवर्ड दर्ज करें</string>
     <string name="password_required_title">यह दस्तावेज़ लॉक है</string>
-    <string name="password_required_body">पढ़ने के लिए दस्तावेज़ का पासवर्ड दर्ज करें। MuPDF इसे मेमोरी में डिक्रिप्ट करता है; PDFr डिक्रिप्ट की गई प्रतिलिपि नहीं लिखता।</string>
+    <string name="password_required_body">पढ़ने के लिए दस्तावेज़ का पासवर्ड दर्ज करें। PDFr अपने निजी कैश में एक प्रति को डिक्रिप्ट करता है और संपादन प्रतिबंध हटाता है; मूल फ़ाइल नहीं बदलती।</string>
 
     <string name="more_options">अधिक विकल्प</string>
     <string name="monospace_on">मोनोस्पेस: चालू</string>

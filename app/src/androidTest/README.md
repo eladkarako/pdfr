@@ -33,6 +33,7 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 |----------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `TestPdfWriter.kt`                     | A tiny PDF writer (no dependencies) using the built-in Helvetica font. Every page gets a visible, extractable label such as `Fixture page 3`.                                                                                                                                                               |
 | `MuPdfDocumentInstrumentedTest.kt`     | Opens, renders, selects text, reorders/rotates/normalizes/fixes, edits PDF metadata, and reopens rewritten PDFs. Also covers password prompts, AES-256 fixtures, the plain-text monospace toggle, Markdown (including long-suffix aliases), single-page images, and fixed-layout/reflowable zoom rendering. |
+| `QpdfDecryptInstrumentedTest.kt`       | Calls qpdf's decrypt/restriction-removal bridge directly and opens an encrypted PDF through the real view model, proving the cached copy is unencrypted and opens with no password.                                                                                                                          |
 | `ImageMetadataInstrumentedTest.kt`     | Reads and writes JPEG/PNG/WebP metadata through the real Android `ExifInterface`, checks XMP/IPTC/ICC fallbacks and sidecar behaviour, and verifies that unsupported formats stay read-only.                                                                                                                |
 | `DocumentStoreInstrumentedTest.kt`     | Imports a document through `ContentResolver`, checks the cache layout, safe names and timestamps, stale-document cleanup, empty-file rejection, derived rewrite files, share copies and discard (including the metadata sidecar).                                                                           |
 | `AppSettingsInstrumentedTest.kt`       | Stores and repairs the theme and language preferences, and checks that the locale-wrapped context selects the real Hebrew resources with an RTL layout direction (and English with LTR).                                                                                                                    |
@@ -59,6 +60,8 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
   removes the title while leaving the other properties intact.
 - Out-of-range page indices are rejected without leaving a partial file.
 - Encrypted PDFs: no/wrong/correct password behaviour.
+- Opening an encrypted PDF stores an unencrypted cache copy with the password
+  and editing restrictions removed; the original file is untouched.
 - Rewriting an encrypted PDF produces an unencrypted copy that opens with no
   password.
 - Plain text: reflow, rendering, selection, both monospace states, and the

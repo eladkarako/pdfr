@@ -123,7 +123,7 @@
     <string name="cancel">Cancel</string>
     <string name="enter_password">Enter password</string>
     <string name="password_required_title">This document is locked</string>
-    <string name="password_required_body">Enter the document password to read it. MuPDF decrypts it in memory; PDFr does not write a decrypted copy.</string>
+    <string name="password_required_body">Enter the document password to read it. PDFr decrypts a copy in its private cache and removes editing restrictions; the original file is not changed.</string>
 
     <string name="more_options">More options</string>
     <string name="monospace_on">Monospace: on</string>

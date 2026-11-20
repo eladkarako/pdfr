@@ -125,7 +125,7 @@
     <string name="cancel">إلغاء</string>
     <string name="enter_password">أدخل كلمة المرور</string>
     <string name="password_required_title">هذا المستند مقفل</string>
-    <string name="password_required_body">أدخل كلمة مرور المستند لقراءته. يفكّ MuPDF تشفيره في الذاكرة؛ ولا يكتب PDFr نسخة مفكوكة التشفير.</string>
+    <string name="password_required_body">أدخل كلمة مرور المستند لقراءته. يفكّ PDFr تشفير نسخة في ذاكرته المؤقتة الخاصة ويزيل قيود التحرير؛ لا يتغيّر الملف الأصلي.</string>
 
     <string name="more_options">مزيد من الخيارات</string>
     <string name="monospace_on">أحادي المسافة: مفعّل</string>
