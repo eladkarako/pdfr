@@ -78,7 +78,11 @@ function Invoke-Native {
         $ErrorActionPreference = $previous
     }
 
-    return $output
+    # Merged stderr arrives as ErrorRecords. Return them as plain text so the
+    # caller's output does not look like the script itself failed.
+    return @($output) | ForEach-Object {
+        if ($_ -is [System.Management.Automation.ErrorRecord]) { $_.Exception.Message } else { $_ }
+    }
 }
 
 function Get-LatestSystemImageApi {
@@ -146,11 +150,14 @@ if (-not $Api) {
 }
 
 $package = "system-images;android-$Api;$Tag;$Abi"
+# sdkmanager.bat splits unquoted semicolons into separate arguments, so it gets
+# the slash form (the sdk-style path it documents anyway).
+$sdkPackage = $package -replace ';', '/'
 $imageDir = Join-Path $sdk "system-images\android-$Api\$Tag\$Abi"
 if (-not (Test-Path $imageDir)) {
     Write-Host "[PDFr] Installing $package ..."
-    Invoke-Native -FilePath $sdkmanager -Arguments @($package) | Out-Host
-    if ($script:NativeExitCode -ne 0) {
+    Invoke-Native -FilePath $sdkmanager -Arguments @($sdkPackage) | Out-Host
+    if ($script:NativeExitCode -ne 0 -or -not (Test-Path $imageDir)) {
         throw "sdkmanager failed to install $package. Run '$sdkmanager --licenses' and try again."
     }
 }
