@@ -67,16 +67,37 @@ function Invoke-Native {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
         [string[]]$Arguments = @(),
-        [string]$InputText
+        [string]$InputText,
+        [switch]$Stream
     )
 
     # sdkmanager and avdmanager write warnings and progress to stderr. The
     # script runs with ErrorActionPreference = 'Stop', which would turn that
     # text into a terminating NativeCommandError (for example the sdkmanager
-    # deprecation warning), so stderr is collected as plain text instead.
+    # deprecation warning), so stderr is handled as plain text instead.
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    $errorFile = $null
     try {
+        if ($Stream) {
+            # Long downloads should show progress, so stdout is streamed and
+            # stderr is parked in a temp file that is shown only on failure.
+            $errorFile = [System.IO.Path]::GetTempFileName()
+            if ($PSBoundParameters.ContainsKey('InputText')) {
+                $InputText | & $FilePath @Arguments 2> $errorFile |
+                    ForEach-Object { Write-Host $_ }
+            } else {
+                & $FilePath @Arguments 2> $errorFile |
+                    ForEach-Object { Write-Host $_ }
+            }
+            $script:NativeExitCode = $LASTEXITCODE
+            if ($script:NativeExitCode -ne 0) {
+                Get-Content -LiteralPath $errorFile -ErrorAction SilentlyContinue |
+                    ForEach-Object { Write-Host $_ }
+            }
+            return
+        }
+
         $output = if ($PSBoundParameters.ContainsKey('InputText')) {
             $InputText | & $FilePath @Arguments 2>&1
         } else {
@@ -85,6 +106,9 @@ function Invoke-Native {
         $script:NativeExitCode = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previous
+        if ($errorFile) {
+            Remove-Item -LiteralPath $errorFile -Force -ErrorAction SilentlyContinue
+        }
     }
 
     # Merged stderr arrives as ErrorRecords. Return them as plain text so the
@@ -168,7 +192,7 @@ if (-not (Test-Path $imageDir)) {
         throw "$package is not installed. Run without -SkipInstall, or install it with sdkmanager."
     }
     Write-Host "[PDFr] Installing $package (large download)..."
-    Invoke-Native -FilePath $sdkmanager -Arguments @($sdkPackage) | Out-Host
+    Invoke-Native -FilePath $sdkmanager -Arguments @($sdkPackage) -Stream
     if ($script:NativeExitCode -ne 0 -or -not (Test-Path $imageDir)) {
         throw "sdkmanager failed to install $package. Run '$sdkmanager --licenses' and try again."
     }
@@ -179,10 +203,10 @@ $configPath = Join-Path $avdHome "$Name.avd\config.ini"
 
 Write-Host "[PDFr] Creating TV AVD '$Name' ($Device, $package, ${RamMb} MB RAM)..."
 # 'no' declines the optional custom-hardware-profile prompt.
-Invoke-Native -FilePath $avdmanager -InputText 'no' -Arguments @(
+Invoke-Native -FilePath $avdmanager -InputText 'no' -Stream -Arguments @(
     'create', 'avd', '--force', '--name', $Name, '--package', $package,
     '--device', $Device, '--sdcard', '512M'
-) | Out-Host
+)
 if ($script:NativeExitCode -ne 0) {
     throw "avdmanager failed to create '$Name'."
 }
