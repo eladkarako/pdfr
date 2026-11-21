@@ -174,13 +174,14 @@ internal fun DocumentInfoDialog(
                             singleLine = true,
                             label = { Text(stringResource(R.string.file_name)) },
                             isError = !draft.fileNameValid,
+                            textStyle = monospaceFieldStyle(),
                             supportingText = if (!draft.fileNameValid) {
                                 { Text(stringResource(R.string.file_name_required)) }
                             } else {
                                 null
                             },
                         )
-                        OutlinedTextField(
+                        ValueTextField(
                             value = draft.extension,
                             onValueChange = {
                                 onDraftChange(
@@ -369,6 +370,7 @@ private fun MetadataTextField(
             .fillMaxWidth()
             .padding(top = 8.dp),
         label = { Text(label) },
+        textStyle = monospaceFieldStyle(),
     )
 }
 
@@ -393,7 +395,7 @@ private fun DateTimeField(
     Column(modifier = Modifier.padding(top = 8.dp)) {
         // The field takes the full width so the whole ISO value stays visible;
         // the picker buttons sit on their own row underneath.
-        OutlinedTextField(
+        ValueTextField(
             value = value,
             onValueChange = { onChange(it.take(DocumentDates.ISO_PATTERN.length)) },
             modifier = Modifier.fillMaxWidth(),

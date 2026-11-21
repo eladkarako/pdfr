@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,6 +46,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.karako.pdfr.R
 import com.karako.pdfr.data.AppLanguage
 import com.karako.pdfr.data.AppSettings
@@ -118,9 +120,11 @@ internal fun SettingsDialog(
  * A closed combo box for the language override.
  *
  * The trigger shows only the current choice, and tapping it opens the full
- * list. Every real language entry uses the same three weighted columns, so the
- * English names, codes and native names line up visually; the system-default
- * entry is a single translated label because it has no language of its own.
+ * list. Every real language entry uses two weighted columns: the English name
+ * and the language's own name. The resource code is deliberately absent: it
+ * takes width that the two names use better, and it is usually already part of
+ * the English name. The system-default entry is a single translated label
+ * because it has no language of its own.
  */
 @Composable
 private fun LanguageCombo(
@@ -201,7 +205,7 @@ private fun LanguageCombo(
     }
 }
 
-/** English name, resource code and native name, in three aligned columns. */
+/** English name and native name, side by side in two aligned columns. */
 @Composable
 private fun LanguageCaption(language: AppLanguage) {
     val labelRes = language.labelRes
@@ -215,25 +219,21 @@ private fun LanguageCaption(language: AppLanguage) {
         return
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val captionStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(
             text = language.englishName,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1.15f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = language.code,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(0.45f),
+            style = captionStyle,
+            modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = language.endonym,
-            style = MaterialTheme.typography.bodyLarge,
+            style = captionStyle,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

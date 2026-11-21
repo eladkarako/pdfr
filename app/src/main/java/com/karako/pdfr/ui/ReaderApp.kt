@@ -901,7 +901,7 @@ private fun ReorderPagesDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
+                ValueTextField(
                     value = query,
                     onValueChange = { query = it.take(PageRanges.MAX_INPUT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
@@ -976,7 +976,7 @@ private fun RotatePagesDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
+                ValueTextField(
                     value = query,
                     onValueChange = { query = it.take(PageRanges.MAX_INPUT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
@@ -1121,7 +1121,7 @@ private fun NormalizeDialog(
                     checked = options.optimizeImages,
                     onCheckedChange = { options = options.copy(optimizeImages = it) },
                 )
-                OutlinedTextField(
+                ValueTextField(
                     value = qualityText,
                     onValueChange = ::updateQuality,
                     modifier = Modifier.fillMaxWidth(),

@@ -110,7 +110,7 @@ internal fun PageSizeDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
+                ValueTextField(
                     value = range,
                     onValueChange = { range = it.take(PageRanges.MAX_INPUT_LENGTH) },
                     modifier = Modifier.fillMaxWidth(),
@@ -181,7 +181,7 @@ internal fun PageSizeDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    OutlinedTextField(
+                    ValueTextField(
                         value = widthText,
                         onValueChange = {
                             widthText = it.take(MAX_DIMENSION_LENGTH)
@@ -196,7 +196,7 @@ internal fun PageSizeDialog(
                             imeAction = ImeAction.Next,
                         ),
                     )
-                    OutlinedTextField(
+                    ValueTextField(
                         value = heightText,
                         onValueChange = {
                             heightText = it.take(MAX_DIMENSION_LENGTH)
