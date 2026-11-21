@@ -82,7 +82,7 @@ object ImageMetadata {
         ),
         ImageFieldSpec(
             MetadataKeys.EXIF_PREFIX + "ISOSpeedRatings",
-            ExifInterface.TAG_ISO_SPEED_RATINGS,
+            ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY,
             XmpProperties.EXIF_ISO_SPEED_RATINGS,
         ),
         ImageFieldSpec(
@@ -232,13 +232,13 @@ object ImageMetadata {
                     ?: ""
 
                 GPS_LATITUDE, GPS_LONGITUDE -> {
-                    val coordinates = FloatArray(2)
-                    if (exif?.getLatLong(coordinates) == true) {
+                    val coordinates = exif?.getLatLong()
+                    if (coordinates != null && coordinates.size >= 2) {
                         formatDecimal(
                             if (slot.key == GPS_LATITUDE) {
-                                coordinates[0].toDouble()
+                                coordinates[0]
                             } else {
-                                coordinates[1].toDouble()
+                                coordinates[1]
                             },
                             6,
                         )

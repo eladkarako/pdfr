@@ -307,9 +307,14 @@ android {
     }
 
     packaging {
-        // Prebuilt, already stripped by tools/build-qpdf-android.ps1.
         jniLibs {
+            // Prebuilt, already stripped by tools/build-qpdf-android.ps1.
             keepDebugSymbols += "**/libqpdfjni.so"
+            // These two ship without the symbols llvm-strip wants to rewrite,
+            // so asking the packaging step to strip them only prints a warning.
+            // Keeping them as-is leaves the libraries untouched and quiet.
+            keepDebugSymbols += "**/libmupdf_java.so"
+            keepDebugSymbols += "**/libandroidx.graphics.path.so"
         }
 
         resources {
