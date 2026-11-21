@@ -95,6 +95,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -196,6 +197,9 @@ fun ReaderApp(
     var showOverflowMenu by remember { mutableStateOf(false) }
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
+    val ownerPasswordPrompt by viewModel.ownerPasswordPrompt.collectAsStateWithLifecycle()
+    val ownerPasswordRejected by
+        viewModel.ownerPasswordRejected.collectAsStateWithLifecycle()
 
     // The toolbar keeps a fixed left-to-right icon order in every language, so
     // Share, Info, Open, Save and Menu never move. The title row below is
@@ -789,6 +793,19 @@ fun ReaderApp(
             wrongPassword = locked.wrongPassword,
             onDismiss = { showPasswordDialog = false },
             onUnlock = viewModel::unlock,
+        )
+    }
+
+    // The document is already readable; this prompt only offers to remove the
+    // editing restrictions that an owner password is still guarding.
+    val restricted = state as? ReaderState.Ready
+    if (restricted != null && ownerPasswordPrompt) {
+        OwnerPasswordDialog(
+            displayName = restricted.displayName,
+            wrongPassword = ownerPasswordRejected,
+            busy = busy,
+            onDismiss = viewModel::dismissOwnerPasswordPrompt,
+            onUnlock = viewModel::decryptWithOwnerPassword,
         )
     }
 
@@ -1984,24 +2001,17 @@ private fun PasswordDialog(
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(16.dp))
-                OutlinedTextField(
+                PasswordField(
                     value = password,
                     onValueChange = { password = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(R.string.password_label)) },
+                    label = stringResource(R.string.password_label),
                     isError = wrongPassword,
                     supportingText = if (wrongPassword) {
                         { Text(stringResource(R.string.password_wrong)) }
                     } else {
                         null
                     },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        imeAction = ImeAction.Done,
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { submit() }),
+                    onDone = submit,
                 )
             }
         },
@@ -2015,6 +2025,111 @@ private fun PasswordDialog(
                 Text(stringResource(R.string.cancel))
             }
         },
+    )
+}
+
+/**
+ * Offers to remove editing restrictions from a document that already opened.
+ *
+ * Cancelling keeps the document readable exactly as it is, so this is a
+ * convenience, not a gate in front of the reader.
+ */
+@Composable
+private fun OwnerPasswordDialog(
+    displayName: String,
+    wrongPassword: Boolean,
+    busy: Boolean,
+    onDismiss: () -> Unit,
+    onUnlock: (String) -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+    val submit = { if (password.isNotEmpty()) onUnlock(password) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.owner_password_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.owner_password_body, displayName),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Spacer(Modifier.height(16.dp))
+                PasswordField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = stringResource(R.string.owner_password_label),
+                    isError = wrongPassword,
+                    supportingText = if (wrongPassword) {
+                        { Text(stringResource(R.string.owner_password_wrong)) }
+                    } else {
+                        null
+                    },
+                    onDone = submit,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = submit,
+                enabled = password.isNotEmpty() && !busy,
+            ) {
+                Text(stringResource(R.string.remove_restrictions))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !busy) {
+                Text(stringResource(R.string.keep_restrictions))
+            }
+        },
+    )
+}
+
+/** A password field with a reveal button, shared by both password dialogs. */
+@Composable
+private fun PasswordField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    isError: Boolean,
+    supportingText: @Composable (() -> Unit)?,
+    onDone: () -> Unit,
+) {
+    var revealed by remember { mutableStateOf(false) }
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(label) },
+        isError = isError,
+        supportingText = supportingText,
+        visualTransformation = if (revealed) {
+            VisualTransformation.None
+        } else {
+            PasswordVisualTransformation()
+        },
+        trailingIcon = {
+            AccessibleIconButton(
+                contentDescription = stringResource(
+                    if (revealed) R.string.hide_password else R.string.show_password,
+                ),
+                onClick = { revealed = !revealed },
+            ) {
+                Icon(
+                    painter = painterResource(
+                        if (revealed) R.drawable.ic_visibility_off else R.drawable.ic_visibility,
+                    ),
+                    contentDescription = null,
+                )
+            }
+        },
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done,
+        ),
+        keyboardActions = KeyboardActions(onDone = { onDone() }),
     )
 }
 

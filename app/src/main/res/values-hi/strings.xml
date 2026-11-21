@@ -122,12 +122,20 @@
     <string name="password_title">पासवर्ड आवश्यक</string>
     <string name="password_body">“%1$s” सुरक्षित है। खोलने के लिए इसका पासवर्ड दर्ज करें।</string>
     <string name="password_label">पासवर्ड</string>
+    <string name="show_password">पासवर्ड दिखाएँ</string>
+    <string name="hide_password">पासवर्ड छिपाएँ</string>
     <string name="password_wrong">वह पासवर्ड काम नहीं आया।</string>
     <string name="unlock">अनलॉक करें</string>
     <string name="cancel">रद्द करें</string>
     <string name="enter_password">पासवर्ड दर्ज करें</string>
     <string name="password_required_title">यह दस्तावेज़ लॉक है</string>
     <string name="password_required_body">पढ़ने के लिए दस्तावेज़ का पासवर्ड दर्ज करें। PDFr अपने निजी कैश में एक प्रति को डिक्रिप्ट करता है और संपादन प्रतिबंध हटाता है; मूल फ़ाइल नहीं बदलती।</string>
+    <string name="owner_password_title">प्रतिबंध हटाएँ?</string>
+    <string name="owner_password_body">“%1$s” खुला है, लेकिन इसके संपादन प्रतिबंध अभी भी लॉक हैं। उन्हें हटाने के लिए इसका स्वामी पासवर्ड दर्ज करें। केवल कैश की गई प्रति बदलती है; मूल फ़ाइल जैसी थी वैसी रहती है।</string>
+    <string name="owner_password_label">स्वामी पासवर्ड</string>
+    <string name="owner_password_wrong">वह स्वामी पासवर्ड काम नहीं आया।</string>
+    <string name="remove_restrictions">प्रतिबंध हटाएँ</string>
+    <string name="keep_restrictions">प्रतिबंध रखें</string>
 
     <string name="more_options">अधिक विकल्प</string>
     <string name="monospace_on">मोनोस्पेस: चालू</string>

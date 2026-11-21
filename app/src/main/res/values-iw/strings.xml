@@ -122,12 +122,20 @@
     <string name="password_title">נדרשת סיסמה</string>
     <string name="password_body">„%1$s” מוגן. הזינו את הסיסמה כדי לפתוח אותו.</string>
     <string name="password_label">סיסמה</string>
+    <string name="show_password">הצג סיסמה</string>
+    <string name="hide_password">הסתר סיסמה</string>
     <string name="password_wrong">הסיסמה לא התאימה.</string>
     <string name="unlock">פתיחה</string>
     <string name="cancel">ביטול</string>
     <string name="enter_password">הזינו סיסמה</string>
     <string name="password_required_title">המסמך הזה נעול</string>
     <string name="password_required_body">הזן את סיסמת המסמך כדי לקרוא אותו. PDFr מפענח עותק במטמון הפרטי שלו ומסיר מגבלות עריכה; הקובץ המקורי אינו משתנה.</string>
+    <string name="owner_password_title">להסיר הגבלות?</string>
+    <string name="owner_password_body">„%1$s” פתוח, אך הגבלות העריכה שלו עדיין נעולות. הזינו את סיסמת הבעלים כדי להסיר אותן. משתנה רק העותק שבמטמון; קובץ המקור נשאר כפי שהוא.</string>
+    <string name="owner_password_label">סיסמת בעלים</string>
+    <string name="owner_password_wrong">סיסמת הבעלים הזו לא עבדה.</string>
+    <string name="remove_restrictions">הסרת הגבלות</string>
+    <string name="keep_restrictions">השארת ההגבלות</string>
 
     <string name="more_options">אפשרויות נוספות</string>
     <string name="monospace_on">רוחב אחיד: פועל</string>

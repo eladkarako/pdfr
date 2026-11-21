@@ -122,12 +122,20 @@
     <string name="password_title">비밀번호 필요</string>
     <string name="password_body">“%1$s” 파일은 보호되어 있습니다. 열려면 비밀번호를 입력하세요.</string>
     <string name="password_label">비밀번호</string>
+    <string name="show_password">암호 표시</string>
+    <string name="hide_password">암호 숨기기</string>
     <string name="password_wrong">비밀번호가 올바르지 않습니다.</string>
     <string name="unlock">잠금 해제</string>
     <string name="cancel">취소</string>
     <string name="enter_password">비밀번호 입력</string>
     <string name="password_required_title">이 문서는 잠겨 있습니다</string>
     <string name="password_required_body">문서를 읽으려면 문서 암호를 입력하세요. PDFr은 비공개 캐시의 사본을 복호화하고 편집 제한을 제거합니다. 원본 파일은 변경되지 않습니다.</string>
+    <string name="owner_password_title">제한을 해제할까요?</string>
+    <string name="owner_password_body">"%1$s" 파일은 열려 있지만 편집 제한이 아직 잠겨 있습니다. 소유자 암호를 입력하면 해제할 수 있습니다. 캐시된 사본만 변경되며 원본 파일은 그대로 유지됩니다.</string>
+    <string name="owner_password_label">소유자 암호</string>
+    <string name="owner_password_wrong">해당 소유자 암호가 작동하지 않았습니다.</string>
+    <string name="remove_restrictions">제한 해제</string>
+    <string name="keep_restrictions">제한 유지</string>
 
     <string name="more_options">추가 옵션</string>
     <string name="monospace_on">고정폭 글꼴: 켬</string>

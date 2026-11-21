@@ -126,12 +126,20 @@
     <string name="password_title">كلمة المرور مطلوبة</string>
     <string name="password_body">“%1$s” محمي. أدخل كلمة مروره لفتحه.</string>
     <string name="password_label">كلمة المرور</string>
+    <string name="show_password">إظهار كلمة المرور</string>
+    <string name="hide_password">إخفاء كلمة المرور</string>
     <string name="password_wrong">لم تعمل كلمة المرور هذه.</string>
     <string name="unlock">فتح</string>
     <string name="cancel">إلغاء</string>
     <string name="enter_password">أدخل كلمة المرور</string>
     <string name="password_required_title">هذا المستند مقفل</string>
     <string name="password_required_body">أدخل كلمة مرور المستند لقراءته. يفكّ PDFr تشفير نسخة في ذاكرته المؤقتة الخاصة ويزيل قيود التحرير؛ لا يتغيّر الملف الأصلي.</string>
+    <string name="owner_password_title">إزالة القيود؟</string>
+    <string name="owner_password_body">‹%1$s› مفتوح، لكن قيود التحرير فيه ما زالت مقفلة. أدخل كلمة مرور المالك لإزالتها. تتغير النسخة المخزّنة مؤقتًا فقط؛ يبقى الملف الأصلي كما هو.</string>
+    <string name="owner_password_label">كلمة مرور المالك</string>
+    <string name="owner_password_wrong">كلمة مرور المالك هذه لم تعمل.</string>
+    <string name="remove_restrictions">إزالة القيود</string>
+    <string name="keep_restrictions">الإبقاء على القيود</string>
 
     <string name="more_options">مزيد من الخيارات</string>
     <string name="monospace_on">أحادي المسافة: مفعّل</string>

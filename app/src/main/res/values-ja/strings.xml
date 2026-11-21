@@ -122,12 +122,20 @@
     <string name="password_title">パスワードが必要です</string>
     <string name="password_body">「%1$s」は保護されています。開くにはパスワードを入力してください。</string>
     <string name="password_label">パスワード</string>
+    <string name="show_password">パスワードを表示</string>
+    <string name="hide_password">パスワードを隠す</string>
     <string name="password_wrong">パスワードが正しくありません。</string>
     <string name="unlock">ロック解除</string>
     <string name="cancel">キャンセル</string>
     <string name="enter_password">パスワードを入力</string>
     <string name="password_required_title">このドキュメントはロックされています</string>
     <string name="password_required_body">文書のパスワードを入力して開きます。PDFr は非公開キャッシュ内のコピーを復号し、編集制限を解除します。元のファイルは変更されません。</string>
+    <string name="owner_password_title">制限を解除しますか?</string>
+    <string name="owner_password_body">「%1$s」は開いていますが、編集制限はまだロックされています。所有者パスワードを入力すると解除できます。変更されるのはキャッシュされたコピーだけで、元のファイルはそのままです。</string>
+    <string name="owner_password_label">所有者パスワード</string>
+    <string name="owner_password_wrong">その所有者パスワードでは解除できませんでした。</string>
+    <string name="remove_restrictions">制限を解除</string>
+    <string name="keep_restrictions">制限を維持</string>
 
     <string name="more_options">その他のオプション</string>
     <string name="monospace_on">等幅フォント: オン</string>

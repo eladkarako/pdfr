@@ -126,6 +126,18 @@ class ReaderViewModel(
     private val _busy = MutableStateFlow(false)
     val busy: StateFlow<Boolean> = _busy.asStateFlow()
 
+    /**
+     * True when opening an encrypted PDF left it readable but still restricted
+     * because qpdf could not remove the restrictions. The reader offers an
+     * optional owner-password prompt without hiding the document.
+     */
+    private val _ownerPasswordPrompt = MutableStateFlow(false)
+    val ownerPasswordPrompt: StateFlow<Boolean> = _ownerPasswordPrompt.asStateFlow()
+
+    /** True when the last owner password the reader typed was rejected. */
+    private val _ownerPasswordRejected = MutableStateFlow(false)
+    val ownerPasswordRejected: StateFlow<Boolean> = _ownerPasswordRejected.asStateFlow()
+
     /** Short user-facing notices (toast text), produced on the main thread. */
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
@@ -143,6 +155,13 @@ class ReaderViewModel(
 
     /** Kept in memory only, so an encrypted PDF can be rewritten. */
     private var password: String? = null
+
+    /**
+     * The password supplied to open the current document. Unlike [password],
+     * this stays set while an encrypted original is still being read, so an
+     * owner-password retry can reopen it.
+     */
+    private var openPassword: String? = null
 
     // Defaults come from res/values/bools.xml and integers.xml. They are read
     // once; the view model then owns the live value and saves it in state.
@@ -237,6 +256,9 @@ class ReaderViewModel(
         _selection.value = null
         _infoDraft.value = null
         password = null
+        openPassword = null
+        _ownerPasswordPrompt.value = false
+        _ownerPasswordRejected.value = false
         // Plain text is monospace by default; non-text documents reset this in
         // load(). Starting true makes the text override visible immediately.
         monospace = readerDefaults.monospace
@@ -306,6 +328,41 @@ class ReaderViewModel(
                     ?: locked.file.lastModified().takeIf { it > 0L },
             )
         }
+    }
+
+    /**
+     * Retries decrypting the current PDF with an owner password.
+     *
+     * The password that opens a PDF and the password that removes its editing
+     * restrictions can differ. This retry runs the same in-place decryption
+     * that opening the file already tried, so a successful attempt replaces the
+     * still-restricted document with an unrestricted copy.
+     */
+    fun decryptWithOwnerPassword(password: String) {
+        val ready = _state.value as? ReaderState.Ready ?: return
+        if (password.isEmpty() || _busy.value) return
+
+        _ownerPasswordPrompt.value = false
+        _ownerPasswordRejected.value = false
+
+        openJob?.cancel()
+        openJob = viewModelScope.launch {
+            load(
+                file = ready.file,
+                displayName = ready.displayName,
+                mimeType = ready.mimeType,
+                password = openPassword,
+                startPage = currentPage,
+                preservePrevious = true,
+                lastModified = ready.lastModified,
+                decryptPassword = password,
+            )
+        }
+    }
+
+    fun dismissOwnerPasswordPrompt() {
+        _ownerPasswordPrompt.value = false
+        _ownerPasswordRejected.value = false
     }
 
     /**
@@ -547,8 +604,11 @@ class ReaderViewModel(
         startPage: Int,
         preservePrevious: Boolean = false,
         lastModified: Long? = null,
+        decryptPassword: String? = null,
     ): Boolean {
         val version = ++generation
+        _ownerPasswordPrompt.value = false
+        _ownerPasswordRejected.value = false
 
         // Non-PDF metadata lives in a sidecar beside the cache file. Read it
         // before opening so an edited display name and timestamp are used by
@@ -584,6 +644,10 @@ class ReaderViewModel(
         var decryptedCopy: File? = null
         var decryptAttempted = false
         var adopted = false
+        // Set when qpdf reports a bad password, so the reader can offer an
+        // owner password without hiding the readable document.
+        var offerOwnerPassword = false
+        var ownerPasswordRejected = false
 
         try {
             lateinit var openedResult: OpenedDocument
@@ -624,12 +688,40 @@ class ReaderViewModel(
                         DocumentStore.derivedFile(app, "decrypted.pdf")
                     }
                     decryptedCopy = decrypted
-                    val error = withContext(Qpdf.dispatcher) {
-                        Qpdf.decrypt(source, decrypted, sourcePassword)
+
+                    // A document can be readable with a user password while
+                    // its restrictions only lift with an owner password, so
+                    // try what the reader supplied first and then the empty
+                    // password. An owner-password retry supplies exactly one
+                    // candidate, because the user is naming the password.
+                    val candidates = if (decryptPassword != null) {
+                        listOf(decryptPassword)
+                    } else {
+                        buildList {
+                            sourcePassword?.takeIf { it.isNotEmpty() }?.let(::add)
+                            add("")
+                        }
+                    }
+                    var error: String? = null
+                    var passwordFailure = false
+                    for (candidate in candidates) {
+                        error = withContext(Qpdf.dispatcher) {
+                            Qpdf.decrypt(source, decrypted, candidate)
+                        }
+                        if (error == null) break
+                        passwordFailure = isPasswordFailure(error)
+                        if (!passwordFailure) break
                     }
                     if (error != null) {
                         withContext(Dispatchers.IO) { decrypted.delete() }
                         decryptedCopy = null
+                        if (decryptPassword != null) {
+                            // The reader named a password, so keep the dialog
+                            // open with an error instead of closing silently.
+                            ownerPasswordRejected = true
+                        } else {
+                            offerOwnerPassword = passwordFailure
+                        }
                         continue
                     }
 
@@ -702,6 +794,17 @@ class ReaderViewModel(
             )
             _infoDraft.value = null
 
+            // Remember the password that opened this document even when MuPDF
+            // no longer asks for it, so an owner-password retry can reopen the
+            // encrypted original. A decrypted copy needs no password again.
+            openPassword = if (decryptedCopy != null) null else password
+            if (decryptPassword != null) {
+                _ownerPasswordRejected.value = ownerPasswordRejected
+                _ownerPasswordPrompt.value = ownerPasswordRejected
+            } else {
+                _ownerPasswordPrompt.value = offerOwnerPassword
+            }
+
             if (previous != null && previous !== opened) {
                 MuPdf.execute { previous.close() }
             }
@@ -753,6 +856,14 @@ class ReaderViewModel(
         document = null
         if (previous != null) MuPdf.execute { previous.close() }
     }
+
+    /**
+     * Decides whether a qpdf failure was a rejected password. Only then is an
+     * owner password worth asking for; other failures are structural and the
+     * prompt would be noise.
+     */
+    private fun isPasswordFailure(message: String): Boolean =
+        message.contains("password", ignoreCase = true)
 
     private fun scheduleReflow(
         doc: MuPdfDocument,

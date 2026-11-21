@@ -122,12 +122,20 @@
     <string name="password_title">Passwort erforderlich</string>
     <string name="password_body">„%1$s“ ist geschützt. Geben Sie das Passwort ein, um es zu öffnen.</string>
     <string name="password_label">Passwort</string>
+    <string name="show_password">Passwort anzeigen</string>
+    <string name="hide_password">Passwort verbergen</string>
     <string name="password_wrong">Dieses Passwort war nicht richtig.</string>
     <string name="unlock">Entsperren</string>
     <string name="cancel">Abbrechen</string>
     <string name="enter_password">Passwort eingeben</string>
     <string name="password_required_title">Dieses Dokument ist gesperrt</string>
     <string name="password_required_body">Geben Sie das Dokumentpasswort ein, um es zu lesen. PDFr entschlüsselt eine Kopie im eigenen Cache und entfernt Bearbeitungseinschränkungen; die Originaldatei bleibt unverändert.</string>
+    <string name="owner_password_title">Beschränkungen entfernen?</string>
+    <string name="owner_password_body">„%1$s“ ist geöffnet, aber die Bearbeitungsbeschränkungen sind noch gesperrt. Geben Sie das Besitzerpasswort ein, um sie zu entfernen. Nur die zwischengespeicherte Kopie ändert sich; die Originaldatei bleibt unverändert.</string>
+    <string name="owner_password_label">Besitzerpasswort</string>
+    <string name="owner_password_wrong">Dieses Besitzerpasswort hat nicht funktioniert.</string>
+    <string name="remove_restrictions">Beschränkungen entfernen</string>
+    <string name="keep_restrictions">Beschränkungen behalten</string>
 
     <string name="more_options">Weitere Optionen</string>
     <string name="monospace_on">Festbreitenschrift: an</string>

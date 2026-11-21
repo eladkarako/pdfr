@@ -122,12 +122,20 @@
     <string name="password_title">Mot de passe requis</string>
     <string name="password_body">« %1$s » est protégé. Saisissez son mot de passe pour l\'ouvrir.</string>
     <string name="password_label">Mot de passe</string>
+    <string name="show_password">Afficher le mot de passe</string>
+    <string name="hide_password">Masquer le mot de passe</string>
     <string name="password_wrong">Ce mot de passe n\'a pas fonctionné.</string>
     <string name="unlock">Déverrouiller</string>
     <string name="cancel">Annuler</string>
     <string name="enter_password">Saisir le mot de passe</string>
     <string name="password_required_title">Ce document est verrouillé</string>
     <string name="password_required_body">Saisissez le mot de passe du document pour le lire. PDFr déchiffre une copie dans son cache privé et supprime les restrictions de modification ; le fichier d’origine n’est pas modifié.</string>
+    <string name="owner_password_title">Supprimer les restrictions ?</string>
+    <string name="owner_password_body">« %1$s » est ouvert, mais ses restrictions de modification sont toujours verrouillées. Saisissez le mot de passe du propriétaire pour les supprimer. Seule la copie en cache change ; le fichier d’origine reste intact.</string>
+    <string name="owner_password_label">Mot de passe du propriétaire</string>
+    <string name="owner_password_wrong">Ce mot de passe du propriétaire n’a pas fonctionné.</string>
+    <string name="remove_restrictions">Supprimer les restrictions</string>
+    <string name="keep_restrictions">Conserver les restrictions</string>
 
     <string name="more_options">Plus d\'options</string>
     <string name="monospace_on">Chasse fixe : activée</string>

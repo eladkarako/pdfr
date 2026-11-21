@@ -122,12 +122,20 @@
     <string name="password_title">需要密码</string>
     <string name="password_body">“%1$s”受保护。请输入密码以打开。</string>
     <string name="password_label">密码</string>
+    <string name="show_password">显示密码</string>
+    <string name="hide_password">隐藏密码</string>
     <string name="password_wrong">该密码无效。</string>
     <string name="unlock">解锁</string>
     <string name="cancel">取消</string>
     <string name="enter_password">输入密码</string>
     <string name="password_required_title">此文档已锁定</string>
     <string name="password_required_body">输入文档密码即可阅读。PDFr 会在私有缓存中解密副本并移除编辑限制；原始文件不会改变。</string>
+    <string name="owner_password_title">移除限制？</string>
+    <string name="owner_password_body">“%1$s”已打开，但其编辑限制仍处于锁定状态。输入其所有者密码即可移除限制。仅缓存副本会改变；原文件保持不变。</string>
+    <string name="owner_password_label">所有者密码</string>
+    <string name="owner_password_wrong">该所有者密码未生效。</string>
+    <string name="remove_restrictions">移除限制</string>
+    <string name="keep_restrictions">保留限制</string>
 
     <string name="more_options">更多选项</string>
     <string name="monospace_on">等宽字体：开</string>

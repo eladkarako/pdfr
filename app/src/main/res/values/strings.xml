@@ -124,12 +124,20 @@
     <string name="password_title">Password required</string>
     <string name="password_body">“%1$s” is protected. Enter its password to open it.</string>
     <string name="password_label">Password</string>
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
     <string name="password_wrong">That password didn’t work.</string>
     <string name="unlock">Unlock</string>
     <string name="cancel">Cancel</string>
     <string name="enter_password">Enter password</string>
     <string name="password_required_title">This document is locked</string>
     <string name="password_required_body">Enter the document password to read it. PDFr decrypts a copy in its private cache and removes editing restrictions; the original file is not changed.</string>
+    <string name="owner_password_title">Remove restrictions?</string>
+    <string name="owner_password_body">“%1$s” is open, but its editing restrictions are still locked. Enter its owner password to remove them. Only the cached copy changes; the original file stays as it is.</string>
+    <string name="owner_password_label">Owner password</string>
+    <string name="owner_password_wrong">That owner password didn’t work.</string>
+    <string name="remove_restrictions">Remove restrictions</string>
+    <string name="keep_restrictions">Keep restrictions</string>
 
     <string name="more_options">More options</string>
     <string name="monospace_on">Monospace: on</string>

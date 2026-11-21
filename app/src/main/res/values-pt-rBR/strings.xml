@@ -122,12 +122,20 @@
     <string name="password_title">Senha necessária</string>
     <string name="password_body">“%1$s” está protegido. Digite a senha para abri-lo.</string>
     <string name="password_label">Senha</string>
+    <string name="show_password">Mostrar senha</string>
+    <string name="hide_password">Ocultar senha</string>
     <string name="password_wrong">Essa senha não funcionou.</string>
     <string name="unlock">Desbloquear</string>
     <string name="cancel">Cancelar</string>
     <string name="enter_password">Digitar senha</string>
     <string name="password_required_title">Este documento está bloqueado</string>
     <string name="password_required_body">Digite a senha do documento para lê-lo. O PDFr descriptografa uma cópia no cache privado e remove as restrições de edição; o arquivo original não é alterado.</string>
+    <string name="owner_password_title">Remover restrições?</string>
+    <string name="owner_password_body">“%1$s” está aberto, mas as restrições de edição ainda estão bloqueadas. Digite a senha do proprietário para removê-las. Apenas a cópia em cache muda; o arquivo original permanece como está.</string>
+    <string name="owner_password_label">Senha do proprietário</string>
+    <string name="owner_password_wrong">Essa senha do proprietário não funcionou.</string>
+    <string name="remove_restrictions">Remover restrições</string>
+    <string name="keep_restrictions">Manter restrições</string>
 
     <string name="more_options">Mais opções</string>
     <string name="monospace_on">Monoespaçado: ativado</string>
