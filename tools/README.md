@@ -108,6 +108,10 @@ Result: a TV AVD that runs the same APK as a phone. The leanback launcher entry
 is an extra intent filter and the TV features are declared optional, so the
 accessibility tests run unchanged: `hw.keyboard=yes` gives them the Tab key.
 
+Both AVD scripts treat `sdkmanager`/`avdmanager` output on stderr as normal
+text, so warnings such as the newer SDK tools' `sdkmanager` deprecation notice
+do not abort the run.
+
 ### `start-emulator.bat [avd]`
 
 Starts an AVD without a snapshot and waits until Android has finished booting.

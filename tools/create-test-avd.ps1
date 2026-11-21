@@ -54,6 +54,33 @@ function Find-CommandTool([string]$Sdk, [string]$FileName) {
     return $null
 }
 
+function Invoke-Native {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [string[]]$Arguments = @(),
+        [string]$InputText
+    )
+
+    # sdkmanager and avdmanager write warnings and progress to stderr. The
+    # script runs with ErrorActionPreference = 'Stop', which would turn that
+    # text into a terminating NativeCommandError (for example the sdkmanager
+    # deprecation warning), so stderr is collected as plain text instead.
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = if ($PSBoundParameters.ContainsKey('InputText')) {
+            $InputText | & $FilePath @Arguments 2>&1
+        } else {
+            & $FilePath @Arguments 2>&1
+        }
+        $script:NativeExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+
+    return $output
+}
+
 function Get-LatestSystemImageApi {
     param(
         [string]$Sdk,
@@ -80,7 +107,7 @@ function Get-LatestSystemImageApi {
     # stable across SDK versions, so this follows the newest release without
     # hard-coding an API level.
     if (-not $InstalledOnly -and $SdkManager) {
-        $list = (& $SdkManager --list 2>&1 | Out-String)
+        $list = (Invoke-Native -FilePath $SdkManager -Arguments @('--list') | Out-String)
         $list = $list -replace "`e\[[0-9;]*m", ''
         $pattern = 'system-images[;/]android-([^;/ ]+)[;/]' +
             [regex]::Escape($Tag) + '[;/]' + [regex]::Escape($Abi) + '(?:\s|$)'
@@ -122,8 +149,8 @@ $package = "system-images;android-$Api;$Tag;$Abi"
 $imageDir = Join-Path $sdk "system-images\android-$Api\$Tag\$Abi"
 if (-not (Test-Path $imageDir)) {
     Write-Host "[PDFr] Installing $package ..."
-    & $sdkmanager $package
-    if ($LASTEXITCODE -ne 0) {
+    Invoke-Native -FilePath $sdkmanager -Arguments @($package) | Out-Host
+    if ($script:NativeExitCode -ne 0) {
         throw "sdkmanager failed to install $package. Run '$sdkmanager --licenses' and try again."
     }
 }
@@ -133,8 +160,11 @@ $configPath = Join-Path $avdHome "$Name.avd\config.ini"
 
 Write-Host "[PDFr] Creating AVD '$Name' ($Device, $package, ${RamMb} MB RAM)..."
 # 'no' declines the optional custom-hardware-profile prompt.
-'no' | & $avdmanager create avd --force --name $Name --package $package --device $Device --sdcard 512M
-if ($LASTEXITCODE -ne 0) {
+Invoke-Native -FilePath $avdmanager -InputText 'no' -Arguments @(
+    'create', 'avd', '--force', '--name', $Name, '--package', $package,
+    '--device', $Device, '--sdcard', '512M'
+) | Out-Host
+if ($script:NativeExitCode -ne 0) {
     throw "avdmanager failed to create '$Name'."
 }
 
