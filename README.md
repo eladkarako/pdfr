@@ -105,24 +105,28 @@ intact wherever the target provider allows its timestamp to be updated.
   (default on; horizontal scrolling when off), right-to-left direction and
   alignment (default off), line numbers on the left, or on the right in RTL
   (default on), and a monospace font override.
-- 📍 **Page indicator** fades away while you read and wakes on any scroll, pan or
-  zoom. The overflow menu, info editor and other dialogs scroll when needed and
+- 📍 **Page bar** sits permanently under the toolbar, for every format: first
+  page, previous page, an editable page number with the total, next page and
+  last page. It is monospace and stays left-to-right in every language; the
+  first/previous and next/last buttons disable at the ends, and it never fades.
+  The overflow menu, info editor and other dialogs scroll when needed and
   never cover more than three quarters of the screen.
 - 🌐 **Hebrew and RTL** - the whole interface is translated, and the layout
   mirrors when the language is right-to-left. **Settings…** in the overflow menu
-  switches between the system language, English and עברית without leaving the
-  reader. Only the UI direction changes: PDF pages, images and plain text keep
-  their own direction, and plain text still opens left-to-right unless **Align
-  right** is turned on.
+  switches between the system language and the languages shipped in this build,
+  listed by English and native name without leaving the reader. Only the UI
+  direction changes: PDF pages, images and plain text keep their own direction,
+  and plain text still opens left-to-right unless **Align right** is turned on.
 - 🎨 **Theme override** - the same **Settings…** dialog offers **Same as
   system**, **Light**, **Dark** (grey surfaces) and **AMOLED black** (pure black
   surfaces for OLED panels). A forced theme also updates the status and
   navigation bar icons.
-- ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries and settings rows
-  show a focus/hover ring, presses use a primary-coloured ripple, and Tab follows
-  Share → Info → Open → Save → Menu in that order in every language (the
-  toolbar never mirrors). Android TV is supported through the leanback launcher
-  entry and a 320x180 banner, and the dialogs scroll with a D-pad remote.
+- ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries, page-bar
+  buttons and settings rows show a focus/hover ring, presses use a
+  primary-coloured ripple, and Tab follows Share → Info → Open → Save → Menu and
+  then the page bar in every language (the toolbar never mirrors). Android TV is
+  supported through the leanback launcher entry and a 320x180 banner, and the
+  dialogs scroll with a D-pad remote.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -152,7 +156,10 @@ intact wherever the target provider allows its timestamp to be updated.
 - 🔐 **Password-protected documents** are unlocked once, then rewritten through
   qpdf into the private cache without a password and without editing
   restrictions. The original file is never changed; later rewrites, **Save as**
-  and **Share** use the decrypted cache copy.
+  and **Share** use the decrypted cache copy. If the opening password cannot
+  lift the restrictions, the document stays readable and an optional **Remove
+  restrictions** prompt asks for the owner password; cancelling keeps reading
+  the restricted copy. Both password dialogs have a reveal button.
 - ℹ️ **Metadata editor**: the circled **i** opens the filename, extension, file
   created/modified timestamps and the document metadata the file already has.
   PDFs list every Info and XMP property; images list an ordered EXIF/XMP set
