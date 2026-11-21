@@ -34,6 +34,12 @@
         <item quantity="other">%1$d страницы</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">Первая страница</string>
+    <string name="page_previous">Предыдущая страница</string>
+    <string name="page_next">Следующая страница</string>
+    <string name="page_last">Последняя страница</string>
+    <string name="page_current">Текущая страница</string>
+    <string name="page_total">Всего страниц</string>
     <string name="password_protected">Защищено паролем</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>

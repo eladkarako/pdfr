@@ -36,6 +36,12 @@
         <item quantity="other">%1$d صفحة</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">الصفحة الأولى</string>
+    <string name="page_previous">الصفحة السابقة</string>
+    <string name="page_next">الصفحة التالية</string>
+    <string name="page_last">الصفحة الأخيرة</string>
+    <string name="page_current">الصفحة الحالية</string>
+    <string name="page_total">إجمالي الصفحات</string>
     <string name="password_protected">محمي بكلمة مرور</string>
     <string name="yes">نعم</string>
     <string name="no">لا</string>

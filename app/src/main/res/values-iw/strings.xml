@@ -32,6 +32,12 @@
         <item quantity="other">%1$d עמודים</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">עמוד ראשון</string>
+    <string name="page_previous">העמוד הקודם</string>
+    <string name="page_next">העמוד הבא</string>
+    <string name="page_last">עמוד אחרון</string>
+    <string name="page_current">העמוד הנוכחי</string>
+    <string name="page_total">סך העמודים</string>
     <string name="password_protected">מוגן בסיסמה</string>
     <string name="yes">כן</string>
     <string name="no">לא</string>

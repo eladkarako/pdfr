@@ -32,6 +32,12 @@
         <item quantity="other">%1$d 頁</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">第一頁</string>
+    <string name="page_previous">上一頁</string>
+    <string name="page_next">下一頁</string>
+    <string name="page_last">最後一頁</string>
+    <string name="page_current">目前頁面</string>
+    <string name="page_total">總頁數</string>
     <string name="password_protected">受密碼保護</string>
     <string name="yes">是</string>
     <string name="no">否</string>

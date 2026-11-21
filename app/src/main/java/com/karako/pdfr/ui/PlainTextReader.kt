@@ -1,8 +1,5 @@
 package com.karako.pdfr.ui
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,7 +14,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.contextmenu.builder.item
 import androidx.compose.foundation.text.contextmenu.data.TextContextMenuKeys
 import androidx.compose.foundation.text.contextmenu.modifier.appendTextContextMenuComponents
@@ -25,16 +21,15 @@ import androidx.compose.foundation.text.contextmenu.modifier.filterTextContextMe
 import androidx.compose.foundation.text.selection.DisableSelection
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -59,6 +54,7 @@ import com.karako.pdfr.R
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.TextPage
 import com.karako.pdfr.data.TextPagination
+import kotlinx.coroutines.launch
 
 /**
  * The custom plain-text reader.
@@ -87,6 +83,7 @@ internal fun PlainTextReader(
     lineWrap: Boolean,
     alignRight: Boolean,
     lineNumbers: Boolean,
+    pageController: PageController,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -192,6 +189,9 @@ internal fun PlainTextReader(
 
         CompositionLocalProvider(LocalLayoutDirection provides direction) {
             if (singlePage) {
+                LaunchedEffect(singlePage) {
+                    pageController.setPages(1, 0)
+                }
                 SelectionContainer {
                     if (lineWrap) {
                         ContinuousWrappedLines(
@@ -226,6 +226,7 @@ internal fun PlainTextReader(
                     showLineNumbers = lineNumbers,
                     wrap = lineWrap,
                     padding = padding,
+                    pageController = pageController,
                 )
             }
         }
@@ -325,9 +326,26 @@ private fun PagedLines(
     showLineNumbers: Boolean,
     wrap: Boolean,
     padding: Dp,
+    pageController: PageController,
 ) {
     if (pages.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { pages.size })
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.pageCount) {
+        pageController.setPages(pagerState.pageCount, pagerState.currentPage)
+    }
+    DisposableEffect(pagerState, pages.size) {
+        pageController.setJumpHandler { target ->
+            scope.launch { pagerState.scrollToPage(target) }
+        }
+        onDispose { pageController.setJumpHandler(null) }
+    }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect {
+            pageController.updateCurrentPage(it)
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         SelectionContainer {
@@ -395,14 +413,6 @@ private fun PagedLines(
                 }
             }
         }
-
-        PageBadge(
-            page = pagerState.currentPage + 1,
-            total = pages.size,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(16.dp),
-        )
     }
 }
 
@@ -438,33 +448,6 @@ private fun PlainTextLine(
             softWrap = wrap,
             maxLines = if (wrap) Int.MAX_VALUE else 1,
             overflow = if (wrap) TextOverflow.Clip else TextOverflow.Visible,
-        )
-    }
-}
-
-@Composable
-private fun PageBadge(page: Int, total: Int, modifier: Modifier) {
-    val alpha = remember { Animatable(ReaderConfig.PAGE_BADGE_START_ALPHA) }
-    LaunchedEffect(page, total) {
-        alpha.snapTo(ReaderConfig.PAGE_BADGE_START_ALPHA)
-        alpha.animateTo(
-            targetValue = ReaderConfig.PAGE_BADGE_END_ALPHA,
-            animationSpec = tween(
-                durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS,
-                easing = LinearEasing
-            ),
-        )
-    }
-    Surface(
-        modifier = modifier.alpha(alpha.value),
-        shape = RoundedCornerShape(50),
-        tonalElevation = 3.dp,
-        shadowElevation = 3.dp,
-    ) {
-        Text(
-            text = stringResource(R.string.page_of, page, total),
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
-            style = MaterialTheme.typography.labelLarge,
         )
     }
 }

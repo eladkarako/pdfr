@@ -32,6 +32,12 @@
         <item quantity="other">%1$d Seiten</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">Erste Seite</string>
+    <string name="page_previous">Vorherige Seite</string>
+    <string name="page_next">Nächste Seite</string>
+    <string name="page_last">Letzte Seite</string>
+    <string name="page_current">Aktuelle Seite</string>
+    <string name="page_total">Seiten insgesamt</string>
     <string name="password_protected">Passwortgeschützt</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>

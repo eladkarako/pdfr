@@ -32,6 +32,12 @@
         <item quantity="other">%1$d ページ</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">最初のページ</string>
+    <string name="page_previous">前のページ</string>
+    <string name="page_next">次のページ</string>
+    <string name="page_last">最後のページ</string>
+    <string name="page_current">現在のページ</string>
+    <string name="page_total">総ページ数</string>
     <string name="password_protected">パスワードで保護</string>
     <string name="yes">はい</string>
     <string name="no">いいえ</string>

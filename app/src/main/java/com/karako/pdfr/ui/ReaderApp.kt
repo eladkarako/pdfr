@@ -10,9 +10,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -78,7 +76,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
@@ -147,15 +144,6 @@ private data class PinchSignal(
     val maxScroll: Int,
     val layoutVersion: Int,
     val anchorSize: Int,
-)
-
-/** Everything that wakes the page badge before it fades again. */
-private data class BadgeSignal(
-    val page: Int,
-    val zoom: Float,
-    val active: Boolean,
-    val verticalOffset: Int,
-    val horizontalOffset: Int,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1262,18 +1250,25 @@ private fun DocumentReader(
     onZoom: (Float) -> Unit,
     viewModel: ReaderViewModel,
 ) {
+    val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val pageController = remember(state.file.absolutePath) { PageController() }
+
     val plainText = state.plainText
     if (plainText != null) {
-        PlainTextReader(
-            text = plainText,
-            textSizePt = state.textSizePt,
-            monospace = state.monospace,
-            singlePage = state.singlePage,
-            lineWrap = state.lineWrap,
-            alignRight = state.alignRight,
-            lineNumbers = state.lineNumbers,
-            modifier = Modifier.fillMaxSize(),
-        )
+        Column(modifier = Modifier.fillMaxSize()) {
+            PageToolbar(controller = pageController, enabled = !busy)
+            PlainTextReader(
+                text = plainText,
+                textSizePt = state.textSizePt,
+                monospace = state.monospace,
+                singlePage = state.singlePage,
+                lineWrap = state.lineWrap,
+                alignRight = state.alignRight,
+                lineNumbers = state.lineNumbers,
+                pageController = pageController,
+                modifier = Modifier.weight(1f),
+            )
+        }
         return
     }
 
@@ -1289,7 +1284,6 @@ private fun DocumentReader(
     val interactiveZoom = if (zoomable) zoom else 1f
     val latestZoom by rememberUpdatedState(interactiveZoom)
     val scope = rememberCoroutineScope()
-    val busy by viewModel.busy.collectAsStateWithLifecycle()
     var zoomJob by remember { mutableStateOf<Job?>(null) }
 
     // Rendering and reflow follow the gesture with a short delay. Everything
@@ -1324,10 +1318,6 @@ private fun DocumentReader(
     // effect must not run again for that version after the anchor is
     // released, or it would scroll away from the point the pinch kept.
     var pinchLayoutVersion by remember { mutableIntStateOf(-1) }
-
-    // The page badge is a quiet hint, not a permanent overlay: it wakes on any
-    // navigation, scroll, zoom or pan and then fades to almost nothing.
-    val badgeAlpha = remember { Animatable(ReaderConfig.PAGE_BADGE_START_ALPHA) }
 
     // Relative point inside the page that currently fills most of the
     // viewport, captured before a zoom reflow. It is the page the reader
@@ -1364,31 +1354,6 @@ private fun DocumentReader(
     // The pinch's zoom anchor is applied inside BoxWithConstraints, where the
     // new page width is known; see `LaunchedEffect(anchor.id)` below.
     val latestLayoutVersion by rememberUpdatedState(state.layoutVersion)
-
-    // Any page change, scroll, zoom or pan wakes the badge. `collectLatest`
-    // restarts the fade timer while movement continues, so the badge stays
-    // readable during a gesture and only fades once the reader stops.
-    LaunchedEffect(listState, horizontalScroll) {
-        snapshotFlow {
-            BadgeSignal(
-                page = primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex,
-                zoom = latestZoom,
-                active = pinchActive || listState.isScrollInProgress ||
-                        horizontalScroll.isScrollInProgress,
-                verticalOffset = listState.firstVisibleItemScrollOffset,
-                horizontalOffset = horizontalScroll.value,
-            )
-        }.collectLatest {
-            badgeAlpha.snapTo(ReaderConfig.PAGE_BADGE_START_ALPHA)
-            badgeAlpha.animateTo(
-                targetValue = ReaderConfig.PAGE_BADGE_END_ALPHA,
-                animationSpec = tween(
-                    durationMillis = ReaderConfig.PAGE_BADGE_FADE_MS,
-                    easing = LinearEasing,
-                ),
-            )
-        }
-    }
 
     // Double-tap glides between 100%, 200%, 400% and 600% instead of jumping.
     // Pinch zoom stays continuous and can stop on any value in that range.
@@ -1452,245 +1417,240 @@ private fun DocumentReader(
         Modifier
     }
 
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(pinchModifier),
-    ) {
-        val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
-        val viewportHeightPx = with(density) { maxHeight.toPx() }.toInt()
+    LaunchedEffect(state.file.absolutePath, state.pageCount) {
+        pageController.setPages(state.pageCount, state.anchorPage)
+    }
+    DisposableEffect(listState, state.file.absolutePath) {
+        pageController.setJumpHandler { page ->
+            scope.launch { listState.scrollToItem(page) }
+        }
+        onDispose { pageController.setJumpHandler(null) }
+    }
 
-        // A pinch is scaled locally, so the expensive reflow only needs to
-        // run once the fingers rest. Deferring it also avoids repaginating
-        // halfway through the gesture, which would shift the text away from
-        // the point being held.
-        LaunchedEffect(
-            viewportWidthPx,
-            viewportHeightPx,
-            densityDpi,
-            interactiveZoom,
-            pinchActive,
+    Column(modifier = Modifier.fillMaxSize()) {
+        PageToolbar(controller = pageController, enabled = !busy)
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .then(pinchModifier),
         ) {
-            if (pinchActive) return@LaunchedEffect
-            viewModel.onViewportChanged(
+            val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
+            val viewportHeightPx = with(density) { maxHeight.toPx() }.toInt()
+
+            // A pinch is scaled locally, so the expensive reflow only needs to
+            // run once the fingers rest. Deferring it also avoids repaginating
+            // halfway through the gesture, which would shift the text away from
+            // the point being held.
+            LaunchedEffect(
                 viewportWidthPx,
                 viewportHeightPx,
                 densityDpi,
                 interactiveZoom,
-            )
-        }
-
-        // Reflowable layouts only change when the new layout arrives; until
-        // then the previous layout is scaled by zoom / layoutZoom. Fixed-layout
-        // pages are rasterised wider and panned horizontally instead.
-        val contentScale = if (state.reflowable) {
-            ZoomMath.reflowRackScale(interactiveZoom, state.layoutZoom, widthZoomFloor)
-        } else {
-            interactiveZoom
-        }
-        val pageWidthPx = (viewportWidthPx * contentScale).toInt().coerceAtLeast(1)
-        val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
-
-        // A pinch changes the page size, but the scroll rack only grows after
-        // the next measure. Compensate in two steps: these effects run whenever
-        // the zoom, the midpoint or the measured layout changes, so a scroll
-        // that was clamped before the new width landed is corrected as soon as
-        // the layout catches up instead of anchoring to the page's left edge.
-        suspend fun applyPinchAnchor(anchor: PinchAnchor) {
-            val ratio = latestZoom / anchor.startZoom
-            val target = ZoomMath.anchoredScroll(
-                startScroll = anchor.startScroll,
-                startFocusX = anchor.startFocus.x,
-                focusX = pinchFocus.x,
-                ratio = ratio,
-            )
-            val horizontalDelta = (target - horizontalScroll.value).toFloat()
-            if (abs(horizontalDelta) >= 0.5f) {
-                horizontalScroll.dispatchRawDelta(horizontalDelta)
-            }
-
-            if (anchor.page >= 0) {
-                val item = listState.layoutInfo.visibleItemsInfo
-                    .firstOrNull { it.index == anchor.page }
-                if (item != null && item.size > 0) {
-                    val verticalDelta = ZoomMath.anchorDelta(
-                        itemOffset = item.offset,
-                        itemSize = item.size,
-                        fraction = anchor.fraction,
-                        focusY = pinchFocus.y,
-                    )
-                    if (abs(verticalDelta) > 1f) {
-                        listState.dispatchRawDelta(verticalDelta)
-                    }
-                }
-            }
-        }
-
-        val activeAnchor = pinchAnchor
-        if (activeAnchor != null) {
-            LaunchedEffect(activeAnchor.id) {
-                snapshotFlow {
-                    PinchSignal(
-                        zoom = latestZoom,
-                        focus = pinchFocus,
-                        maxScroll = horizontalScroll.maxValue,
-                        layoutVersion = latestLayoutVersion,
-                        anchorSize = if (activeAnchor.page >= 0) {
-                            listState.layoutInfo.visibleItemsInfo
-                                .firstOrNull { it.index == activeAnchor.page }?.size ?: 0
-                        } else {
-                            0
-                        },
-                    )
-                }.collect {
-                    applyPinchAnchor(activeAnchor)
-                }
-            }
-
-            // The deferred reflow lands after the fingers lift. Keep the
-            // anchor through that layout change and the width-floor switch
-            // that follows it (or a short fallback), then release it so
-            // ordinary scrolling owns the position again.
-            LaunchedEffect(activeAnchor.id, pinchActive) {
-                if (pinchActive) return@LaunchedEffect
-                val version = latestLayoutVersion
-                withTimeoutOrNull(ReaderConfig.POST_PINCH_SETTLE_MS) {
-                    snapshotFlow { latestLayoutVersion }.first { it != version }
-                }
-                // New bitmaps and the rack width both change after the version
-                // bump. The anchor effect keeps correcting while this delay
-                // runs, so the page never drifts during the hand-off.
-                delay(ReaderConfig.POST_PINCH_RENDER_MS)
-                withFrameNanos { }
-                applyPinchAnchor(activeAnchor)
-                pinchLayoutVersion = latestLayoutVersion
-                restorePageFraction = visiblePageFraction()
-                if (pinchAnchor?.id == activeAnchor.id) pinchAnchor = null
-            }
-        }
-
-        LaunchedEffect(state.file.absolutePath) {
-            horizontalScroll.scrollTo(0)
-        }
-
-        LaunchedEffect(state.file.absolutePath, state.layoutVersion, state.anchorPage) {
-            // A pinch keeps its own anchor through the delayed reflow; the
-            // restored reading fraction must not fight it, or run again for
-            // the layout version the pinch already settled.
-            if (pinchActive || pinchAnchor != null) return@LaunchedEffect
-            if (pinchLayoutVersion == state.layoutVersion) return@LaunchedEffect
-            if (state.pageCount <= 0) return@LaunchedEffect
-            val page = state.anchorPage.coerceIn(0, state.pageCount - 1)
-            val fraction = restorePageFraction
-            listState.scrollToItem(page)
-            if (fraction > 0f) {
-                // Let the reflowed page be measured, then keep the same
-                // relative point in it instead of snapping to its top. The
-                // fraction stays remembered, so a reflow that lands while a
-                // pinch is still running does not fall back to the page top.
-                withFrameNanos { }
-                val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
-                if (item != null && item.size > 0) {
-                    listState.scrollToItem(page, (fraction * item.size).roundToInt())
-                }
-            }
-        }
-
-        // Report the page that occupies the largest part of the viewport, not
-        // the first one that peeks in at the top. At the end of a scroll the
-        // last page therefore wins as soon as it fills more than half the
-        // screen instead of waiting for the previous page to leave entirely.
-        val visiblePage by remember {
-            derivedStateOf {
-                primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex
-            }
-        }
-        LaunchedEffect(visiblePage) {
-            viewModel.onPageChanged(visiblePage)
-        }
-
-        val contentPadding = if (state.reflowable) 8.dp else 16.dp
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .horizontalScroll(horizontalScroll),
-        ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .width(pageWidthDp)
-                    .fillMaxHeight(),
-                contentPadding = PaddingValues(vertical = contentPadding),
-                verticalArrangement = Arrangement.spacedBy(24.dp),
+                pinchActive,
             ) {
-                items(
-                    count = state.pageCount,
-                    key = { index -> "${state.file.absolutePath}#$index" },
-                ) { index ->
-                    PageItem(
-                        index = index,
-                        documentKey = state.file.absolutePath,
-                        viewportWidthPx = viewportWidthPx,
-                        reflowable = state.reflowable,
-                        liveZoom = interactiveZoom,
-                        layoutZoom = state.layoutZoom,
-                        renderZoom = renderZoom,
-                        layoutVersion = state.layoutVersion,
-                        selection = selection,
-                        viewModel = viewModel,
-                        onDoubleTap = if (zoomable) doubleTapZoom else null,
-                    )
-                }
+                if (pinchActive) return@LaunchedEffect
+                viewModel.onViewportChanged(
+                    viewportWidthPx,
+                    viewportHeightPx,
+                    densityDpi,
+                    interactiveZoom,
+                )
             }
-        }
 
-        if (selection != null) {
-            SelectionBar(
-                selection = selection,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp),
-                enabled = !busy,
-                onCopy = {
-                    copyToClipboard(context, selection.text)
-                    viewModel.clearSelection()
-                },
-                onCopyAll = {
-                    scope.launch {
-                        val text = viewModel.allText()
-                        if (text.isNullOrBlank()) {
-                            Toast.makeText(
-                                context,
-                                R.string.no_text_to_copy,
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                        } else {
-                            copyToClipboard(context, text, R.string.copied_all)
-                            viewModel.clearSelection()
+            // Reflowable layouts only change when the new layout arrives; until
+            // then the previous layout is scaled by zoom / layoutZoom. Fixed-layout
+            // pages are rasterised wider and panned horizontally instead.
+            val contentScale = if (state.reflowable) {
+                ZoomMath.reflowRackScale(interactiveZoom, state.layoutZoom, widthZoomFloor)
+            } else {
+                interactiveZoom
+            }
+            val pageWidthPx = (viewportWidthPx * contentScale).toInt().coerceAtLeast(1)
+            val pageWidthDp: Dp = with(density) { pageWidthPx.toDp() }
+
+            // A pinch changes the page size, but the scroll rack only grows after
+            // the next measure. Compensate in two steps: these effects run whenever
+            // the zoom, the midpoint or the measured layout changes, so a scroll
+            // that was clamped before the new width landed is corrected as soon as
+            // the layout catches up instead of anchoring to the page's left edge.
+            suspend fun applyPinchAnchor(anchor: PinchAnchor) {
+                val ratio = latestZoom / anchor.startZoom
+                val target = ZoomMath.anchoredScroll(
+                    startScroll = anchor.startScroll,
+                    startFocusX = anchor.startFocus.x,
+                    focusX = pinchFocus.x,
+                    ratio = ratio,
+                )
+                val horizontalDelta = (target - horizontalScroll.value).toFloat()
+                if (abs(horizontalDelta) >= 0.5f) {
+                    horizontalScroll.dispatchRawDelta(horizontalDelta)
+                }
+
+                if (anchor.page >= 0) {
+                    val item = listState.layoutInfo.visibleItemsInfo
+                        .firstOrNull { it.index == anchor.page }
+                    if (item != null && item.size > 0) {
+                        val verticalDelta = ZoomMath.anchorDelta(
+                            itemOffset = item.offset,
+                            itemSize = item.size,
+                            fraction = anchor.fraction,
+                            focusY = pinchFocus.y,
+                        )
+                        if (abs(verticalDelta) > 1f) {
+                            listState.dispatchRawDelta(verticalDelta)
                         }
                     }
-                },
-                onSelectAll = { viewModel.selectAll(selection.page) },
-            )
-        } else if (state.pageCount > 0) {
-            Surface(
+                }
+            }
+
+            val activeAnchor = pinchAnchor
+            if (activeAnchor != null) {
+                LaunchedEffect(activeAnchor.id) {
+                    snapshotFlow {
+                        PinchSignal(
+                            zoom = latestZoom,
+                            focus = pinchFocus,
+                            maxScroll = horizontalScroll.maxValue,
+                            layoutVersion = latestLayoutVersion,
+                            anchorSize = if (activeAnchor.page >= 0) {
+                                listState.layoutInfo.visibleItemsInfo
+                                    .firstOrNull { it.index == activeAnchor.page }?.size ?: 0
+                            } else {
+                                0
+                            },
+                        )
+                    }.collect {
+                        applyPinchAnchor(activeAnchor)
+                    }
+                }
+
+                // The deferred reflow lands after the fingers lift. Keep the
+                // anchor through that layout change and the width-floor switch
+                // that follows it (or a short fallback), then release it so
+                // ordinary scrolling owns the position again.
+                LaunchedEffect(activeAnchor.id, pinchActive) {
+                    if (pinchActive) return@LaunchedEffect
+                    val version = latestLayoutVersion
+                    withTimeoutOrNull(ReaderConfig.POST_PINCH_SETTLE_MS) {
+                        snapshotFlow { latestLayoutVersion }.first { it != version }
+                    }
+                    // New bitmaps and the rack width both change after the version
+                    // bump. The anchor effect keeps correcting while this delay
+                    // runs, so the page never drifts during the hand-off.
+                    delay(ReaderConfig.POST_PINCH_RENDER_MS)
+                    withFrameNanos { }
+                    applyPinchAnchor(activeAnchor)
+                    pinchLayoutVersion = latestLayoutVersion
+                    restorePageFraction = visiblePageFraction()
+                    if (pinchAnchor?.id == activeAnchor.id) pinchAnchor = null
+                }
+            }
+
+            LaunchedEffect(state.file.absolutePath) {
+                horizontalScroll.scrollTo(0)
+            }
+
+            LaunchedEffect(state.file.absolutePath, state.layoutVersion, state.anchorPage) {
+                // A pinch keeps its own anchor through the delayed reflow; the
+                // restored reading fraction must not fight it, or run again for
+                // the layout version the pinch already settled.
+                if (pinchActive || pinchAnchor != null) return@LaunchedEffect
+                if (pinchLayoutVersion == state.layoutVersion) return@LaunchedEffect
+                if (state.pageCount <= 0) return@LaunchedEffect
+                val page = state.anchorPage.coerceIn(0, state.pageCount - 1)
+                val fraction = restorePageFraction
+                listState.scrollToItem(page)
+                if (fraction > 0f) {
+                    // Let the reflowed page be measured, then keep the same
+                    // relative point in it instead of snapping to its top. The
+                    // fraction stays remembered, so a reflow that lands while a
+                    // pinch is still running does not fall back to the page top.
+                    withFrameNanos { }
+                    val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
+                    if (item != null && item.size > 0) {
+                        listState.scrollToItem(page, (fraction * item.size).roundToInt())
+                    }
+                }
+            }
+
+            // Report the page that occupies the largest part of the viewport, not
+            // the first one that peeks in at the top. At the end of a scroll the
+            // last page therefore wins as soon as it fills more than half the
+            // screen instead of waiting for the previous page to leave entirely.
+            val visiblePage by remember {
+                derivedStateOf {
+                    primaryVisibleItem()?.index ?: listState.firstVisibleItemIndex
+                }
+            }
+            LaunchedEffect(visiblePage, state.pageCount) {
+                pageController.setPages(state.pageCount, visiblePage)
+                viewModel.onPageChanged(visiblePage)
+            }
+
+            val contentPadding = if (state.reflowable) 8.dp else 16.dp
+
+            Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .alpha(badgeAlpha.value),
-                shape = RoundedCornerShape(50),
-                tonalElevation = 3.dp,
-                shadowElevation = 3.dp,
+                    .fillMaxSize()
+                    .horizontalScroll(horizontalScroll),
             ) {
-                Text(
-                    text = stringResource(
-                        R.string.page_of,
-                        (visiblePage + 1).coerceAtMost(state.pageCount),
-                        state.pageCount,
-                    ),
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
-                    style = MaterialTheme.typography.labelLarge,
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .width(pageWidthDp)
+                        .fillMaxHeight(),
+                    contentPadding = PaddingValues(vertical = contentPadding),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    items(
+                        count = state.pageCount,
+                        key = { index -> "${state.file.absolutePath}#$index" },
+                    ) { index ->
+                        PageItem(
+                            index = index,
+                            documentKey = state.file.absolutePath,
+                            viewportWidthPx = viewportWidthPx,
+                            reflowable = state.reflowable,
+                            liveZoom = interactiveZoom,
+                            layoutZoom = state.layoutZoom,
+                            renderZoom = renderZoom,
+                            layoutVersion = state.layoutVersion,
+                            selection = selection,
+                            viewModel = viewModel,
+                            onDoubleTap = if (zoomable) doubleTapZoom else null,
+                        )
+                    }
+                }
+            }
+
+            if (selection != null) {
+                SelectionBar(
+                    selection = selection,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    enabled = !busy,
+                    onCopy = {
+                        copyToClipboard(context, selection.text)
+                        viewModel.clearSelection()
+                    },
+                    onCopyAll = {
+                        scope.launch {
+                            val text = viewModel.allText()
+                            if (text.isNullOrBlank()) {
+                                Toast.makeText(
+                                    context,
+                                    R.string.no_text_to_copy,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            } else {
+                                copyToClipboard(context, text, R.string.copied_all)
+                                viewModel.clearSelection()
+                            }
+                        }
+                    },
+                    onSelectAll = { viewModel.selectAll(selection.page) },
                 )
             }
         }

@@ -32,6 +32,12 @@
         <item quantity="other">%1$d पृष्ठ</item>
     </plurals>
     <string name="page_of">%1$d / %2$d</string>
+    <string name="page_first">पहला पृष्ठ</string>
+    <string name="page_previous">पिछला पृष्ठ</string>
+    <string name="page_next">अगला पृष्ठ</string>
+    <string name="page_last">अंतिम पृष्ठ</string>
+    <string name="page_current">वर्तमान पृष्ठ</string>
+    <string name="page_total">कुल पृष्ठ</string>
     <string name="password_protected">पासवर्ड से सुरक्षित</string>
     <string name="yes">हाँ</string>
     <string name="no">नहीं</string>

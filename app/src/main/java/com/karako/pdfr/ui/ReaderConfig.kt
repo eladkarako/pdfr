@@ -67,19 +67,6 @@ internal object ReaderConfig {
     const val PINCH_START_DISTANCE = 8f
 
     // -----------------------------------------------------------------------
-    // Page badge
-    // -----------------------------------------------------------------------
-
-    /** The page badge starts slightly transparent while the reader is idle. */
-    const val PAGE_BADGE_START_ALPHA = 0.78f
-
-    /** Fully faded alpha the badge animates towards. */
-    const val PAGE_BADGE_END_ALPHA = 0.05f
-
-    /** How long the badge stays visible before fading. */
-    const val PAGE_BADGE_FADE_MS = 5000
-
-    // -----------------------------------------------------------------------
     // Selection outline
     // -----------------------------------------------------------------------
 
