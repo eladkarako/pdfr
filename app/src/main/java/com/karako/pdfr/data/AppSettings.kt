@@ -28,6 +28,25 @@ enum class ThemeMode {
 }
 
 /**
+ * Which way the page-navigation bar runs.
+ *
+ * [LANGUAGE] follows the active language, so a right-to-left language mirrors
+ * the bar while the main toolbar above it stays fixed. The other values pin
+ * the page bar regardless of the UI language.
+ */
+enum class PageDirection {
+    LANGUAGE,
+    LTR,
+    RTL,
+    ;
+
+    companion object {
+        fun parse(name: String?): PageDirection =
+            runCatching { valueOf(name.orEmpty()) }.getOrDefault(LANGUAGE)
+    }
+}
+
+/**
  * One language offered by the settings dialog.
  *
  * [tag] is the value stored in preferences and passed to
@@ -70,6 +89,7 @@ object AppSettings {
     const val PREFERENCES_NAME = "pdfr-settings"
     const val KEY_THEME = "theme"
     const val KEY_LANGUAGE = "language"
+    const val KEY_PAGE_DIRECTION = "page_direction"
 
     /** Empty tag means "follow the system language". */
     const val SYSTEM_LANGUAGE = ""
@@ -122,6 +142,16 @@ object AppSettings {
     fun setLanguageTag(context: Context, tag: String) {
         val safe = if (languages(context).any { it.tag == tag }) tag else SYSTEM_LANGUAGE
         preferences(context).edit().putString(KEY_LANGUAGE, safe).apply()
+    }
+
+    fun pageDirection(context: Context): PageDirection =
+        PageDirection.parse(preferences(context).getString(
+            KEY_PAGE_DIRECTION,
+            PageDirection.LANGUAGE.name,
+        ))
+
+    fun setPageDirection(context: Context, direction: PageDirection) {
+        preferences(context).edit().putString(KEY_PAGE_DIRECTION, direction.name).apply()
     }
 
     /**
