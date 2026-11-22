@@ -1,10 +1,14 @@
 package com.karako.pdfr.ui
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
@@ -14,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -48,21 +55,76 @@ internal fun AccessibleIconButton(
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription
             }
-            .then(
-                if (active) {
-                    Modifier
-                        .background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                            CircleShape,
-                        )
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                } else {
-                    Modifier
-                },
+            .classicButton(
+                interaction = interaction,
+                shape = CircleShape,
+                enabled = enabled,
+                active = active,
             ),
         interactionSource = interaction,
         content = content,
     )
+}
+
+/**
+ * The raised-key look shared by the toolbar and page-bar buttons.
+ *
+ * At rest the control sits on a tinted surface with a hairline outline and a
+ * small shadow. While pressed it shrinks, moves down a couple of pixels and
+ * loses the shadow, then springs back when released. Focus or hover adds the
+ * primary ring used for keyboard and TV navigation. The whole effect is drawn
+ * from the button's interaction source, so it works for icon buttons, text
+ * buttons and the overflow menu trigger alike without any bitmap assets.
+ */
+@Composable
+internal fun Modifier.classicButton(
+    interaction: MutableInteractionSource,
+    shape: Shape,
+    enabled: Boolean,
+    active: Boolean,
+): Modifier {
+    val pressed by interaction.collectIsPressedAsState()
+    val pushed = pressed && enabled
+    val scale by animateFloatAsState(
+        targetValue = if (pushed) 0.9f else 1f,
+        animationSpec = tween(durationMillis = 90),
+        label = "button-scale",
+    )
+    val shadow by animateDpAsState(
+        targetValue = if (enabled && !pushed) 2.dp else 0.dp,
+        animationSpec = tween(durationMillis = 90),
+        label = "button-shadow",
+    )
+    val lift by animateDpAsState(
+        targetValue = if (pushed) 2.dp else 0.dp,
+        animationSpec = tween(durationMillis = 90),
+        label = "button-lift",
+    )
+    val fill = when {
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        pushed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.26f)
+        active -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val borderColor = if (active && enabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = if (enabled) 0.6f else 0.25f)
+    }
+
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+            translationY = lift.toPx()
+        }
+        .shadow(elevation = shadow, shape = shape, clip = false)
+        .background(color = fill, shape = shape)
+        .border(
+            width = if (active && enabled) 2.dp else 1.dp,
+            color = borderColor,
+            shape = shape,
+        )
 }
 
 /**

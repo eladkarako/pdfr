@@ -1,7 +1,6 @@
 package com.karako.pdfr.ui
 
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -201,16 +200,13 @@ private fun PageButton(
         modifier = Modifier
             .width(40.dp)
             .height(30.dp)
-            .clip(shape)
-            .then(
-                if (active) {
-                    Modifier
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
-                        .border(2.dp, MaterialTheme.colorScheme.primary, shape)
-                } else {
-                    Modifier
-                },
+            .classicButton(
+                interaction = interaction,
+                shape = shape,
+                enabled = enabled,
+                active = active,
             )
+            .clip(shape)
             .clickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
@@ -346,11 +342,20 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
 @Composable
 private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
+    val active = focused || hovered
     val shape = RoundedCornerShape(4.dp)
 
     Box(
         modifier = Modifier
             .size(22.dp)
+            .classicButton(
+                interaction = interaction,
+                shape = shape,
+                enabled = enabled,
+                active = active,
+            )
             .clip(shape)
             .clickable(
                 interactionSource = interaction,
