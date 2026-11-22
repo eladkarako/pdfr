@@ -38,6 +38,7 @@
     <string name="page_last">अंतिम पृष्ठ</string>
     <string name="page_current">वर्तमान पृष्ठ</string>
     <string name="page_total">कुल पृष्ठ</string>
+    <string name="page_go">पेज पर जाएँ</string>
     <string name="password_protected">पासवर्ड से सुरक्षित</string>
     <string name="yes">हाँ</string>
     <string name="no">नहीं</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">सेटिंग्स</string>
     <string name="settings_theme">थीम</string>
     <string name="settings_language">भाषा</string>
+    <string name="settings_page_direction">पेज बार की दिशा</string>
+    <string name="page_direction_language">भाषा के अनुसार</string>
+    <string name="page_direction_ltr">बाएँ से दाएँ</string>
+    <string name="page_direction_rtl">दाएँ से बाएँ</string>
     <string name="settings_note">बदलाव तुरंत सहेजे जाते हैं। नई भाषा स्क्रीन को फिर से लोड करती है।</string>
     <string name="theme_system">सिस्टम जैसा</string>
     <string name="theme_light">हल्का</string>

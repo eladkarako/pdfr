@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.karako.pdfr.data.AppSettings
+import com.karako.pdfr.data.PageDirection
 import com.karako.pdfr.data.ThemeMode
 import com.karako.pdfr.ui.ReaderApp
 import com.karako.pdfr.ui.ReaderViewModel
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     // language change recreates the activity.
     private var themeMode by mutableStateOf(ThemeMode.SYSTEM)
     private var languageTag by mutableStateOf(AppSettings.SYSTEM_LANGUAGE)
+    private var pageDirection by mutableStateOf(PageDirection.LANGUAGE)
 
     override fun attachBaseContext(newBase: Context) {
         // The language override has to be applied before the activity resolves
@@ -45,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
         themeMode = AppSettings.themeMode(this)
         languageTag = AppSettings.languageTag(this)
+        pageDirection = AppSettings.pageDirection(this)
         applySystemBars()
 
         // On rotation the ViewModel already holds the document; only act on the
@@ -68,6 +71,7 @@ class MainActivity : ComponentActivity() {
                     viewModel = viewModel,
                     themeMode = themeMode,
                     languageTag = languageTag,
+                    pageDirection = pageDirection,
                     onThemeModeChange = { mode ->
                         themeMode = mode
                         AppSettings.setThemeMode(this@MainActivity, mode)
@@ -78,6 +82,10 @@ class MainActivity : ComponentActivity() {
                             languageTag = tag
                             recreate()
                         }
+                    },
+                    onPageDirectionChange = { direction ->
+                        pageDirection = direction
+                        AppSettings.setPageDirection(this@MainActivity, direction)
                     },
                 )
             }

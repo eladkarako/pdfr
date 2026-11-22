@@ -38,6 +38,7 @@
     <string name="page_last">마지막 페이지</string>
     <string name="page_current">현재 페이지</string>
     <string name="page_total">전체 페이지</string>
+    <string name="page_go">페이지로 이동</string>
     <string name="password_protected">비밀번호로 보호됨</string>
     <string name="yes">예</string>
     <string name="no">아니요</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">설정</string>
     <string name="settings_theme">테마</string>
     <string name="settings_language">언어</string>
+    <string name="settings_page_direction">페이지 표시줄 방향</string>
+    <string name="page_direction_language">언어에 따름</string>
+    <string name="page_direction_ltr">왼쪽에서 오른쪽</string>
+    <string name="page_direction_rtl">오른쪽에서 왼쪽</string>
     <string name="settings_note">변경 사항은 즉시 저장됩니다. 언어를 변경하면 화면이 다시 로드됩니다.</string>
     <string name="theme_system">시스템과 동일</string>
     <string name="theme_light">밝게</string>

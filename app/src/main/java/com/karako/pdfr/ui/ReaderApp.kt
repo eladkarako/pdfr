@@ -105,6 +105,7 @@ import com.karako.pdfr.R
 import com.karako.pdfr.data.DocumentFormats
 import com.karako.pdfr.data.NormalizeOptions
 import com.karako.pdfr.data.PageBounds
+import com.karako.pdfr.data.PageDirection
 import com.karako.pdfr.data.PageRanges
 import com.karako.pdfr.data.PlainText
 import com.karako.pdfr.data.RenderedPage
@@ -155,8 +156,10 @@ fun ReaderApp(
     viewModel: ReaderViewModel,
     themeMode: ThemeMode,
     languageTag: String,
+    pageDirection: PageDirection,
     onThemeModeChange: (ThemeMode) -> Unit,
     onLanguageChange: (String) -> Unit,
+    onPageDirectionChange: (PageDirection) -> Unit,
 ) {
     val context = LocalContext.current
     val busy by viewModel.busy.collectAsStateWithLifecycle()
@@ -757,6 +760,7 @@ fun ReaderApp(
                     zoom = zoom,
                     onZoom = { zoom = it },
                     viewModel = viewModel,
+                    pageDirection = pageDirection,
                 )
             }
         }
@@ -846,8 +850,10 @@ fun ReaderApp(
         SettingsDialog(
             themeMode = themeMode,
             languageTag = languageTag,
+            pageDirection = pageDirection,
             onThemeModeChange = onThemeModeChange,
             onLanguageChange = onLanguageChange,
+            onPageDirectionChange = onPageDirectionChange,
             onDismiss = { showSettingsDialog = false },
         )
     }
@@ -1266,6 +1272,7 @@ private fun DocumentReader(
     zoom: Float,
     onZoom: (Float) -> Unit,
     viewModel: ReaderViewModel,
+    pageDirection: PageDirection,
 ) {
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val pageController = remember(state.file.absolutePath) { PageController() }
@@ -1273,7 +1280,11 @@ private fun DocumentReader(
     val plainText = state.plainText
     if (plainText != null) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PageToolbar(controller = pageController, enabled = !busy)
+            PageToolbar(
+                controller = pageController,
+                enabled = !busy,
+                direction = pageDirection,
+            )
             PlainTextReader(
                 text = plainText,
                 textSizePt = state.textSizePt,
@@ -1445,7 +1456,11 @@ private fun DocumentReader(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        PageToolbar(controller = pageController, enabled = !busy)
+        PageToolbar(
+            controller = pageController,
+            enabled = !busy,
+            direction = pageDirection,
+        )
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()

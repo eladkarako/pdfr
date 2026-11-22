@@ -38,6 +38,7 @@
     <string name="page_last">最后一页</string>
     <string name="page_current">当前页</string>
     <string name="page_total">总页数</string>
+    <string name="page_go">跳转到页面</string>
     <string name="password_protected">受密码保护</string>
     <string name="yes">是</string>
     <string name="no">否</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">设置</string>
     <string name="settings_theme">主题</string>
     <string name="settings_language">语言</string>
+    <string name="settings_page_direction">页码栏方向</string>
+    <string name="page_direction_language">跟随语言</string>
+    <string name="page_direction_ltr">从左到右</string>
+    <string name="page_direction_rtl">从右到左</string>
     <string name="settings_note">更改会立即保存。切换语言会重新加载屏幕。</string>
     <string name="theme_system">跟随系统</string>
     <string name="theme_light">浅色</string>

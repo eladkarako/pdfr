@@ -38,6 +38,7 @@
     <string name="page_last">最後のページ</string>
     <string name="page_current">現在のページ</string>
     <string name="page_total">総ページ数</string>
+    <string name="page_go">ページへ移動</string>
     <string name="password_protected">パスワードで保護</string>
     <string name="yes">はい</string>
     <string name="no">いいえ</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">設定</string>
     <string name="settings_theme">テーマ</string>
     <string name="settings_language">言語</string>
+    <string name="settings_page_direction">ページバーの方向</string>
+    <string name="page_direction_language">言語に合わせる</string>
+    <string name="page_direction_ltr">左から右</string>
+    <string name="page_direction_rtl">右から左</string>
     <string name="settings_note">変更はすぐに保存されます。言語を変更すると画面が再読み込みされます。</string>
     <string name="theme_system">システムと同じ</string>
     <string name="theme_light">ライト</string>

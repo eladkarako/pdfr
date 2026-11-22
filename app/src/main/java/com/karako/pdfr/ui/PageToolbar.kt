@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.karako.pdfr.R
+import com.karako.pdfr.data.PageDirection
 
 /**
  * Page position shared by the reader and its thin navigation toolbar.
@@ -105,6 +106,7 @@ internal class PageController {
 internal fun PageToolbar(
     controller: PageController,
     enabled: Boolean,
+    direction: PageDirection,
     modifier: Modifier = Modifier,
 ) {
     val pageCount = controller.pageCount
@@ -112,10 +114,18 @@ internal fun PageToolbar(
     val hasPrevious = current > 0
     val hasNext = current < pageCount - 1
 
+    // The bar follows the document language by default, so an RTL language
+    // mirrors the whole row and its buttons. The main toolbar is wrapped in an
+    // explicit LTR provider of its own and is unaffected. A stored LTR/RTL
+    // choice overrides the language for this bar only.
+    val layoutDirection = when (direction) {
+        PageDirection.LANGUAGE -> LocalLayoutDirection.current
+        PageDirection.LTR -> LayoutDirection.Ltr
+        PageDirection.RTL -> LayoutDirection.Rtl
+    }
+
     Surface(color = MaterialTheme.colorScheme.surface) {
-        // Page numbers and the first/previous/next/last order stay left-to-right
-        // in every language, like the main toolbar above it.
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
             Column(modifier = modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier

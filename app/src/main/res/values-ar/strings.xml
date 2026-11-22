@@ -42,6 +42,7 @@
     <string name="page_last">الصفحة الأخيرة</string>
     <string name="page_current">الصفحة الحالية</string>
     <string name="page_total">إجمالي الصفحات</string>
+    <string name="page_go">الانتقال إلى الصفحة</string>
     <string name="password_protected">محمي بكلمة مرور</string>
     <string name="yes">نعم</string>
     <string name="no">لا</string>
@@ -149,6 +150,10 @@
     <string name="settings_title">الإعدادات</string>
     <string name="settings_theme">المظهر</string>
     <string name="settings_language">اللغة</string>
+    <string name="settings_page_direction">اتجاه شريط الصفحات</string>
+    <string name="page_direction_language">حسب اللغة</string>
+    <string name="page_direction_ltr">من اليسار إلى اليمين</string>
+    <string name="page_direction_rtl">من اليمين إلى اليسار</string>
     <string name="settings_note">تُحفظ التغييرات فورًا. اللغة الجديدة تعيد تحميل الشاشة.</string>
     <string name="theme_system">مثل النظام</string>
     <string name="theme_light">فاتح</string>

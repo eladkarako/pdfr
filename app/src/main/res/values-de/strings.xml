@@ -38,6 +38,7 @@
     <string name="page_last">Letzte Seite</string>
     <string name="page_current">Aktuelle Seite</string>
     <string name="page_total">Seiten insgesamt</string>
+    <string name="page_go">Zu Seite springen</string>
     <string name="password_protected">Passwortgeschützt</string>
     <string name="yes">Ja</string>
     <string name="no">Nein</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">Einstellungen</string>
     <string name="settings_theme">Design</string>
     <string name="settings_language">Sprache</string>
+    <string name="settings_page_direction">Ausrichtung der Seitenleiste</string>
+    <string name="page_direction_language">Nach Sprache</string>
+    <string name="page_direction_ltr">Von links nach rechts</string>
+    <string name="page_direction_rtl">Von rechts nach links</string>
     <string name="settings_note">Änderungen werden sofort gespeichert. Eine neue Sprache lädt den Bildschirm neu.</string>
     <string name="theme_system">Wie System</string>
     <string name="theme_light">Hell</string>

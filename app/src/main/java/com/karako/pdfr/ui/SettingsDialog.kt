@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.sp
 import com.karako.pdfr.R
 import com.karako.pdfr.data.AppLanguage
 import com.karako.pdfr.data.AppSettings
+import com.karako.pdfr.data.PageDirection
 import com.karako.pdfr.data.ThemeMode
 
 /**
@@ -69,8 +71,10 @@ import com.karako.pdfr.data.ThemeMode
 internal fun SettingsDialog(
     themeMode: ThemeMode,
     languageTag: String,
+    pageDirection: PageDirection,
     onThemeModeChange: (ThemeMode) -> Unit,
     onLanguageChange: (String) -> Unit,
+    onPageDirectionChange: (PageDirection) -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -105,6 +109,16 @@ internal fun SettingsDialog(
                 )
 
                 Spacer(Modifier.height(12.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(12.dp))
+
+                SectionTitle(stringResource(R.string.settings_page_direction))
+                DirectionCombo(
+                    selected = pageDirection,
+                    onSelect = onPageDirectionChange,
+                )
+
+                Spacer(Modifier.height(12.dp))
                 Text(
                     text = stringResource(R.string.settings_note),
                     style = MaterialTheme.typography.bodySmall,
@@ -135,36 +149,9 @@ private fun LanguageCombo(
     onSelect: (AppLanguage) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val interaction = remember { MutableInteractionSource() }
-    val focused by interaction.collectIsFocusedAsState()
-    val hovered by interaction.collectIsHoveredAsState()
-    val active = focused || hovered
-    val shape = RoundedCornerShape(10.dp)
 
     Box(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .background(
-                    if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                    else Color.Transparent,
-                    shape,
-                )
-                .border(
-                    width = if (active) 2.dp else 1.dp,
-                    color = if (active) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outline,
-                    shape = shape,
-                )
-                .clickable(
-                    interactionSource = interaction,
-                    indication = LocalIndication.current,
-                    role = Role.DropdownList,
-                ) { expanded = true }
-                .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        ComboButton(onClick = { expanded = true }) {
             Box(Modifier.weight(1f)) {
                 LanguageCaption(selected)
             }
@@ -205,6 +192,101 @@ private fun LanguageCombo(
             }
         }
     }
+}
+
+/**
+ * The closed combo box for the page-bar direction. It uses the same trigger as
+ * the language picker, so both rows share one focus ring and one press feel.
+ */
+@Composable
+private fun DirectionCombo(
+    selected: PageDirection,
+    onSelect: (PageDirection) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(Modifier.fillMaxWidth()) {
+        ComboButton(onClick = { expanded = true }) {
+            Box(Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(selected.labelRes()),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+            }
+            Icon(
+                painter = painterResource(R.drawable.ic_arrow_drop_down),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.width(dimensionResource(R.dimen.language_menu_width)),
+        ) {
+            PageDirection.entries.forEach { direction ->
+                AccessibleDropdownMenuItem(
+                    text = { Text(stringResource(direction.labelRes())) },
+                    onClick = {
+                        expanded = false
+                        if (direction != selected) onSelect(direction)
+                    },
+                    leadingIcon = {
+                        Box(Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                            if (direction == selected) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_check),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                        }
+                    },
+                )
+            }
+        }
+    }
+}
+
+/** The shared closed-combo trigger: border, focus ring and dropdown arrow slot. */
+@Composable
+private fun ComboButton(
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
+    val active = focused || hovered
+    val shape = RoundedCornerShape(10.dp)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(
+                if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                else Color.Transparent,
+                shape,
+            )
+            .border(
+                width = if (active) 2.dp else 1.dp,
+                color = if (active) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+                shape = shape,
+            )
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                role = Role.DropdownList,
+                onClick = onClick,
+            )
+            .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
 }
 
 /** English name and native name, side by side in two aligned columns. */
@@ -307,4 +389,10 @@ private fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.LIGHT -> R.string.theme_light
     ThemeMode.DARK -> R.string.theme_dark
     ThemeMode.AMOLED -> R.string.theme_amoled
+}
+
+private fun PageDirection.labelRes(): Int = when (this) {
+    PageDirection.LANGUAGE -> R.string.page_direction_language
+    PageDirection.LTR -> R.string.page_direction_ltr
+    PageDirection.RTL -> R.string.page_direction_rtl
 }

@@ -38,6 +38,7 @@
     <string name="page_last">עמוד אחרון</string>
     <string name="page_current">העמוד הנוכחי</string>
     <string name="page_total">סך העמודים</string>
+    <string name="page_go">מעבר לעמוד</string>
     <string name="password_protected">מוגן בסיסמה</string>
     <string name="yes">כן</string>
     <string name="no">לא</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">הגדרות</string>
     <string name="settings_theme">ערכת נושא</string>
     <string name="settings_language">שפה</string>
+    <string name="settings_page_direction">כיוון שורת העמודים</string>
+    <string name="page_direction_language">לפי השפה</string>
+    <string name="page_direction_ltr">משמאל לימין</string>
+    <string name="page_direction_rtl">מימין לשמאל</string>
     <string name="settings_note">השינויים נשמרים מיד. שפה חדשה טוענת מחדש את המסך.</string>
     <string name="theme_system">לפי המערכת</string>
     <string name="theme_light">בהיר</string>

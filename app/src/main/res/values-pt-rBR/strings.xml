@@ -38,6 +38,7 @@
     <string name="page_last">Última página</string>
     <string name="page_current">Página atual</string>
     <string name="page_total">Total de páginas</string>
+    <string name="page_go">Ir para a página</string>
     <string name="password_protected">Protegido por senha</string>
     <string name="yes">Sim</string>
     <string name="no">Não</string>
@@ -145,6 +146,10 @@
     <string name="settings_title">Configurações</string>
     <string name="settings_theme">Tema</string>
     <string name="settings_language">Idioma</string>
+    <string name="settings_page_direction">Direção da barra de páginas</string>
+    <string name="page_direction_language">Conforme o idioma</string>
+    <string name="page_direction_ltr">Da esquerda para a direita</string>
+    <string name="page_direction_rtl">Da direita para a esquerda</string>
     <string name="settings_note">As alterações são salvas imediatamente. Um novo idioma recarrega a tela.</string>
     <string name="theme_system">Igual ao sistema</string>
     <string name="theme_light">Claro</string>

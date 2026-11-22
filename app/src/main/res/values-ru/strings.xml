@@ -40,6 +40,7 @@
     <string name="page_last">Последняя страница</string>
     <string name="page_current">Текущая страница</string>
     <string name="page_total">Всего страниц</string>
+    <string name="page_go">Перейти к странице</string>
     <string name="password_protected">Защищено паролем</string>
     <string name="yes">Да</string>
     <string name="no">Нет</string>
@@ -147,6 +148,10 @@
     <string name="settings_title">Настройки</string>
     <string name="settings_theme">Тема</string>
     <string name="settings_language">Язык</string>
+    <string name="settings_page_direction">Направление панели страниц</string>
+    <string name="page_direction_language">По языку</string>
+    <string name="page_direction_ltr">Слева направо</string>
+    <string name="page_direction_rtl">Справа налево</string>
     <string name="settings_note">Изменения сохраняются сразу. Новый язык перезагружает экран.</string>
     <string name="theme_system">Как в системе</string>
     <string name="theme_light">Светлая</string>

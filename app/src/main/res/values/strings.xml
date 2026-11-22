@@ -38,6 +38,7 @@
     <string name="page_last">Last page</string>
     <string name="page_current">Current page</string>
     <string name="page_total">Total pages</string>
+    <string name="page_go">Go to page</string>
     <string name="password_protected">Password protected</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
@@ -147,6 +148,10 @@
     <string name="settings_title">Settings</string>
     <string name="settings_theme">Theme</string>
     <string name="settings_language">Language</string>
+    <string name="settings_page_direction">Page bar direction</string>
+    <string name="page_direction_language">By language</string>
+    <string name="page_direction_ltr">Left to right</string>
+    <string name="page_direction_rtl">Right to left</string>
     <string name="settings_note">Changes are saved immediately. A new language reloads the screen.</string>
     <string name="theme_system">Same as system</string>
     <string name="theme_light">Light</string>
