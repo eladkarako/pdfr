@@ -17,6 +17,8 @@ keystore/release.jks
 .DS_Store
 build/
 /build*
+# buildSrc is source (the language-resource generator), not build output.
+!/buildSrc/
 captures/
 .externalNativeBuild/
 .cxx/
