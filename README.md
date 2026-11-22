@@ -106,10 +106,14 @@ intact wherever the target provider allows its timestamp to be updated.
   alignment (default off), line numbers on the left, or on the right in RTL
   (default on), and a monospace font override.
 - 📍 **Page bar** sits permanently under the toolbar, for every format: first
-  page, previous page, an editable page number with the total, next page and
-  last page. It is monospace and stays left-to-right in every language; the
-  first/previous and next/last buttons disable at the ends, and it never fades.
-  The overflow menu, info editor and other dialogs scroll when needed and
+  page, previous page, an editable page number with the total and a small jump
+  button, next page and last page. The bar follows the UI language by default,
+  so it mirrors for Hebrew and Arabic while the toolbar above it stays
+  left-to-right; **Settings… → Page bar direction** can force left-to-right or
+  right-to-left instead. The page field follows scrolling and navigation even
+  while it has focus, and a tap anywhere else in the reader commits the value
+  and drops the keyboard. The buttons disable at the ends, and the bar never
+  fades. The overflow menu, info editor and other dialogs scroll when needed and
   never cover more than three quarters of the screen.
 - 🌐 **Hebrew and RTL** - the whole interface is translated, and the layout
   mirrors when the language is right-to-left. **Settings…** in the overflow menu
@@ -122,11 +126,12 @@ intact wherever the target provider allows its timestamp to be updated.
   surfaces for OLED panels). A forced theme also updates the status and
   navigation bar icons.
 - ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries, page-bar
-  buttons and settings rows show a focus/hover ring, presses use a
-  primary-coloured ripple, and Tab follows Share → Info → Open → Save → Menu and
-  then the page bar in every language (the toolbar never mirrors). Android TV is
-  supported through the leanback launcher entry and a 320x180 banner, and the
-  dialogs scroll with a D-pad remote.
+  buttons and settings rows show a focus/hover ring, and every button sinks
+  under the press before springing back. Tab follows Share → Info → Open → Save
+  → Menu and then the page bar in every language (the toolbar never mirrors; the
+  page bar follows its direction setting). Android TV is supported through the
+  leanback launcher entry and a 320x180 banner, and the dialogs scroll with a
+  D-pad remote.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -248,8 +253,8 @@ Tunable values live in a handful of places, depending on who consumes them:
 | What | Where | Why there |
 | --- | --- | --- |
 | User-visible text | `app/src/main/res/values/strings.xml` | Translatable, with plurals. Technical patterns such as the ISO date hint are marked `translatable="false"`. |
-| Hebrew text | `app/src/main/res/values-iw/strings.xml` | Mirrors every translatable entry; keep both files in sync. `iw` is Android's legacy qualifier for Hebrew and is what the platform selects at runtime, so the folder must stay `values-iw` even though the language tag is `he`. |
-| Stored theme and language | `data/AppSettings.kt` | The preference keys, the language list and the locale wrapper; a new language folder must be added here too. |
+| Other languages | `app/src/main/res/values-*/strings.xml` | Thirteen full translations plus regional overlays. The settings picker and `xml/locales_config.xml` are generated from these folders by `buildSrc`, so adding a folder is enough. `values-iw` stays `iw` because that is Android's legacy qualifier for Hebrew, even though the generated tag is `he`. |
+| Stored theme, language and page-bar direction | `data/AppSettings.kt` | The preference keys, the `PageDirection` enum and the locale wrapper. The language catalog itself comes from the generated `supported_language_tags` array. |
 | Colours and theme | `app/src/main/res/values/colors.xml`, `themes.xml` | Standard Android resource lookup. |
 | Semantic layout sizes | `app/src/main/res/values/dimens.xml` | Dialog heights, label columns, icon sizes and the selection outline. One-off spacing stays next to its composable. |
 | Reader timing, layout limits, saved-state keys and selection colours | `ui/ReaderConfig.kt` | Shared by composables and the view model; mostly floats, durations and opaque keys. |

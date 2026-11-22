@@ -91,6 +91,10 @@ were left in place.
 | --- | --- | --- |
 | `metadata_icc_profile_size` | `"ICC profile (${it.sizeBytes} bytes)"` | `ImageMetadata.read(..., iccProfileLabel)` |
 | `language_system` | `"System default"` (new label) | `AppSettings.languages` / `SettingsDialog` |
+| `settings_page_direction` | `"Page bar direction"` (new label) | `SettingsDialog` |
+| `page_direction_language` | `"By language"` (new label) | `SettingsDialog` |
+| `page_direction_ltr` / `page_direction_rtl` | `"Left to right"` / `"Right to left"` | `SettingsDialog` |
+| `page_go` | `"Go to page"` (new label) | `PageToolbar.PageJumpButton` |
 
 The ICC fallback is the only string that was assembled in the data layer. It is
 now passed as an `iccProfileLabel: (Int) -> String` lambda from
@@ -103,42 +107,55 @@ data layer still has no `Context` dependency.
 
 | File | Purpose |
 | --- | --- |
-| `res/drawable/ic_check.xml` | Check mark on the selected language row. |
-| `res/drawable/ic_arrow_drop_down.xml` | Closed-combo affordance on the language trigger. |
+| `res/drawable/ic_check.xml` | Check mark on the selected language/direction row, and the page jump button. |
+| `res/drawable/ic_arrow_drop_down.xml` | Closed-combo affordance on the language and page-direction triggers. |
 
 Both are simple vector paths, matching the existing `ic_*` drawables.
 
 ## Translations
 
-Five locale folders ship with the app:
+Seventeen locale folders ship with the app: thirteen full translations and
+three regional overlays.
 
 | Folder | Language | Notes |
 | --- | --- | --- |
-| `values-iw` | Hebrew | Kept as `iw` because that is the qualifier Android resolves; the stored preference tag is `he`. |
+| `values-iw` | Hebrew | Kept as `iw` because that is the qualifier Android resolves; the generated tag is `he`. |
 | `values-ar` | Arabic | Plurals use `zero/one/two/few/many/other`. |
 | `values-fr` | French | Plurals use `one/other`. |
-| `values-ru` | Russian | Plurals use `one/few/many/other`. |
 | `values-de` | German | Plurals use `one/other`. |
+| `values-es` | Spanish | Full translation. |
+| `values-pt` | Portuguese | Full translation. The Brazilian overlay is `values-pt-rBR`. |
+| `values-ru` | Russian | Plurals use `one/few/many/other`. |
+| `values-ja` | Japanese | Full translation. |
+| `values-ko` | Korean | Full translation. |
+| `values-zh-rCN` | Simplified Chinese | Full translation. |
+| `values-zh-rTW` | Traditional Chinese | Full translation. |
+| `values-hi` | Hindi | Full translation. |
+| `values-en-rGB`, `values-fr-rCA`, `values-b+es+419` | Regional overlays | Only the strings that differ from the base translation. |
 
-The language picker shows the English name, the resource code and the native
-name, so every entry is recognisable regardless of the active UI language. The
-system-default row is a single translated label because it has no language of
-its own.
+The language picker is not maintained by hand. The `buildSrc` task
+`GenerateLanguageResources` scans every `values-*/strings.xml`, converts the
+folder qualifier to a canonical BCP-47 tag (so `values-iw` becomes `he` and
+`values-b+es+419` becomes `es-419`), and writes:
 
-To check that a translation is complete and still matches the base file:
+- `values/generated_languages.xml`, containing the
+  `supported_language_tags` string-array;
+- `xml/locales_config.xml`, wired to the manifest through
+  `android:localeConfig`.
+
+`AppSettings.languages` reads that array and uses the platform locale data for
+the English and native names. Adding a translation folder is therefore enough
+to offer the language, and there is no separate list to edit. Rebuild with
+`.\gradlew.bat :app:generateLanguageResources` to refresh the files.
+
+`TranslationResourcesTest` enforces the same contract in the JVM test suite:
+every full folder must define every base string except the non-translatable
+`date_hint`, keep every format placeholder, and avoid unknown keys. Overlays are
+allowed to contain only their overrides. This replaces the old ad-hoc
+PowerShell completeness snippet; run it with:
 
 ```powershell
-$base = (Select-String -Path app\src\main\res\values\strings.xml `
-    -Pattern '<(string|plurals) name="([^"]+)"').Matches |
-    ForEach-Object { $_.Groups[2].Value } | Sort-Object
-foreach ($loc in 'iw', 'ar', 'fr', 'ru', 'de') {
-    $names = (Select-String -Path "app\src\main\res\values-$loc\strings.xml" `
-        -Pattern '<(string|plurals) name="([^"]+)"').Matches |
-        ForEach-Object { $_.Groups[2].Value } | Sort-Object
-    "=== $loc ==="
-    "missing: " + (($base | Where-Object { $names -notcontains $_ }) -join ', ')
-    "extra:   " + (($names | Where-Object { $base -notcontains $_ }) -join ', ')
-}
+.\gradlew.bat :app:testDebugUnitTest --tests "com.karako.pdfr.data.TranslationResourcesTest"
 ```
 
 ## What deliberately stays in Kotlin
@@ -157,9 +174,11 @@ foreach ($loc in 'iw', 'ar', 'fr', 'ru', 'de') {
 ## Verification
 
 - `.\gradlew.bat :app:processDebugResources` — every resource name resolves in
-  all locales.
+  all locales, and the generated language array plus `locales_config.xml` are
+  linked.
 - `.\gradlew.bat :app:compileDebugKotlin` — the Kotlin readers match the new
   resource types.
 - `.\gradlew.bat :app:testDebugUnitTest` — `TextSettingsTest`,
-  `NormalizeOptionsTest`, `AppSettingsTest` and `ReaderConfigTest` cover the
-  moved values and the fallback behaviour.
+  `NormalizeOptionsTest`, `AppSettingsTest`, `ReaderConfigTest` and
+  `TranslationResourcesTest` cover the moved values, the translated resource
+  contract and the fallback behaviour.
