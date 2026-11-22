@@ -62,20 +62,18 @@ class TranslationResourcesTest {
     }
 
     @Test
-    fun everyOfferedLanguageHasAResourceFolder() {
-        AppSettings.languages.forEach { language ->
-            val folder = when {
-                language.tag.isEmpty() -> baseFolder
-                language.tag == "en" -> baseFolder
-                language.tag == "es-419" -> "values-b+es+419"
-                language.tag.contains('-') ->
-                    "values-${language.tag.substringBefore('-')}-r${language.tag.substringAfter('-')}"
-                else -> "values-${language.code}"
-            }
-            assertTrue(
-                "missing $folder for ${language.englishName}",
-                File(resDir, "$folder/strings.xml").isFile,
-            )
+    fun everyStringsFolderMapsToACanonicalTag() {
+        val expectedTags = setOf(
+            "ar", "de", "en", "en-GB", "es", "es-419", "fr", "fr-CA", "he",
+            "hi", "ja", "ko", "pt", "pt-BR", "ru", "zh-CN", "zh-TW",
+        )
+        val folders = resDir.listFiles()
+            .orEmpty()
+            .filter { it.isDirectory && File(it, "strings.xml").isFile }
+        val tags = folders.mapNotNull { folderTag(it.name) }
+        assertEquals(expectedTags, tags.toSet())
+        tags.forEach { tag ->
+            assertEquals("canonical tag for $tag", tag, java.util.Locale.forLanguageTag(tag).toLanguageTag())
         }
     }
 
@@ -373,6 +371,25 @@ class TranslationResourcesTest {
             directory = directory.parentFile
         }
         error("Could not locate app/src/main/res from ${System.getProperty("user.dir")}")
+    }
+
+    /** Mirror of the build script rule; a mismatch between them fails here. */
+    private fun folderTag(folder: String): String? {
+        if (folder == "values") return "en"
+        val prefix = "values-"
+        if (!folder.startsWith(prefix)) return null
+
+        val qualifier = folder.removePrefix(prefix)
+        if (qualifier.startsWith("b+")) {
+            return qualifier.removePrefix("b+").replace('+', '-')
+        }
+
+        val parts = qualifier.split("-r")
+        val language = when (parts[0]) {
+            "iw" -> "he"
+            else -> parts[0]
+        }
+        return if (parts.size == 1) language else "$language-${parts[1]}"
     }
 
     private fun document(folder: String): Document {

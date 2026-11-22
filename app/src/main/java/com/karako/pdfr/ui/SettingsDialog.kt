@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,11 +58,12 @@ import com.karako.pdfr.data.ThemeMode
  *
  * The theme choice applies as soon as a row is tapped. The language choice is
  * a closed combo box rather than a radio list, which keeps the dialog short;
- * its entries are laid out as three aligned columns (English name, code and
- * native name) so every language can be recognised whichever UI language is
- * active. Choosing a language reloads the activity so Android resolves the new
- * resource folder; the document itself is unaffected because the reader keeps
- * its own text direction.
+ * its entries show the English name and the language's own name side by side,
+ * so every language can be recognised whichever UI language is active. The
+ * rows come from the generated `supported_language_tags` array, which the build
+ * derives from the `values-*` folders. Choosing a language reloads the activity
+ * so Android resolves the new resource folder; the document itself is
+ * unaffected because the reader keeps its own text direction.
  */
 @Composable
 internal fun SettingsDialog(
@@ -75,6 +77,8 @@ internal fun SettingsDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.settings_title)) },
         text = {
+            val context = LocalContext.current
+            val languages = remember(context) { AppSettings.languages(context) }
             Column(
                 Modifier
                     .heightIn(max = dimensionResource(R.dimen.normalize_dialog_max_height))
@@ -95,8 +99,8 @@ internal fun SettingsDialog(
 
                 SectionTitle(stringResource(R.string.settings_language))
                 LanguageCombo(
-                    selected = AppSettings.language(languageTag),
-                    languages = AppSettings.languages,
+                    selected = AppSettings.language(languages, languageTag),
+                    languages = languages,
                     onSelect = { onLanguageChange(it.tag) },
                 )
 
@@ -121,10 +125,8 @@ internal fun SettingsDialog(
  *
  * The trigger shows only the current choice, and tapping it opens the full
  * list. Every real language entry uses two weighted columns: the English name
- * and the language's own name. The resource code is deliberately absent: it
- * takes width that the two names use better, and it is usually already part of
- * the English name. The system-default entry is a single translated label
- * because it has no language of its own.
+ * and the language's own name. The system-default entry is a single translated
+ * label because it has no language of its own.
  */
 @Composable
 private fun LanguageCombo(

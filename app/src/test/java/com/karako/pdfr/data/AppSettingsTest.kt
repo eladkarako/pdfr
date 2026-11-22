@@ -25,46 +25,6 @@ class AppSettingsTest {
     }
 
     @Test
-    fun offersTheSystemFirstThenEveryTranslatedLanguage() {
-        val languages = AppSettings.languages
-        assertEquals(AppSettings.SYSTEM_LANGUAGE, languages.first().tag)
-        assertEquals(
-            listOf(
-                "", "en", "en-GB", "he", "ar", "fr", "fr-CA", "de", "es", "es-419",
-                "pt", "pt-BR", "ru", "ja", "zh-CN", "zh-TW", "ko", "hi",
-            ),
-            languages.map { it.tag },
-        )
-        assertEquals(languages.size, languages.map { it.tag }.distinct().size)
-    }
-
-    @Test
-    fun hebrewShowsTheResourceCodeAndroidResolves() {
-        val hebrew = AppSettings.language("he")
-        assertEquals("iw", hebrew.code)
-        assertEquals("Hebrew", hebrew.englishName)
-        assertEquals("עברית", hebrew.endonym)
-    }
-
-    @Test
-    fun unknownTagsFallBackToTheSystemEntry() {
-        assertEquals(AppSettings.SYSTEM_LANGUAGE, AppSettings.language("xx").tag)
-    }
-
-    @Test
-    fun onlyTheSystemEntryHasNoEndonym() {
-        val system = AppSettings.languages.first()
-        assertEquals("", system.endonym)
-        assertTrue(system.labelRes != null)
-        AppSettings.languages.drop(1).forEach {
-            assertTrue(it.endonym.isNotBlank())
-            assertTrue(it.code.isNotBlank())
-            assertTrue(it.englishName.isNotBlank())
-            assertEquals(null, it.labelRes)
-        }
-    }
-
-    @Test
     fun forcedLightAndDarkIgnoreTheSystemSetting() {
         assertFalse(ThemeMode.LIGHT.isDark(systemDark = true))
         assertFalse(ThemeMode.LIGHT.isDark(systemDark = false))

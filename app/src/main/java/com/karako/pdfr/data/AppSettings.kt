@@ -30,21 +30,30 @@ enum class ThemeMode {
 /**
  * One language offered by the settings dialog.
  *
- * [tag] is the value stored in preferences and passed to [Locale.forLanguageTag];
- * an empty string means "follow the system". [code] is the short code shown in
- * the picker; it usually matches [tag], except Hebrew, which displays `iw`
- * because that is the folder Android resolves (the modern `he` tag is still
- * what gets stored). [englishName] lets a speaker of any language recognise the
- * row, and [endonym] is the language's own name. [labelRes] replaces the three
- * columns for the system-default row, whose label is translated.
+ * [tag] is the value stored in preferences and passed to
+ * [Locale.forLanguageTag]; an empty string means "follow the system".
+ * [englishName] lets a speaker of any language recognise the row, and
+ * [endonym] is the language's own name. [labelRes] replaces the two names for
+ * the system-default row, whose label is translated.
  */
 data class AppLanguage(
     val tag: String,
-    val code: String = "",
     val englishName: String = "",
     val endonym: String = "",
     val labelRes: Int? = null,
-)
+) {
+    companion object {
+        /** Builds an entry from a BCP-47 [tag], using the platform's locale data. */
+        fun fromTag(tag: String): AppLanguage {
+            val locale = Locale.forLanguageTag(tag)
+            return AppLanguage(
+                tag = tag,
+                englishName = locale.getDisplayName(Locale.ENGLISH),
+                endonym = locale.getDisplayName(locale),
+            )
+        }
+    }
+}
 
 /**
  * Small, synchronous preference store for the app-wide appearance and
@@ -66,37 +75,33 @@ object AppSettings {
     const val SYSTEM_LANGUAGE = ""
 
     /**
-     * Languages that have a values-* resource folder in this build.
+     * Builds the picker entries from the tags generated out of the `values-*`
+     * folders.
      *
-     * The list stays explicit rather than derived from the APK: the picker
-     * needs an English name and a native name for every entry, and a region
-     * variant only makes sense next to its base language. Entries are ordered
-     * by language family so the combo reads like a menu rather than a random
-     * dump of tags.
+     * The platform's locale data supplies both names, so adding a translation
+     * folder is enough to offer that language. Sorting by the English name
+     * keeps the menu order stable whichever UI language is active, and the
+     * native name stays next to it so the row is recognisable either way.
      */
-    val languages: List<AppLanguage> = listOf(
-        AppLanguage(SYSTEM_LANGUAGE, labelRes = R.string.language_system),
-        AppLanguage("en", "en", "English", "English"),
-        AppLanguage("en-GB", "en-GB", "English (UK)", "English (UK)"),
-        AppLanguage("he", "iw", "Hebrew", "עברית"),
-        AppLanguage("ar", "ar", "Arabic", "العربية"),
-        AppLanguage("fr", "fr", "French", "Français"),
-        AppLanguage("fr-CA", "fr-CA", "French (Canada)", "Français (Canada)"),
-        AppLanguage("de", "de", "German", "Deutsch"),
-        AppLanguage("es", "es", "Spanish", "Español"),
-        AppLanguage("es-419", "es-419", "Spanish (LatAm)", "Español (LatAm)"),
-        AppLanguage("pt", "pt", "Portuguese (PT)", "Português (PT)"),
-        AppLanguage("pt-BR", "pt-BR", "Portuguese (BR)", "Português (BR)"),
-        AppLanguage("ru", "ru", "Russian", "Русский"),
-        AppLanguage("ja", "ja", "Japanese", "日本語"),
-        AppLanguage("zh-CN", "zh-CN", "Chinese (Simp.)", "简体中文"),
-        AppLanguage("zh-TW", "zh-TW", "Chinese (Trad.)", "繁體中文"),
-        AppLanguage("ko", "ko", "Korean", "한국어"),
-        AppLanguage("hi", "hi", "Hindi", "हिन्दी"),
-    )
+    fun offeredLanguages(tags: List<String>): List<AppLanguage> =
+        tags.asSequence()
+            .filter { it.isNotBlank() }
+            .distinct()
+            .map(AppLanguage::fromTag)
+            .sortedBy { it.englishName }
+            .toList()
+
+    /** The language rows for [context], with the translated system row first. */
+    fun languages(context: Context): List<AppLanguage> =
+        listOf(AppLanguage(SYSTEM_LANGUAGE, labelRes = R.string.language_system)) +
+            offeredLanguages(
+                context.resources
+                    .getStringArray(R.array.supported_language_tags)
+                    .toList(),
+            )
 
     /** The entry for [tag], or the system-default entry when it is unknown. */
-    fun language(tag: String): AppLanguage =
+    fun language(languages: List<AppLanguage>, tag: String): AppLanguage =
         languages.firstOrNull { it.tag == tag } ?: languages.first()
 
     fun preferences(context: Context): SharedPreferences =
@@ -111,11 +116,11 @@ object AppSettings {
 
     fun languageTag(context: Context): String {
         val stored = preferences(context).getString(KEY_LANGUAGE, SYSTEM_LANGUAGE).orEmpty()
-        return if (languages.any { it.tag == stored }) stored else SYSTEM_LANGUAGE
+        return if (languages(context).any { it.tag == stored }) stored else SYSTEM_LANGUAGE
     }
 
     fun setLanguageTag(context: Context, tag: String) {
-        val safe = if (languages.any { it.tag == tag }) tag else SYSTEM_LANGUAGE
+        val safe = if (languages(context).any { it.tag == tag }) tag else SYSTEM_LANGUAGE
         preferences(context).edit().putString(KEY_LANGUAGE, safe).apply()
     }
 

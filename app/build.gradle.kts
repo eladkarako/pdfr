@@ -6,6 +6,7 @@
     "RedundantCurlyBracesInStringTemplate"
 )
 
+import buildlogic.GenerateLanguageResources
 import com.android.build.api.variant.FilterConfiguration.FilterType.ABI
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.FileInputStream
@@ -19,6 +20,21 @@ plugins {
 // Keep generated files out of the source tree: everything Gradle writes for
 // this module goes to <repo>/build/app instead of app/build.
 layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("build/app"))
+
+
+// ============================================================================
+// SUPPORTED LANGUAGES
+// ============================================================================
+
+// The task lives in buildSrc so Gradle can instantiate it; it scans the
+// values-* folders and writes both the settings list and the platform
+// per-app language configuration.
+val generateLanguageResources = tasks.register<GenerateLanguageResources>("generateLanguageResources") {
+    group = "build"
+    description = "Generates the supported-language list from the values-* folders."
+    resDirectory.set(layout.projectDirectory.dir("src/main/res"))
+    outputDirectory.set(layout.buildDirectory.dir("generated/languages/res"))
+}
 
 
 // ============================================================================
@@ -326,6 +342,15 @@ android {
         }
     }
 
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.res?.addGeneratedSourceDirectory(
+            generateLanguageResources,
+            GenerateLanguageResources::outputDirectory,
+        )
+    }
 }
 
 kotlin {

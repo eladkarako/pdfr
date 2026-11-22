@@ -46,7 +46,7 @@ class LanguageResourcesInstrumentedTest {
 
     @Test
     fun everyOfferedLanguageWrapsItsCanonicalLocale() {
-        AppSettings.languages.filter { it.tag.isNotEmpty() }.forEach { language ->
+        AppSettings.languages(context).filter { it.tag.isNotEmpty() }.forEach { language ->
             val wrapped = wrappedFor(language.tag)
             assertEquals(
                 "locale for ${language.tag}",
@@ -58,7 +58,7 @@ class LanguageResourcesInstrumentedTest {
 
     @Test
     fun everyOfferedLanguageSurvivesThePreferenceRoundTrip() {
-        AppSettings.languages.filter { it.tag.isNotEmpty() }.forEach { language ->
+        AppSettings.languages(context).filter { it.tag.isNotEmpty() }.forEach { language ->
             AppSettings.setLanguageTag(context, language.tag)
             assertEquals(language.tag, AppSettings.languageTag(context))
         }
@@ -69,7 +69,7 @@ class LanguageResourcesInstrumentedTest {
     @Test
     fun everyFullLanguageChangesTheCloseCaption() {
         val fallback = listOf("en", "en-GB")
-        AppSettings.languages
+        AppSettings.languages(context)
             .filter { it.tag.isNotEmpty() && it.tag !in fallback }
             .forEach { language ->
                 val close = wrappedFor(language.tag).getString(R.string.close)
@@ -81,7 +81,7 @@ class LanguageResourcesInstrumentedTest {
     @Test
     fun everyFullLanguageChangesTheShareCaption() {
         val fallback = listOf("en", "en-GB")
-        AppSettings.languages
+        AppSettings.languages(context)
             .filter { it.tag.isNotEmpty() && it.tag !in fallback }
             .forEach { language ->
                 val share = wrappedFor(language.tag).getString(R.string.share_document)
@@ -178,7 +178,7 @@ class LanguageResourcesInstrumentedTest {
 
     @Test
     fun everyFullLanguageKeepsTheBrandName() {
-        AppSettings.languages
+        AppSettings.languages(context)
             .filter { it.tag.isNotEmpty() }
             .forEach { language ->
                 assertEquals("PDFr", wrappedFor(language.tag).getString(R.string.app_name))
