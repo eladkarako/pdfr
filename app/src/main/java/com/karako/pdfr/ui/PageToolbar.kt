@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -37,10 +39,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -244,10 +251,11 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
         text = TextFieldValue((controller.currentPage + 1).toString())
     }
 
-    // Scrolling, buttons and pager swipes all update the same field. Leave the
-    // text alone while it is being edited so typing is never overwritten.
-    LaunchedEffect(current, pageCount, editing) {
-        if (!editing) text = TextFieldValue((current + 1).toString())
+    // Scrolling, buttons and pager swipes all update the same field. The new
+    // page number replaces whatever is in the field even while it is focused,
+    // so typing can never hide the reader's real position.
+    LaunchedEffect(current, pageCount) {
+        text = TextFieldValue((current + 1).toString())
     }
 
     Row(
@@ -305,6 +313,10 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
                 },
             ),
         )
+        PageJumpButton(enabled = enabled) {
+            commit()
+            focusManager.clearFocus()
+        }
         Text(
             text = "/",
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -325,5 +337,60 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
         )
     }
 }
+
+/**
+ * The small button that commits the typed page number. It sits next to the
+ * current-page field, so its side flips with the bar: right of the field in
+ * LTR and left of it in RTL.
+ */
+@Composable
+private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val shape = RoundedCornerShape(4.dp)
+
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(shape)
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics(mergeDescendants = true) {},
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_check),
+            contentDescription = stringResource(R.string.page_go),
+            tint = if (enabled) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            },
+            modifier = Modifier.size(16.dp),
+        )
+    }
+}
+
+/**
+ * Drops keyboard focus on any press in the reader area.
+ *
+ * The initial pass runs before the content's own gesture handlers, so a tap
+ * that scrolls, selects text or follows a link still clears the page field
+ * without consuming the event. Taps inside the field itself never reach this
+ * modifier because it is only attached to the page content.
+ */
+internal fun Modifier.clearFocusOnPress(focusManager: FocusManager): Modifier =
+    pointerInput(focusManager) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.type == PointerEventType.Press) focusManager.clearFocus()
+            }
+        }
+    }
 
 private const val MAX_PAGE_DIGITS = 7

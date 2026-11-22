@@ -86,6 +86,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
@@ -1276,6 +1277,7 @@ private fun DocumentReader(
 ) {
     val busy by viewModel.busy.collectAsStateWithLifecycle()
     val pageController = remember(state.file.absolutePath) { PageController() }
+    val focusManager = LocalFocusManager.current
 
     val plainText = state.plainText
     if (plainText != null) {
@@ -1294,7 +1296,9 @@ private fun DocumentReader(
                 alignRight = state.alignRight,
                 lineNumbers = state.lineNumbers,
                 pageController = pageController,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clearFocusOnPress(focusManager),
             )
         }
         return
@@ -1465,6 +1469,7 @@ private fun DocumentReader(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .clearFocusOnPress(focusManager)
                 .then(pinchModifier),
         ) {
             val viewportWidthPx = with(density) { maxWidth.toPx() }.toInt()
