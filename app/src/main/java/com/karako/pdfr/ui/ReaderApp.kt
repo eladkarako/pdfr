@@ -212,6 +212,7 @@ fun ReaderApp(
     // and D-pad then follow the row's composition order, skipping the buttons
     // that are disabled in the current state.
     val uiLayoutDirection = LocalLayoutDirection.current
+    val focusManager = LocalFocusManager.current
 
     // Toolbar and overflow menu share these actions so both always agree on
     // what each entry does. Their enabled state is decided by the callers.
@@ -318,7 +319,9 @@ fun ReaderApp(
                         LocalLayoutDirection provides LayoutDirection.Ltr,
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clearFocusOnPress(focusManager),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {

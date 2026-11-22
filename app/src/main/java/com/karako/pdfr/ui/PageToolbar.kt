@@ -119,6 +119,7 @@ internal fun PageToolbar(
     val current = controller.currentPage
     val hasPrevious = current > 0
     val hasNext = current < pageCount - 1
+    val focusManager = LocalFocusManager.current
 
     // The bar follows the document language by default, so an RTL language
     // mirrors the whole row and its buttons. The main toolbar is wrapped in an
@@ -146,12 +147,18 @@ internal fun PageToolbar(
                             label = "|<",
                             description = stringResource(R.string.page_first),
                             enabled = enabled && hasPrevious,
-                        ) { controller.goToPage(0) }
+                        ) {
+                            focusManager.clearFocus()
+                            controller.goToPage(0)
+                        }
                         PageButton(
                             label = "<",
                             description = stringResource(R.string.page_previous),
                             enabled = enabled && hasPrevious,
-                        ) { controller.goToPage(current - 1) }
+                        ) {
+                            focusManager.clearFocus()
+                            controller.goToPage(current - 1)
+                        }
                     }
 
                     PageNumberBox(controller = controller, enabled = enabled)
@@ -161,12 +168,18 @@ internal fun PageToolbar(
                             label = ">",
                             description = stringResource(R.string.page_next),
                             enabled = enabled && hasNext,
-                        ) { controller.goToPage(current + 1) }
+                        ) {
+                            focusManager.clearFocus()
+                            controller.goToPage(current + 1)
+                        }
                         PageButton(
                             label = ">|",
                             description = stringResource(R.string.page_last),
                             enabled = enabled && hasNext,
-                        ) { controller.goToPage(pageCount - 1) }
+                        ) {
+                            focusManager.clearFocus()
+                            controller.goToPage(pageCount - 1)
+                        }
                     }
                 }
                 HorizontalDivider(
