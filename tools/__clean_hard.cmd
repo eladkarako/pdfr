@@ -39,16 +39,13 @@ for /F "usebackq delims=" %%E IN (`powershell.exe -NoProfile -Command "Get-Date 
 
 
 ::---------------------- "remove" old build folder.
-ren "build" "build_%TIMESTAMP%" 1>nul 2>nul
-
+::ren "build" "build_%TIMESTAMP%" 1>nul 2>nul
 ::---------------------- place for logs. re-creates the build folder path.
-mkdir "build\logs" 1>nul 2>nul
-
+::mkdir "build\logs" 1>nul 2>nul
 ::---------------------- cleanup log file.
-echo.>"build\logs\__clean_hard.log"
-
+::echo.>"build\logs\__clean_hard.log"
 ::---------------------- where did old build folder was renamed to.
-echo note: old [build] folder renamed to [build_%TIMESTAMP%] >>"build\logs\__clean_hard.log"
+::echo note: old [build] folder renamed to [build_%TIMESTAMP%] >>"build\logs\__clean_hard.log"
 
 ::---------------------- removing .gradle folder(s)
 title .gradle folder (local)
