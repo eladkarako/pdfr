@@ -14,7 +14,10 @@ and what it leaves behind.
 ## Before the first run
 
 Make sure `ANDROID_SDK_ROOT` is set (or the SDK is in the default
-`%LOCALAPPDATA%\Android\Sdk`). Everything can be overridden:
+`%LOCALAPPDATA%\Android\Sdk`). Node.js 18 or newer must be on `PATH`; the
+scripts use only built-in modules, so there is nothing to install with npm. The
+Windows batch files are thin wrappers that check for `node` and run the `.js`
+program next to them. Everything can be overridden:
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -385,14 +388,15 @@ in `build\reader-actions\`. Check that:
   to a PDF;
 - the info and metadata dialogs scroll and never cover more than three quarters
   of the screen;
-- the page indicator starts dim and fades to nearly invisible after about five
-  seconds, then returns on the next scroll;
+- the page bar stays under the toolbar without fading, follows the UI language
+  by default and can be forced LTR or RTL from **Settings…**;
 - the settings dialog lists the four themes in the required order and switches
   the palette as soon as a row is tapped;
-- switching to עברית mirrors the toolbar, menu and dialogs while plain text and
-  PDF pages keep their own direction;
-- the language combo aligns the English name, code and native name columns, and
-  a switch to any of the other languages reloads with translated captions
+- switching to עברית mirrors menus, dialogs and the page bar while the main
+  toolbar stays left-to-right; plain text and PDF pages keep their own
+  direction;
+- the language combo aligns the English name and native name columns, and a
+  switch to any of the other languages reloads with translated captions
   (Japanese and Chinese keep their own left-to-right layout).
 
 ### `zoom-probe.js <action>`
@@ -734,9 +738,15 @@ the same route, in order, for a full manual pass:
     source where the provider supports timestamps.
 18. **Gutenberg samples** - open a book from `gutenberg/`: EPUB, plain text and
     HTML should all render and reflow.
-19. **Page indicator** - scroll to the end of `sample.pdf`. The indicator should
+19. **Page bar** - scroll to the end of `sample.pdf`. The page field should
     change to the last page as soon as that page occupies most of the screen,
-    not after the previous page has completely left.
+    not after the previous page has completely left. Type a page number and
+    press the jump button; tap into the field on another page and scroll without
+    dismissing the keyboard: the field must keep showing the real page. Tap the
+    reader once to commit the value and drop the keyboard. In **Settings… →
+    Page bar direction** try **Follow language**, **Left-to-right** and
+    **Right-to-left**; the buttons and the page field mirror, while the toolbar
+    above never does.
 20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.
@@ -770,17 +780,19 @@ the same route, in order, for a full manual pass:
     captures the result.
 26. **Language** - overflow -> **Settings…** -> **Language**. The language row is
     a closed combo box: it shows the current choice, and opening it lists every
-    language in three aligned columns - English name, resource code and native
-    name - so a row can be recognised whichever UI language is active. Hebrew
-    shows the code `iw` because that is the folder Android resolves, but the
-    modern `he` tag is what gets stored. Choosing **עברית** reloads the activity
-    and the whole UI, menus and dialogs are Hebrew with a right-to-left layout;
-    the toolbar keeps Share → Info → Open → Save → Menu left-to-right, and
-    `notes.txt` still starts left-aligned unless **Align right** is on. The same
-    reload happens for **English**, **English (UK)**, **Arabic**, **French**,
-    **French (Canada)**, **German**, **Spanish**, **Spanish (LatAm)**,
-    **Portuguese (PT)**, **Portuguese (BR)**, **Russian**, **Japanese**,
-    **Chinese (Simp.)**, **Chinese (Trad.)**, **Korean** and **Hindi**.
+    language as two aligned columns, English name and the language's own name,
+    so a row can be recognised whichever UI language is active. The picker and
+    `xml/locales_config.xml` are generated from the `values-*` folders, so a new
+    translation appears without editing a list. Hebrew is stored as the modern
+    `he` tag even though its resource folder keeps Android's legacy `iw`
+    qualifier. Choosing **עברית** reloads the activity and the menus, dialogs
+    and page bar become Hebrew with a right-to-left layout; the toolbar keeps
+    Share → Info → Open → Save → Menu left-to-right, and `notes.txt` still
+    starts left-aligned unless **Align right** is on. The same reload happens
+    for **English**, **English (United Kingdom)**, **Arabic**, **French**,
+    **French (Canada)**, **German**, **Spanish**, **Spanish (Latin America)**,
+    **Portuguese**, **Portuguese (Brazil)**, **Russian**, **Japanese**,
+    **Chinese (China)**, **Chinese (Taiwan)**, **Korean** and **Hindi**.
     **System default** clears the override. `reader-actions.js -Action language
     -Language ja` (any tag from the list, plus `system`) drives the combo from
     the current UI language; `-Action language-hebrew` and `-Action
