@@ -4,6 +4,8 @@
 
 Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/qpdf/qpdf).
 
+📓 Release notes and commit references live in [`changelog.txt`](changelog.txt).
+
 ## 👀 Privacy
 
 - 🚫 no network permission.
