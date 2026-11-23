@@ -125,9 +125,11 @@ intact wherever the target provider allows its timestamp to be updated.
   system**, **Light**, **Dark** (grey surfaces) and **AMOLED black** (pure black
   surfaces for OLED panels). A forced theme also updates the status and
   navigation bar icons.
-- ♿ **Keyboard, mouse and TV** - toolbar buttons, menu entries, page-bar
-  buttons and settings rows show a focus/hover ring, and every button sinks
-  under the press before springing back. Tab follows Share → Info → Open → Save
+- ♿ **Keyboard, mouse and TV** - toolbar buttons are square raised key caps
+  with a light top lip and a dark bottom edge; menu entries, page-bar buttons
+  and settings rows use the same look. Every button sinks under the press
+  before springing back, and focused or hovered buttons add a primary ring. Tab
+  follows Share → Info → Open → Save
   → Menu and then the page bar in every language (the toolbar never mirrors; the
   page bar follows its direction setting). Android TV is supported through the
   leanback launcher entry and a 320x180 banner, and the dialogs scroll with a
@@ -165,7 +167,7 @@ intact wherever the target provider allows its timestamp to be updated.
   lift the restrictions, the document stays readable and an optional **Remove
   restrictions** prompt asks for the owner password; cancelling keeps reading
   the restricted copy. Both password dialogs have a reveal button.
-- ℹ️ **Metadata editor**: the circled **i** opens the filename, extension, file
+- ℹ️ **Metadata editor**: the **i** toolbar button opens the filename, extension, file
   created/modified timestamps and the document metadata the file already has.
   PDFs list every Info and XMP property; images list an ordered EXIF/XMP set
   (camera, lens, exposure, GPS, caption, keywords, creator, rights, rating,
@@ -203,7 +205,7 @@ app/src/main/java/com/karako/pdfr/
 │   ├── DocumentStore.kt     # 💾 copies an incoming URI into cache
 │   ├── StorageConfig.kt     # ⚙️ cache directory, name limits and sidecar names
 │   ├── PageRanges.kt        # 🔢 parses "1-3,7,9-e" page selections
-│   ├── AppSettings.kt       # ⚙️ stored theme/language + locale wrapping
+│   ├── AppSettings.kt       # ⚙️ stored theme/language/page direction + locale wrapping
 │   ├── MuPdf.kt             # 🧵 one dedicated MuPDF thread
 │   ├── MuPdfDocument.kt     # 📂 open/auth/layout/render/select/rewrite
 │   ├── Qpdf.kt              # 🧵 one dedicated qpdf thread + JNI bridge
@@ -216,8 +218,8 @@ app/src/main/java/com/karako/pdfr/
 │   ├── PlainTextReader.kt   # 📃 continuous/paged text view with selection
 │   ├── DocumentInfoDialog.kt# ✏️ editable metadata dialog
 │   ├── TextSizeDialog.kt    # 🔠 reflowable text-size picker
-│   ├── SettingsDialog.kt    # 🎨 theme and language chooser
-│   ├── AccessibleControls.kt# ♿ focus/hover rings for toolbar and menu items
+│   ├── SettingsDialog.kt    # 🎨 theme, language and page-bar direction chooser
+│   ├── AccessibleControls.kt# ♿ raised-key buttons and focus/hover rings
 │   └── theme/Theme.kt       # 🎨 light, dark, AMOLED and dynamic palettes
 app/src/main/cpp/            # 🔌 JNI bridge to static libqpdf
 │   ├── qpdf_jni.cpp         # 🔌 JNI entry points and QDF repair
@@ -226,7 +228,7 @@ app/src/main/jniLibs/<abi>/  # 📦 stripped libqpdfjni.so per ABI
 app/src/test/                # 🧪 JVM tests (no device, no native code)
 app/src/androidTest/         # 🤖 MuPDF/qpdf integration tests + PDF writer
 tools/make_test_files.js     # 🛠️ generates manual-test documents + Gutenberg books
-tools/fetch_gutenberg.py     # 🐍 standalone Project Gutenberg downloader
+tools/fetch-gutenberg.js    # 📚 standalone Project Gutenberg downloader
 tools/                       # 🪟 Windows helpers: AVD, emulator, install, tests, gestures
 ```
 
@@ -312,7 +314,7 @@ emulator).
 <details><summary><h2>🛠️ Rebuilding the qpdf bridge</h2></summary>
 
 `build/qpdf/` holds the downloaded qpdf and libjpeg-turbo sources and the
-per-ABI build trees. `tools/build-qpdf-android.ps1` configures and builds all
+per-ABI build trees. `tools/build-qpdf-android.js` configures and builds all
 four ABIs with the Android NDK, strips the resulting `libqpdfjni.so`, and copies
 it into `app/src/main/jniLibs/<abi>/`. Only do this when `qpdf_jni.cpp`,
 `qpdf_config.h` or the qpdf version changes; a normal clone builds from the

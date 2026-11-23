@@ -154,7 +154,7 @@ every full folder must define every base string except the non-translatable
 allowed to contain only their overrides. This replaces the old ad-hoc
 PowerShell completeness snippet; run it with:
 
-```powershell
+```bat
 .\gradlew.bat :app:testDebugUnitTest --tests "com.karako.pdfr.data.TranslationResourcesTest"
 ```
 

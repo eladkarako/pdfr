@@ -98,8 +98,8 @@ adb shell am instrument -w -e class com.karako.pdfr.MuPdfDocumentInstrumentedTes
 
 The gesture itself (live resize under the fingers, anchored centroid, deferred
 reflow, two-finger pan) cannot be driven through `am instrument`, because it
-needs real multitouch. `tools\zoom-probe.ps1` records that check as a sequence
-of screenshots, and `tools\reader-actions.ps1` covers long-press, Select all,
+needs real multitouch. `tools\zoom-probe.js` records that check as a sequence
+of screenshots, and `tools\reader-actions.js` covers long-press, Select all,
 Copy and the menu/dialog checks; see `tools\README.md`.
 
 `MuPdfDocumentInstrumentedTest` dispatches every MuPDF call through
