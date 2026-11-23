@@ -337,7 +337,10 @@ fun ReaderApp(
                                     )
                                 }
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
                                 AccessibleIconButton(
                                     contentDescription = stringResource(R.string.document_info),
                                     onClick = editInfo,

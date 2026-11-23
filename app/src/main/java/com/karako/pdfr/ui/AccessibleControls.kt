@@ -9,7 +9,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
@@ -18,12 +17,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import kotlin.math.max
 
 /**
  * An [IconButton] that shows a primary-coloured ring when it is focused (for
@@ -57,7 +65,7 @@ internal fun AccessibleIconButton(
             }
             .classicButton(
                 interaction = interaction,
-                shape = CircleShape,
+                shape = RoundedCornerShape(8.dp),
                 enabled = enabled,
                 active = active,
             ),
@@ -100,17 +108,35 @@ internal fun Modifier.classicButton(
         animationSpec = tween(durationMillis = 90),
         label = "button-lift",
     )
-    val fill = when {
-        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-        pushed -> MaterialTheme.colorScheme.primary.copy(alpha = 0.26f)
-        active -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-        else -> MaterialTheme.colorScheme.surfaceVariant
+    val base = if (enabled) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     }
-    val borderColor = if (active && enabled) {
+    val tinted = when {
+        pushed -> lerp(base, MaterialTheme.colorScheme.primary, 0.28f)
+        active && enabled -> lerp(base, MaterialTheme.colorScheme.primary, 0.14f)
+        else -> base
+    }
+    // The cap is lighter at the top and darker at the bottom. Pressing swaps
+    // that so the surface looks pushed into the bar, and the shadow collapses.
+    val top = if (pushed) {
+        lerp(tinted, Color.Black, 0.30f)
+    } else {
+        lerp(tinted, Color.White, 0.32f)
+    }
+    val bottom = if (pushed) {
+        lerp(tinted, Color.White, 0.12f)
+    } else {
+        lerp(tinted, Color.Black, 0.30f)
+    }
+    val outlineColor = if (active && enabled) {
         MaterialTheme.colorScheme.primary
     } else {
         MaterialTheme.colorScheme.outline.copy(alpha = if (enabled) 0.6f else 0.25f)
     }
+    val highlight = if (pushed) Color.Transparent else Color.White.copy(alpha = 0.34f)
+    val shade = Color.Black.copy(alpha = if (pushed) 0.26f else 0.18f)
 
     return this
         .graphicsLayer {
@@ -119,11 +145,55 @@ internal fun Modifier.classicButton(
             translationY = lift.toPx()
         }
         .shadow(elevation = shadow, shape = shape, clip = false)
-        .background(color = fill, shape = shape)
-        .border(
-            width = if (active && enabled) 2.dp else 1.dp,
-            color = borderColor,
-            shape = shape,
+        .drawBehind {
+            val corner = if (shape is RoundedCornerShape) {
+                shape.topStart.toPx(size, this)
+            } else {
+                size.minDimension / 2f
+            }
+            val radius = CornerRadius(corner, corner)
+            val line = 1.dp.toPx()
+
+            drawRoundRect(
+                brush = Brush.verticalGradient(listOf(top, tinted, bottom)),
+                size = size,
+                cornerRadius = radius,
+            )
+            // A bright top lip and a dark bottom lip sell the raised key cap.
+            drawLine(
+                color = highlight,
+                start = Offset(corner, line * 0.75f),
+                end = Offset(size.width - corner, line * 0.75f),
+                strokeWidth = line,
+            )
+            drawLine(
+                color = shade,
+                start = Offset(corner, size.height - line * 0.75f),
+                end = Offset(size.width - corner, size.height - line * 0.75f),
+                strokeWidth = line,
+            )
+            drawRoundRect(
+                color = outlineColor,
+                size = size,
+                cornerRadius = radius,
+                style = Stroke(width = line),
+            )
+            if (pushed) {
+                drawRoundRect(
+                    color = Color.Black.copy(alpha = 0.16f),
+                    topLeft = Offset(line, line),
+                    size = Size(size.width - line * 2, size.height - line * 2),
+                    cornerRadius = CornerRadius(max(0f, corner - line), max(0f, corner - line)),
+                    style = Stroke(width = line),
+                )
+            }
+        }
+        .then(
+            if (active && enabled) {
+                Modifier.border(2.dp, MaterialTheme.colorScheme.primary, shape)
+            } else {
+                Modifier
+            },
         )
 }
 

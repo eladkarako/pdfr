@@ -142,7 +142,10 @@ internal fun PageToolbar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         PageButton(
                             label = "|<",
                             description = stringResource(R.string.page_first),
@@ -163,7 +166,10 @@ internal fun PageToolbar(
 
                     PageNumberBox(controller = controller, enabled = enabled)
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         PageButton(
                             label = ">",
                             description = stringResource(R.string.page_next),
@@ -211,8 +217,7 @@ private fun PageButton(
 
     Box(
         modifier = Modifier
-            .width(40.dp)
-            .height(30.dp)
+            .size(30.dp)
             .classicButton(
                 interaction = interaction,
                 shape = shape,
