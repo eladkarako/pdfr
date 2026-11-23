@@ -95,33 +95,33 @@ if errorlevel 5 (
 goto pause
 
 :doubletap
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0gestures.ps1" double-tap
+node "%~dp0gestures.js" double-tap
 goto pause
 
 :zoomprobe
 choice /c 1234 /n /m "1 = pinch out, 2 = pinch in, 3 = two-finger pan, 4 = double-tap: "
 if errorlevel 4 (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action double-tap
+  node "%~dp0zoom-probe.js" -Action double-tap
 ) else if errorlevel 3 (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pan
+  node "%~dp0zoom-probe.js" -Action pan
 ) else if errorlevel 2 (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pinch-in
+  node "%~dp0zoom-probe.js" -Action pinch-in
 ) else (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0zoom-probe.ps1" -Action pinch-out
+  node "%~dp0zoom-probe.js" -Action pinch-out
 )
 goto pause
 
 :pinch
 choice /c 12 /n /m "1 = pinch out (zoom in), 2 = pinch in (zoom out): "
 if errorlevel 2 (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0gestures.ps1" pinch-in
+  node "%~dp0gestures.js" pinch-in
 ) else (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0gestures.ps1" pinch-out
+  node "%~dp0gestures.js" pinch-out
 )
 goto pause
 
 :select
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0gestures.ps1" select-word
+node "%~dp0gestures.js" select-word
 goto pause
 
 :cache
@@ -133,7 +133,7 @@ call "%~dp0logcat-app.bat"
 goto pause
 
 :menu-mirror
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action menu-mirror
+node "%~dp0reader-actions.js" -Action menu-mirror
 goto pause
 
 :promo
@@ -141,19 +141,19 @@ call "%~dp0capture-promo.bat"
 goto pause
 
 :poster
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-poster.ps1"
+node "%~dp0make-poster.js"
 goto pause
 
 :settings
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action settings
+node "%~dp0reader-actions.js" -Action settings
 goto pause
 
 :language-hebrew
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language-hebrew
+node "%~dp0reader-actions.js" -Action language-hebrew
 goto pause
 
 :language-system
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language-system
+node "%~dp0reader-actions.js" -Action language-system
 goto pause
 
 :language-other
@@ -162,11 +162,11 @@ echo       pt, pt-BR, ru, ja, zh-CN, zh-TW, ko, hi
 set "LANGTAG="
 set /p "LANGTAG=Language tag: "
 if not defined LANGTAG goto menu
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0reader-actions.ps1" -Action language -Language "%LANGTAG%"
+node "%~dp0reader-actions.js" -Action language -Language "%LANGTAG%"
 goto pause
 
 :banner
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make-tv-banner.ps1"
+node "%~dp0make-tv-banner.js"
 goto pause
 
 :pause

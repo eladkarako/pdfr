@@ -40,9 +40,9 @@ tools\manual-testing.bat
 | --- | --- |
 | `build\app\outputs\apk\` | APKs and the instrumented test APK |
 | `build\test-fixtures\` | generated documents, Gutenberg books and the colour sampler |
-| `build\reader-actions\` | `reader-actions.ps1` screenshots and `window.xml` |
+| `build\reader-actions\` | `reader-actions.js` screenshots and `window.xml` |
 | `build\reader-checks\` | `reader-checks.bat` screenshots and `results.txt` |
-| `build\zoom-probe\` | `zoom-probe.ps1` before/down/mid/late/settled PNGs |
+| `build\zoom-probe\` | `zoom-probe.js` before/down/mid/late/settled PNGs |
 | `build\promo\` | promo screenshots, MP4 and poster |
 | `build\logs\` | output of the `__*.cmd` build helpers |
 
@@ -68,7 +68,7 @@ Variations:
 tools\create-test-avd.bat pdfr_full 4096
 
 :: Pin an older API or image when a specific level is needed.
-powershell -ExecutionPolicy Bypass -File tools\create-test-avd.ps1 -Name pdfr_api36 -Api 36
+node tools\create-test-avd.js -Name pdfr_api36 -Api 36
 ```
 
 It looks for the SDK in `ANDROID_SDK_ROOT`, `ANDROID_HOME` or
@@ -101,7 +101,7 @@ in the generated config. Pass `-SkipInstall` to use only an already-installed
 image, or `-Name`/`-RamMb` to override the defaults:
 
 ```bat
-powershell -ExecutionPolicy Bypass -File tools\create-tv-avd.ps1 -Name pdfr_tv -RamMb 2048
+node tools\create-tv-avd.js -Name pdfr_tv -RamMb 2048
 ```
 
 Result: a TV AVD that runs the same APK as a phone. The leanback launcher entry
@@ -222,14 +222,14 @@ keystore it points at. Node is looked up on `PATH` first, then in
 Result: a release keystore and a matching `keystore.properties`, or a check of
 the existing pair. Keep both files out of version control.
 
-### `build-qpdf-android.ps1`
+### `build-qpdf-android.js`
 
 Builds the static qpdf library and the JNI bridge for Android, then refreshes
 `app\src\main\jniLibs`.
 
 ```bat
-powershell -ExecutionPolicy Bypass -File tools\build-qpdf-android.ps1
-powershell -ExecutionPolicy Bypass -File tools\build-qpdf-android.ps1 -Abis arm64-v8a -Clean
+node tools\build-qpdf-android.js
+node tools\build-qpdf-android.js -Abis arm64-v8a -Clean
 ```
 
 | Option | Default | Meaning |
@@ -315,16 +315,16 @@ whatever the last check opened. Screen coordinates default to 1080x2340; use
 
 Result: `build\reader-checks\results.txt` plus the screenshots, and a non-zero
 exit code on any failure. The gesture section needs adb root, exactly like
-`zoom-probe.ps1`; the other sections also run on a retail device.
+`zoom-probe.js`; the other sections also run on a retail device.
 
-### `reader-actions.ps1 <action>`
+### `reader-actions.js <action>`
 
 Drives the single-finger reader actions and captures screenshots. It sends
 `adb shell input` events, so it needs no root and works on a normal device.
 
 ```bat
 tools\open-fixture.bat sample.pdf
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press
+node tools\reader-actions.js -Action long-press
 ```
 
 Actions, grouped by what they exercise:
@@ -341,22 +341,22 @@ Useful variations:
 
 ```bat
 :: Keep runs side by side.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action info -Prefix sample-info
+node tools\reader-actions.js -Action info -Prefix sample-info
 
 :: Tap somewhere else (screen fractions).
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action long-press -X 0.5 -Y 0.3
+node tools\reader-actions.js -Action long-press -X 0.5 -Y 0.3
 
 :: A phone with another toolbar layout.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action menu -MenuX 0.93 -MenuY 0.06
+node tools\reader-actions.js -Action menu -MenuX 0.93 -MenuY 0.06
 
 :: List what the current screen exposes when a label cannot be found.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action list
+node tools\reader-actions.js -Action list
 
 :: Switch the UI to any offered language, from any current UI language.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language -Language pt-BR
+node tools\reader-actions.js -Action language -Language pt-BR
 
 :: Clear the override and follow the system language again.
-powershell -ExecutionPolicy Bypass -File tools\reader-actions.ps1 -Action language -Language system
+node tools\reader-actions.js -Action language -Language system
 ```
 
 The menu actions find the visible **Select all**, **Copy**, **Document info**,
@@ -395,7 +395,7 @@ in `build\reader-actions\`. Check that:
   a switch to any of the other languages reloads with translated captions
   (Japanese and Chinese keep their own left-to-right layout).
 
-### `zoom-probe.ps1 <action>`
+### `zoom-probe.js <action>`
 
 Records what the reader looks like before, during and after a two-finger
 gesture, then scores how much the reading area changed between `late` and
@@ -407,15 +407,15 @@ tools\install-debug.bat
 
 :: Fixed-layout PDF: pinch around the title of page 3.
 tools\open-fixture.bat sample.pdf
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out -CenterY 0.17
+node tools\zoom-probe.js -Action pinch-out -CenterY 0.17
 
 :: Reflowable text: pinch, then pan with two fingers.
 tools\open-fixture.bat notes.txt
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-out
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pan
+node tools\zoom-probe.js -Action pinch-out
+node tools\zoom-probe.js -Action pan
 
 :: Back to 100% and sharpen.
-powershell -ExecutionPolicy Bypass -File tools\zoom-probe.ps1 -Action pinch-in -StartGap 780 -EndGap 120
+node tools\zoom-probe.js -Action pinch-in -StartGap 780 -EndGap 120
 ```
 
 Actions: `pinch-out`, `pinch-in`, `pan`, `double-tap`.
@@ -463,13 +463,13 @@ Moving `-CenterX` away from 0.5 is the quickest way to confirm a pinch anchors
 on the midpoint between the fingers instead of drifting towards the starter
 finger. The same actions are available from `manual-testing.bat` as option 11.
 
-### `gestures.ps1 <gesture>`
+### `gestures.js <gesture>`
 
 Sends reader gestures to the connected device.
 
 ```bat
-powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 pinch-out
-powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 double-tap
+node tools\gestures.js pinch-out
+node tools\gestures.js double-tap
 ```
 
 Gestures: `pinch-out`, `pinch-in`, `double-tap`, `select-word`, `swipe-up`.
@@ -484,15 +484,15 @@ Coordinates default to a 1080x2340 phone/AVD. Override `-ScreenWidth` and
 emulator's `/dev/input/event2`; use `adb shell getevent -lp` to find another:
 
 ```bat
-powershell -ExecutionPolicy Bypass -File tools\gestures.ps1 pinch-out -ScreenWidth 1440 -ScreenHeight 3120
+node tools\gestures.js pinch-out -ScreenWidth 1440 -ScreenHeight 3120
 adb shell getevent -lp
 ```
 
 Use the event device whose name contains `multi_touch`.
 
 Result: the gesture plays on the device. Nothing is written to disk; use
-`zoom-probe.ps1` when you want screenshots and a stability score, or
-`reader-actions.ps1` for the single-finger menu actions.
+`zoom-probe.js` when you want screenshots and a stability score, or
+`reader-actions.js` for the single-finger menu actions.
 
 ## Fixtures and device files
 
@@ -564,21 +564,22 @@ network.
 Result: the documents above in the chosen folder. `push-fixtures.bat` copies
 them to the device, and `open-fixture.bat` opens one by name.
 
-### `fetch_gutenberg.py`
+### `fetch-gutenberg.js`
 
-The standalone Python equivalent of the Gutenberg part of the generator. It
+The standalone Node.js equivalent of the Gutenberg part of the generator. It
 uses only the standard library.
 
 ```bash
 node tools/make_test_files.js --out build/test-fixtures
-python3 tools/fetch_gutenberg.py --out build/test-fixtures/gutenberg
+node tools/fetch-gutenberg.js --out build/test-fixtures/gutenberg
 ```
 
 Variations: `--list` prints the known books, `--only <slug>` downloads one
 (`alice`, `pride`, `sherlock`, `yellow`). The JavaScript generator also
 downloads the Gutenberg books itself unless you pass `--no-gutenberg`.
 
-Result: the same `gutenberg/` folder and `SOURCES.txt`, without needing Node.
+Result: the same `gutenberg/` folder and `SOURCES.txt`, without the full fixture
+generator.
 
 ### `push-fixtures.bat`
 
@@ -623,7 +624,7 @@ use the folder button inside the app and pick
 `/sdcard/Download/pdfr-fixtures/...` manually.
 
 Result: PDFr opens the fixture in the reader. Run it before any
-`reader-actions.ps1`, `zoom-probe.ps1` or `reader-checks.bat` action that needs
+`reader-actions.js`, `zoom-probe.js` or `reader-checks.bat` action that needs
 a document.
 
 ### `show-cache.bat`
@@ -672,12 +673,12 @@ the same route, in order, for a full manual pass:
 2. **Double-tap zoom** - glides from 100% to 200%, 400%, 600%, then back to
    100%. Every intermediate value is allowed.
 3. **Pinch zoom** - two-finger spread clamps at 600%, pinch together clamps at
-   100%. Single-finger scrolling still works while zoomed. `zoom-probe.ps1`
+   100%. Single-finger scrolling still works while zoomed. `zoom-probe.js`
    records the sequence for later inspection.
 4. **Text selection** - long-press anywhere on a page to open the page menu,
    choose **Select all**, and check that every text block (including footers)
    is highlighted and that **Copy** appears. Tapping the page dismisses it.
-   `reader-actions.ps1 -Action select-all` repeats this automatically.
+   `reader-actions.js -Action select-all` repeats this automatically.
 5. **Reorder pages** - overflow menu -> Reorder pages -> `1-3,7,9-e,3` on
    `sample.pdf` produces an 11-page `sample (reordered).pdf`. `show-cache.bat`
    should show the new name; the old cache file is gone. Pages not listed are
@@ -721,7 +722,7 @@ the same route, in order, for a full manual pass:
     scripts and other source files use the same path.
 15. **Images and PNM** - open `image.png` and `image.ppm`; each is a one-page
     document that stays sharp when zoomed.
-16. **Metadata editor** - tap the circled **i**. Filename, extension and every
+16. **Metadata editor** - tap the **i** button. Filename, extension and every
     metadata field the document already has are editable; dates use
     `yyyy-MM-ddThh:mm:ss` and have date/time pickers. Clearing a field removes
     its value. **Apply** rewrites the cache file and reloads it; **Cancel**
@@ -744,8 +745,8 @@ the same route, in order, for a full manual pass:
     **Share**, **Document info**, **Open**, **Save as**, each with its
     leading icon, followed by a divider and the document actions. With no
     document open the mirrored entries are disabled except **Open**.
-    `reader-actions.ps1 -Action menu-mirror` captures the menu.
-22. **Promo capture** - `capture-promo.ps1` rebuilds, generates the colourful
+    `reader-actions.js -Action menu-mirror` captures the menu.
+22. **Promo capture** - `capture-promo.js` rebuilds, generates the colourful
     Gutenberg sampler, records the screenshots and MP4, and composes the poster.
     Check that `gutenberg-color.pdf` opens with six A4 pages of readable text
     and that the poster shows the chosen screenshots without stretching.
@@ -765,7 +766,7 @@ the same route, in order, for a full manual pass:
     immediately: Light stays light with the device in dark mode, Dark uses grey
     surfaces, and AMOLED black uses pure black backgrounds and surfaces. The
     status/navigation bar icons stay readable in each mode. Reopen the app and
-    the choice is still there. `reader-actions.ps1 -Action theme-amoled`
+    the choice is still there. `reader-actions.js -Action theme-amoled`
     captures the result.
 26. **Language** - overflow -> **Settings…** -> **Language**. The language row is
     a closed combo box: it shows the current choice, and opening it lists every
@@ -780,7 +781,7 @@ the same route, in order, for a full manual pass:
     **French (Canada)**, **German**, **Spanish**, **Spanish (LatAm)**,
     **Portuguese (PT)**, **Portuguese (BR)**, **Russian**, **Japanese**,
     **Chinese (Simp.)**, **Chinese (Trad.)**, **Korean** and **Hindi**.
-    **System default** clears the override. `reader-actions.ps1 -Action language
+    **System default** clears the override. `reader-actions.js -Action language
     -Language ja` (any tag from the list, plus `system`) drives the combo from
     the current UI language; `-Action language-hebrew` and `-Action
     language-system` remain shortcuts, and `manual-testing.bat` option 19
@@ -794,24 +795,24 @@ the same route, in order, for a full manual pass:
 28. **Android TV** - install the same APK on a TV or the TV emulator. PDFr
     appears in the leanback launcher with its 320x180 banner, the D-pad moves
     focus between toolbar buttons and menu rows, and the settings dialog scrolls
-    with the remote. `make-tv-banner.ps1` regenerates the banner.
+    with the remote. `make-tv-banner.js` regenerates the banner.
 
 ## Capture
 
-### `capture-promo.ps1`
+### `capture-promo.js`
 
 Produces the screenshots, the short MP4 and the poster used for release notes
 and store listings.
 
 ```bat
 :: Build, start the AVD, capture everything, stop the AVD.
-tools\capture-promo.ps1 -StartEmulator
+node tools\capture-promo.js -StartEmulator
 
 :: Reuse the current build and connected device, skip the video.
-tools\capture-promo.ps1 -SkipBuild -SkipVideo
+node tools\capture-promo.js -SkipBuild -SkipVideo
 
 :: Leave the emulator running for another capture.
-tools\capture-promo.ps1 -KeepEmulator
+node tools\capture-promo.js -KeepEmulator
 ```
 
 | Option | Meaning |
@@ -844,15 +845,16 @@ Output in `build\promo\`:
 
 The same steps are available from `manual-testing.bat` as options 13 and 14.
 
-### `make-poster.ps1`
+### `make-poster.js`
 
 Composes 3-4 screenshots into `poster.png` with a dark gradient, rounded cards
-and a title, using `System.Drawing` (no ImageMagick or ffmpeg).
+and a title, using the bundled PNG and raster helpers (no ImageMagick, ffmpeg
+or System.Drawing).
 
 ```bat
-tools\make-poster.ps1 -OutDir build\promo
-tools\make-poster.ps1 -OutDir build\promo -Images 02-pdf-cover.png,04-overflow.png,06-epub.png
-tools\make-poster.ps1 -OutDir build\promo -Columns 1 -Width 1000
+node tools\make-poster.js -OutDir build\promo
+node tools\make-poster.js -OutDir build\promo -Images 02-pdf-cover.png,04-overflow.png,06-epub.png
+node tools\make-poster.js -OutDir build\promo -Columns 1 -Width 1000
 ```
 
 | Option | Default | Meaning |
@@ -872,14 +874,14 @@ Without `-Images` it picks `02-pdf-cover`, `03-pdf-colour`, `04-overflow` and
 Result: `poster.png` in the chosen folder, with the screenshots cropped to a
 common card size rather than stretched.
 
-### `make-tv-banner.ps1`
+### `make-tv-banner.js`
 
 Draws the 320x180 Android TV banner (document sheet, `PDFr`, `Read anything`)
-with `System.Drawing`.
+with the bundled PNG and raster helpers.
 
 ```bat
-tools\make-tv-banner.ps1
-tools\make-tv-banner.ps1 -OutFile C:\tmp\banner.png
+node tools\make-tv-banner.js
+node tools\make-tv-banner.js -OutFile C:\tmp\banner.png
 ```
 
 Without `-OutFile` it writes
