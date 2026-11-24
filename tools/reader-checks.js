@@ -28,6 +28,7 @@ const { spawnSync } = require('node:child_process');
 const {
     REPO_ROOT,
     ensureDir,
+    ensureFixtures,
     parseCli,
     resolveAdb,
     run,
@@ -1324,6 +1325,11 @@ function main() {
     if (!/package:/i.test(packagePath)) {
         throw new Error('com.karako.pdfr is not installed. Run tools\\install-debug.bat first.');
     }
+
+    // build/test-fixtures is deliberately disposable: `gradlew clean` removes
+    // it. Recreate the few documents the checks open instead of failing later
+    // with a confusing "fixture not found" error.
+    ensureFixtures();
 
     invokeAdb(['shell', 'svc power stayon true']);
     invokeAdb(['shell', 'input', 'keyevent', 224]);

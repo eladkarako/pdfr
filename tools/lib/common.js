@@ -84,6 +84,49 @@ function outDir(defaultName) {
     return path.join(REPO_ROOT, 'build', defaultName);
 }
 
+// The reader checks open these documents. They live under build/test-fixtures,
+// which a clean build removes, so a missing file is regenerated before a test
+// run instead of failing halfway through.
+const REQUIRED_FIXTURES = ['sample.pdf', 'notes.txt', 'long.txt'];
+
+/**
+ * Makes sure the documents the reader checks need exist.
+ *
+ * The fixture generator is fast when `--no-gutenberg` is used: it writes the
+ * PDF, text and image samples without downloading the public-domain books.
+ * Returns the fixture directory.
+ */
+function ensureFixtures() {
+    const directory = fixturesDir();
+    const missing = () => REQUIRED_FIXTURES.filter(
+        (name) => !isFile(path.join(directory, name)),
+    );
+
+    if (missing().length === 0) return directory;
+
+    step(`Generating test fixtures in ${directory}`);
+    const generator = path.join(__dirname, '..', 'make_test_files.js');
+    const result = spawnSync(
+        process.execPath,
+        [generator, '--out', directory, '--no-gutenberg'],
+        { cwd: REPO_ROOT, stdio: 'inherit', windowsHide: false },
+    );
+    if (result.error) throw result.error;
+    const status = result.status ?? (result.signal ? 1 : 0);
+    if (status !== 0) {
+        throw new Error(`make_test_files.js failed with exit code ${status}.`);
+    }
+
+    const stillMissing = missing();
+    if (stillMissing.length > 0) {
+        throw new Error(
+            `Fixtures are still missing after generation: ${stillMissing.join(', ')}. `
+            + `Check ${directory}.`,
+        );
+    }
+    return directory;
+}
+
 function say(message) {
     process.stdout.write(`${message}\n`);
 }
@@ -335,6 +378,7 @@ module.exports = {
     REPO_ROOT,
     compareVersionsDesc,
     ensureDir,
+    ensureFixtures,
     fixturesDir,
     formatBytes,
     isFile,
