@@ -9,7 +9,7 @@ package com.karako.pdfr.data
  */
 object QpdfConfig {
 
-    /** Name of the shared library built by `tools/build-qpdf-android.ps1`. */
+    /** Name of the shared library built by `tools/build-qpdf-android.js`. */
     const val LIBRARY_NAME = "qpdfjni"
 
     /** Name of the serialized worker thread, visible in thread dumps. */

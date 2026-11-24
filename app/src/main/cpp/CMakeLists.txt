@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 # JNI bridge for the statically linked qpdf build. The qpdf source and
-# libjpeg-turbo are prepared by tools/build-qpdf-android.ps1; their paths are
+# libjpeg-turbo are prepared by tools/build-qpdf-android.js; their paths are
 # passed in from that script so normal Gradle builds never need the sources.
 project(pdfr_qpdf LANGUAGES CXX)
 
