@@ -2,6 +2,12 @@
 setlocal
 call "%~dp0_env.bat"
 
+where node >nul 2>nul
+if errorlevel 1 (
+  echo [PDFr] Node.js was not found on PATH.
+  exit /b 1
+)
+
 :menu
 cls
 echo ============================================================
