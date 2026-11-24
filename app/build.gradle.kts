@@ -29,12 +29,13 @@ layout.buildDirectory.set(rootProject.layout.projectDirectory.dir("build/app"))
 // The task lives in buildSrc so Gradle can instantiate it; it scans the
 // values-* folders and writes both the settings list and the platform
 // per-app language configuration.
-val generateLanguageResources = tasks.register<GenerateLanguageResources>("generateLanguageResources") {
-    group = "build"
-    description = "Generates the supported-language list from the values-* folders."
-    resDirectory.set(layout.projectDirectory.dir("src/main/res"))
-    outputDirectory.set(layout.buildDirectory.dir("generated/languages/res"))
-}
+val generateLanguageResources =
+    tasks.register<GenerateLanguageResources>("generateLanguageResources") {
+        group = "build"
+        description = "Generates the supported-language list from the values-* folders."
+        resDirectory.set(layout.projectDirectory.dir("src/main/res"))
+        outputDirectory.set(layout.buildDirectory.dir("generated/languages/res"))
+    }
 
 
 // ============================================================================
@@ -324,7 +325,7 @@ android {
 
     packaging {
         jniLibs {
-            // Prebuilt, already stripped by tools/build-qpdf-android.ps1.
+            // Prebuilt, already stripped by tools/build-qpdf-android.js.
             keepDebugSymbols += "**/libqpdfjni.so"
             // These two ship without the symbols llvm-strip wants to rewrite,
             // so asking the packaging step to strip them only prints a warning.
