@@ -217,22 +217,26 @@ private fun PageButton(
 
     Box(
         modifier = Modifier
-            .size(30.dp)
+            // A 36 dp touch target with a 28 dp cap: close to the glyph size
+            // instead of a large square around a two-character label. Clicking
+            // runs on release, so the key stays visibly pressed while held.
+            .size(36.dp)
+            .semantics(mergeDescendants = true) {}
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .padding(4.dp)
             .classicButton(
                 interaction = interaction,
                 shape = shape,
                 enabled = enabled,
                 active = active,
             )
-            .clip(shape)
-            .clickable(
-                interactionSource = interaction,
-                indication = LocalIndication.current,
-                enabled = enabled,
-                role = Role.Button,
-                onClick = onClick,
-            )
-            .semantics(mergeDescendants = true) {},
+            .clip(shape),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -292,7 +296,7 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
                 }
             },
             modifier = Modifier
-                .width(42.dp)
+                .width(48.dp)
                 .onFocusChanged { state ->
                     if (state.isFocused) {
                         editing = true
@@ -313,7 +317,7 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
                 color = LocalContentColor.current,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 13.sp,
-                textAlign = TextAlign.Left,
+                textAlign = TextAlign.Center,
             ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             keyboardOptions = KeyboardOptions(
@@ -336,19 +340,28 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
             modifier = Modifier.padding(horizontal = 4.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontFamily = FontFamily.Monospace,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             maxLines = 1,
         )
-        Text(
-            text = pageCount.toString(),
-            modifier = Modifier.clearAndSetSemantics {
-                contentDescription = totalLabel
-            },
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 13.sp,
-            maxLines = 1,
-        )
+        // The total is slightly larger than the editable number and centred
+        // inside a minimum width, so one- and two-digit counts do not move the
+        // jump button or the slash around.
+        Box(
+            modifier = Modifier.widthIn(min = 32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = pageCount.toString(),
+                modifier = Modifier.clearAndSetSemantics {
+                    contentDescription = totalLabel
+                },
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 15.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -389,7 +402,10 @@ private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
             painter = painterResource(R.drawable.ic_check),
             contentDescription = stringResource(R.string.page_go),
             tint = if (enabled) {
-                MaterialTheme.colorScheme.primary
+                // A normal content colour: the commit action is not the primary
+                // action of the bar, so it must not compete with the green
+                // accent used for focus and selection.
+                LocalContentColor.current
             } else {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             },

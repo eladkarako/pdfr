@@ -5,17 +5,23 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
@@ -28,16 +34,31 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlin.math.max
 
+/** Touch target of a toolbar key, kept at the 48 dp accessibility minimum. */
+private val ToolbarKeyTouchSize = 48.dp
+
+/** Visible inset between the touch target and the drawn key cap. */
+private val ToolbarKeyInset = 6.dp
+
 /**
- * An [IconButton] that shows a primary-coloured ring when it is focused (for
- * a keyboard or TV remote) or hovered (for a mouse). The ring is drawn from
- * the button's own interaction source, so it uses the same press, focus and
- * hover state as the ripple.
+ * A toolbar key that shows a primary-coloured ring when it is focused (for a
+ * keyboard or TV remote) or hovered (for a mouse). The ring is drawn from the
+ * button's own interaction source, so it uses the same press, focus and hover
+ * state as the key cap.
+ *
+ * The control keeps the full 48 dp touch target required for accessibility,
+ * but only the inset 36 dp cap is drawn. That leaves about 6 dp around a 24 dp
+ * icon instead of a large empty square around it.
+ *
+ * [Modifier.clickable] invokes [onClick] on pointer *release* and on the key-up
+ * of Enter/D-pad centre, never on key-down. Holding a finger or a remote key
+ * therefore keeps the cap sunken long enough to see the press animation.
  *
  * [contentDescription] is set on the button rather than on the [Icon] inside
  * it: the focusable node is what a screen reader, switch access or a TV remote
@@ -54,24 +75,44 @@ internal fun AccessibleIconButton(
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     val hovered by interaction.collectIsHoveredAsState()
-    val active = focused || hovered
+    val active = enabled && (focused || hovered)
+    val contentColor = LocalContentColor.current
+    val shape = RoundedCornerShape(8.dp)
 
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
+    Box(
         modifier = modifier
+            .size(ToolbarKeyTouchSize)
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription
             }
+            // The clickable target stays 48 dp; the padding below shrinks only
+            // the drawn key cap.
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .padding(ToolbarKeyInset)
             .classicButton(
                 interaction = interaction,
-                shape = RoundedCornerShape(8.dp),
+                shape = shape,
                 enabled = enabled,
                 active = active,
             ),
-        interactionSource = interaction,
-        content = content,
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        CompositionLocalProvider(
+            LocalContentColor provides if (enabled) {
+                contentColor
+            } else {
+                contentColor.copy(alpha = 0.38f)
+            },
+        ) {
+            content()
+        }
+    }
 }
 
 /**
@@ -93,19 +134,22 @@ internal fun Modifier.classicButton(
 ): Modifier {
     val pressed by interaction.collectIsPressedAsState()
     val pushed = pressed && enabled
+    // Long enough to be seen on a quick tap, short enough to stay responsive.
+    // The pressed state starts on pointer/key down and ends on release, so the
+    // cap stays visibly sunken while the control is held.
     val scale by animateFloatAsState(
-        targetValue = if (pushed) 0.9f else 1f,
-        animationSpec = tween(durationMillis = 90),
+        targetValue = if (pushed) 0.88f else 1f,
+        animationSpec = tween(durationMillis = 130),
         label = "button-scale",
     )
     val shadow by animateDpAsState(
         targetValue = if (enabled && !pushed) 2.dp else 0.dp,
-        animationSpec = tween(durationMillis = 90),
+        animationSpec = tween(durationMillis = 130),
         label = "button-shadow",
     )
     val lift by animateDpAsState(
         targetValue = if (pushed) 2.dp else 0.dp,
-        animationSpec = tween(durationMillis = 90),
+        animationSpec = tween(durationMillis = 130),
         label = "button-lift",
     )
     val base = if (enabled) {
