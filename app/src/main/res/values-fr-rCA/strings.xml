@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Canadian French overrides the few terms that differ from the French
+<?xml version="1.0" encoding="utf-8"?><!-- Canadian French overrides the few terms that differ from the French
      resources; everything else falls back to values-fr/strings.xml. -->
 <resources>
     <string name="saved_as">Enregistré dans %1$s.</string>

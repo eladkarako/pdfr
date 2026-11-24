@@ -114,7 +114,6 @@ import com.karako.pdfr.data.ShareSheet
 import com.karako.pdfr.data.ThemeMode
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -203,7 +202,7 @@ fun ReaderApp(
     val infoDraft by viewModel.infoDraft.collectAsStateWithLifecycle()
     val ownerPasswordPrompt by viewModel.ownerPasswordPrompt.collectAsStateWithLifecycle()
     val ownerPasswordRejected by
-        viewModel.ownerPasswordRejected.collectAsStateWithLifecycle()
+    viewModel.ownerPasswordRejected.collectAsStateWithLifecycle()
 
     // The toolbar keeps a fixed left-to-right icon order in every language, so
     // Share, Info, Open, Save and Menu never move. The title row below is
@@ -1610,7 +1609,8 @@ private fun DocumentReader(
                     // fraction stays remembered, so a reflow that lands while a
                     // pinch is still running does not fall back to the page top.
                     withFrameNanos { }
-                    val item = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
+                    val item =
+                        listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
                     if (item != null && item.size > 0) {
                         listState.scrollToItem(page, (fraction * item.size).roundToInt())
                     }

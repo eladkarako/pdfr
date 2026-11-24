@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- British English only overrides the spellings that differ from the base
+<?xml version="1.0" encoding="utf-8"?><!-- British English only overrides the spellings that differ from the base
      English resources; everything else falls back to values/strings.xml. -->
 <resources>
     <string name="normalize">Normalise…</string>

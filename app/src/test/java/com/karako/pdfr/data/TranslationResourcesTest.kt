@@ -73,7 +73,11 @@ class TranslationResourcesTest {
         val tags = folders.mapNotNull { folderTag(it.name) }
         assertEquals(expectedTags, tags.toSet())
         tags.forEach { tag ->
-            assertEquals("canonical tag for $tag", tag, java.util.Locale.forLanguageTag(tag).toLanguageTag())
+            assertEquals(
+                "canonical tag for $tag",
+                tag,
+                java.util.Locale.forLanguageTag(tag).toLanguageTag()
+            )
         }
     }
 
@@ -95,14 +99,22 @@ class TranslationResourcesTest {
     @Test
     fun fullTranslationsAddNoUnknownStrings() {
         fullFolders.forEach { folder ->
-            assertEquals("$folder extra strings", emptySet<String>(), strings(folder).keys - baseStrings.keys)
+            assertEquals(
+                "$folder extra strings",
+                emptySet<String>(),
+                strings(folder).keys - baseStrings.keys
+            )
         }
     }
 
     @Test
     fun fullTranslationsAddNoUnknownPlurals() {
         fullFolders.forEach { folder ->
-            assertEquals("$folder extra plurals", emptySet<String>(), plurals(folder).keys - basePlurals.keys)
+            assertEquals(
+                "$folder extra plurals",
+                emptySet<String>(),
+                plurals(folder).keys - basePlurals.keys
+            )
         }
     }
 
@@ -182,8 +194,16 @@ class TranslationResourcesTest {
     @Test
     fun overlaysOnlyOverrideKnownStrings() {
         overlayFolders.forEach { folder ->
-            assertEquals("$folder extra strings", emptySet<String>(), strings(folder).keys - baseStrings.keys)
-            assertEquals("$folder extra plurals", emptySet<String>(), plurals(folder).keys - basePlurals.keys)
+            assertEquals(
+                "$folder extra strings",
+                emptySet<String>(),
+                strings(folder).keys - baseStrings.keys
+            )
+            assertEquals(
+                "$folder extra plurals",
+                emptySet<String>(),
+                plurals(folder).keys - basePlurals.keys
+            )
         }
     }
 
@@ -308,9 +328,9 @@ class TranslationResourcesTest {
             assertFalse(
                 "$folder starts with a UTF-8 BOM",
                 bytes.size >= 3 &&
-                    bytes[0] == 0xEF.toByte() &&
-                    bytes[1] == 0xBB.toByte() &&
-                    bytes[2] == 0xBF.toByte(),
+                        bytes[0] == 0xEF.toByte() &&
+                        bytes[1] == 0xBB.toByte() &&
+                        bytes[2] == 0xBF.toByte(),
             )
             val decoder = Charsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)
@@ -324,7 +344,11 @@ class TranslationResourcesTest {
         val folders = listOf(baseFolder) + fullFolders + overlayFolders
         folders.forEach { folder ->
             strings(folder).forEach { (name, value) ->
-                assertEquals("$folder/$name has a stray %", emptyList<String>(), strayPercents(value))
+                assertEquals(
+                    "$folder/$name has a stray %",
+                    emptyList<String>(),
+                    strayPercents(value)
+                )
             }
             plurals(folder).forEach { (name, items) ->
                 items.forEach { (quantity, value) ->

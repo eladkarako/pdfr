@@ -114,11 +114,11 @@ object AppSettings {
     /** The language rows for [context], with the translated system row first. */
     fun languages(context: Context): List<AppLanguage> =
         listOf(AppLanguage(SYSTEM_LANGUAGE, labelRes = R.string.language_system)) +
-            offeredLanguages(
-                context.resources
-                    .getStringArray(R.array.supported_language_tags)
-                    .toList(),
-            )
+                offeredLanguages(
+                    context.resources
+                        .getStringArray(R.array.supported_language_tags)
+                        .toList(),
+                )
 
     /** The entry for [tag], or the system-default entry when it is unknown. */
     fun language(languages: List<AppLanguage>, tag: String): AppLanguage =
@@ -145,10 +145,12 @@ object AppSettings {
     }
 
     fun pageDirection(context: Context): PageDirection =
-        PageDirection.parse(preferences(context).getString(
-            KEY_PAGE_DIRECTION,
-            PageDirection.LANGUAGE.name,
-        ))
+        PageDirection.parse(
+            preferences(context).getString(
+                KEY_PAGE_DIRECTION,
+                PageDirection.LANGUAGE.name,
+            )
+        )
 
     fun setPageDirection(context: Context, direction: PageDirection) {
         preferences(context).edit().putString(KEY_PAGE_DIRECTION, direction.name).apply()

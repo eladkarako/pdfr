@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Latin American Spanish overrides the terms that differ from the Spanish
+<?xml version="1.0" encoding="utf-8"?><!-- Latin American Spanish overrides the terms that differ from the Spanish
      resources; everything else falls back to values-es/strings.xml. -->
 <resources>
     <string name="settings_open">Configuración…</string>
