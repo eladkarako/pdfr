@@ -316,6 +316,10 @@ that can resize the viewport between screenshots; `-KeepOpen` leaves the app on
 whatever the last check opened. Screen coordinates default to 1080x2340; use
 `-ScreenWidth`, `-ScreenHeight` and `-EventDevice` on another device.
 
+If `build\test-fixtures` was removed by a clean, the script regenerates the
+documents it opens - `sample.pdf`, `notes.txt` and `long.txt` - before the first
+check, without downloading the Gutenberg books.
+
 Result: `build\reader-checks\results.txt` plus the screenshots, and a non-zero
 exit code on any failure. The gesture section needs adb root, exactly like
 `zoom-probe.js`; the other sections also run on a retail device.
@@ -740,13 +744,15 @@ the same route, in order, for a full manual pass:
     HTML should all render and reflow.
 19. **Page bar** - scroll to the end of `sample.pdf`. The page field should
     change to the last page as soon as that page occupies most of the screen,
-    not after the previous page has completely left. Type a page number and
-    press the jump button; tap into the field on another page and scroll without
-    dismissing the keyboard: the field must keep showing the real page. Tap the
-    reader once to commit the value and drop the keyboard. In **Settings… →
-    Page bar direction** try **Follow language**, **Left-to-right** and
-    **Right-to-left**; the buttons and the page field mirror, while the toolbar
-    above never does.
+    not after the previous page has completely left. The current number is
+    centred, the total is slightly larger and centred in its slot, and the jump
+    icon uses the normal text colour. Type a page number and press the jump
+    button; tap into the field on another page and scroll without dismissing the
+    keyboard: the field must keep showing the real page. Tap the reader once to
+    commit the value and drop the keyboard. In **Settings… → Page bar direction**
+    try **Follow language**, **Left-to-right** and **Right-to-left**; the buttons
+    and the page field mirror, while the toolbar above never does. Hold a page
+    button: it stays visibly pressed until release, then activates.
 20. **Rotation / process death** - rotate while reading, then enable
     "Don't keep activities" in Developer options and reopen. The file, page and
     monospace state should be restored.

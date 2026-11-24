@@ -109,14 +109,16 @@ intact wherever the target provider allows its timestamp to be updated.
   (default on), and a monospace font override.
 - 📍 **Page bar** sits permanently under the toolbar, for every format: first
   page, previous page, an editable page number with the total and a small jump
-  button, next page and last page. The bar follows the UI language by default,
-  so it mirrors for Hebrew and Arabic while the toolbar above it stays
-  left-to-right; **Settings… → Page bar direction** can force left-to-right or
-  right-to-left instead. The page field follows scrolling and navigation even
-  while it has focus, and a tap anywhere else in the reader commits the value
-  and drops the keyboard. The buttons disable at the ends, and the bar never
-  fades. The overflow menu, info editor and other dialogs scroll when needed and
-  never cover more than three quarters of the screen.
+  button, next page and last page. The typed number is centred in its field,
+  the total is one size larger and centred in its own slot, and the jump icon
+  uses the normal text colour rather than the green accent. The bar follows the
+  UI language by default, so it mirrors for Hebrew and Arabic while the toolbar
+  above it stays left-to-right; **Settings… → Page bar direction** can force
+  left-to-right or right-to-left instead. The page field follows scrolling and
+  navigation even while it has focus, and a tap anywhere else in the reader
+  commits the value and drops the keyboard. The buttons disable at the ends,
+  and the bar never fades. The overflow menu, info editor and other dialogs
+  scroll when needed and never cover more than three quarters of the screen.
 - 🌐 **Hebrew and RTL** - the whole interface is translated, and the layout
   mirrors when the language is right-to-left. **Settings…** in the overflow menu
   switches between the system language and the languages shipped in this build,
@@ -129,13 +131,15 @@ intact wherever the target provider allows its timestamp to be updated.
   navigation bar icons.
 - ♿ **Keyboard, mouse and TV** - toolbar buttons are square raised key caps
   with a light top lip and a dark bottom edge; menu entries, page-bar buttons
-  and settings rows use the same look. Every button sinks under the press
-  before springing back, and focused or hovered buttons add a primary ring. Tab
-  follows Share → Info → Open → Save
-  → Menu and then the page bar in every language (the toolbar never mirrors; the
-  page bar follows its direction setting). Android TV is supported through the
-  leanback launcher entry and a 320x180 banner, and the dialogs scroll with a
-  D-pad remote.
+  and settings rows use the same look. A 36 dp cap sits inside the required
+  48 dp touch target, so the key is about an icon plus a little padding instead
+  of a large empty square. Buttons activate on pointer or key release, never on
+  key-down, so the 130 ms press animation stays visible while a finger or remote
+  key is held; focused or hovered buttons add a primary ring. Tab follows Share
+  → Info → Open → Save → Menu and then the page bar in every language (the
+  toolbar never mirrors; the page bar follows its direction setting). Android TV
+  is supported through the leanback launcher entry and a 320x180 banner, and the
+  dialogs scroll with a D-pad remote.
 - 🔀 **Reorder pages** (PDF only): enter `1-3,7,9-e` to list the pages to keep, in
   the order you want them. Pages you leave out are deleted; `e` is the last
   page, spaces are ignored, and repeats are kept. PDFr writes a new,
@@ -375,6 +379,12 @@ testing, `node tools\make_test_files.js` creates a 14-page `sample.pdf`, text
 files (`.txt`, `.nfo`, `.text`), an EPUB, a CBZ, an AES-256 PDF whose password
 is `secret`, and downloads a few public-domain Project Gutenberg books
 (EPUB/TXT/HTML) into `gutenberg/`.
+
+🧹 `build/` is disposable. Gradle regenerates the language array and
+`xml/locales_config.xml` from the `values-*` folders on the next build, the
+scripts create their own screenshot folders, and `reader-checks.bat` rebuilds
+the few fixtures it opens (`sample.pdf`, `notes.txt`, `long.txt`) when a clean
+has removed `build/test-fixtures`.
 
 🔏 Release builds are minified and signed from `keystore.properties` in the project
 root (git-ignored), or from environment variables for CI:

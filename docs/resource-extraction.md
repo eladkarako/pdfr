@@ -148,6 +148,15 @@ the English and native names. Adding a translation folder is therefore enough
 to offer the language, and there is no separate list to edit. Rebuild with
 `.\gradlew.bat :app:generateLanguageResources` to refresh the files.
 
+The names deliberately stay out of the `strings.xml` files. Android exposes the
+configuration that is active at runtime, not the list of `values-*` folders the
+APK contains, so a runtime query cannot discover the catalog. Per-file English
+and endonym keys would duplicate the platform's `Locale.getDisplayName` data,
+would have to be translated or kept in sync in every folder, and would still
+need the generated tag array to know which folders exist. The array stays the
+single list; `Locale` supplies both names, and the picker sorts by the English
+name so its order does not change with the UI language.
+
 `TranslationResourcesTest` enforces the same contract in the JVM test suite:
 every full folder must define every base string except the non-translatable
 `date_hint`, keep every format placeholder, and avoid unknown keys. Overlays are
