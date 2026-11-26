@@ -53,6 +53,12 @@ Generated Gradle output lives under `<repo>\build\app`, and release APKs/AABs
 are mirrored to `<repo>\build\release` after `assembleRelease` or
 `bundleRelease`.
 
+Long-running commands stream their output live and also write it to a log
+(`runTee` in `lib\common.js`). stdout and stderr are mirrored as they arrive,
+and Ctrl+C or SIGTERM is forwarded to the child, so Gradle, adb and the
+emulator stop cleanly instead of leaving an orphan behind. `push-fixtures.js`
+and `capture-promo.js` use it for generation, pushes and builds.
+
 ## AVDs
 
 ### `create-test-avd.bat [name] [ram-mb]`
@@ -589,51 +595,59 @@ downloads the Gutenberg books itself unless you pass `--no-gutenberg`.
 Result: the same `gutenberg/` folder and `SOURCES.txt`, without the full fixture
 generator.
 
-### `push-fixtures.bat`
+### `push-fixtures.bat [-SkipGenerate] [-NoGutenberg] [-Source DIR] [-Dest PATH]`
 
-Generates the fixtures, pushes them to the emulator and asks MediaStore to index
-them.
+Generates the fixtures and copies them to the device's shared Downloads folder.
 
 ```bat
 tools\push-fixtures.bat
+tools\push-fixtures.bat -SkipGenerate
+node tools\push-fixtures.js -NoGutenberg
 ```
 
-It runs `make_test_files.cmd` into `PDFR_FIXTURES` (default
-`build\test-fixtures`), creates `/sdcard/Download/pdfr-fixtures/`, pushes the
-folder (including `gutenberg/`) and broadcasts a media scan for every file.
+It runs `make_test_files.js` into `PDFR_FIXTURES` (default
+`build\test-fixtures`), creates `/sdcard/Download/pdfr-fixtures/`, and pushes
+every file individually, including `gutenberg/`. After each push it reads the
+size back from the device and fails when it differs, so a truncated transfer
+cannot pass silently. It then asks MediaStore to scan the files and checks the
+rows, warning (without failing) when indexing has not caught up yet. A `-Dest`
+outside `/sdcard` or `/storage/emulated/0` is refused, because a private path
+would defeat the point.
 
-Result: the fixtures are visible in the device's Downloads and in the app's
-picker. The encrypted PDF password is `secret`. The script prints each pushed
-name and ends with the `open-fixture.bat` hint.
+The full run is streamed to the console and appended to
+`build\logs\push-fixtures-<timestamp>.log`, so a slow Gutenberg download or a
+stalled transfer can be inspected while it runs.
+
+Result: the fixtures are on shared storage and visible in the device's
+Downloads and in the app's picker. The encrypted PDF password is `secret`.
 
 ### `open-fixture.bat <name-or-path> [mime-type]`
 
-Restarts PDFr, stages a generated fixture inside its cache with `run-as`, then
-sends the app its own FileProvider URI.
+Copies a fixture to shared storage, verifies it, then opens it in PDFr.
 
 ```bat
 tools\open-fixture.bat sample.pdf
 tools\open-fixture.bat notes.txt text/plain
 tools\open-fixture.bat C:\docs\paper.pdf
+tools\open-fixture.bat -Method picker gutenberg\gutenberg-color.pdf
 ```
 
-The name is looked up in the current directory, the repository root, and
-`PDFR_FIXTURES`, so both `sample.pdf` and
-`build\test-fixtures\sample.pdf` work from the root or from `tools\`. The MIME
-type is guessed from the extension unless you pass one.
+The name is looked up in the current directory, the repository root and
+`PDFR_FIXTURES`, so both `sample.pdf` and `build\test-fixtures\sample.pdf`
+work from the root or from `tools\`. A file outside the fixture folder is
+copied to `/sdcard/Download/pdfr-fixtures` under its own name. The MIME type is
+guessed from the extension unless you pass one.
 
-The preferred route needs the debug build: it copies the file into
-`cache/documents` through `run-as` and sends the matching
-`content://com.karako.pdfr.fileprovider/...` URI. This avoids the scoped-storage
-trap where Android refuses to grant a shell-issued MediaStore URI. If you have a
-release build installed instead (no `run-as`), the script falls back to a
-MediaStore `ACTION_VIEW`; some Android builds reject that grant, in which case
-use the folder button inside the app and pick
-`/sdcard/Download/pdfr-fixtures/...` manually.
+The file is pushed to shared storage, never to the app's private cache, and the
+size is verified before opening. The preferred route sends the app a
+`content://com.android.externalstorage.documents/...` URI for that file. If the
+platform refuses the grant, the script restarts PDFr and drives the system
+picker: **Open document**, **Show roots**, **Downloads**, the fixture folder,
+then the file. `-Method intent` or `-Method picker` forces one route.
 
-Result: PDFr opens the fixture in the reader. Run it before any
-`reader-actions.js`, `zoom-probe.js` or `reader-checks.bat` action that needs
-a document.
+Result: PDFr opens the fixture in the reader, and the same file stays in the
+device's Downloads for a manual open. Run it before any `reader-actions.js`,
+`zoom-probe.js` or `reader-checks.bat` action that needs a document.
 
 ### `show-cache.bat`
 
@@ -860,6 +874,7 @@ Output in `build\promo\`:
 | `pdfr-promo.mp4` | Scrolling and the overflow menu, scaled to 720 px wide. |
 | `poster.png` | 3-4 screenshots composed into a shareable poster. |
 | `README.txt` | A short index of the captured assets. |
+| `capture.log` | The streamed Gradle, fixture and emulator output. |
 
 The same steps are available from `manual-testing.bat` as options 13 and 14.
 

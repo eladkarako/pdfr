@@ -232,6 +232,115 @@ function runStreaming(file, args = [], options = {}) {
     });
 }
 
+/**
+ * Runs a command like `tee`: its stdout and stderr appear live in this
+ * console *and* are appended to `options.logFile` as they arrive.
+ *
+ * Unlike `runStreaming`, the output is captured rather than inherited, so a
+ * long build or an adb push can be logged while it runs. Ctrl+C and SIGTERM
+ * are forwarded to the child instead of ending this process first; the
+ * promise then settles once the child has stopped, with status 130 so a
+ * cancelled run is distinguishable from a failure.
+ *
+ * Options: cwd, env, logFile, allowFailure, input, quiet, onLine, windowsHide.
+ * Returns { status, signal, logFile }.
+ */
+function runTee(file, args = [], options = {}) {
+    const logFile = options.logFile ? path.resolve(options.logFile) : null;
+    let logStream = null;
+    if (logFile) {
+        ensureDir(path.dirname(logFile));
+        logStream = fs.createWriteStream(logFile, { flags: 'a' });
+        const command = [path.basename(file), ...args].join(' ');
+        logStream.write(`\n=== ${new Date().toISOString()} ${command}\n`);
+    }
+
+    return new Promise((resolve, reject) => {
+        const child = spawn(file, args, {
+            cwd: options.cwd || REPO_ROOT,
+            env: { ...process.env, ...(options.env || {}) },
+            stdio: ['pipe', 'pipe', 'pipe'],
+            windowsHide: options.windowsHide ?? true,
+        });
+
+        let forwarded = null;
+
+        const mirror = (stream, target) => {
+            stream.setEncoding('utf8');
+            let pending = '';
+            stream.on('data', (chunk) => {
+                if (logStream) logStream.write(chunk);
+                if (!options.quiet) target.write(chunk);
+                if (options.onLine) {
+                    pending += chunk;
+                    let newline;
+                    while ((newline = pending.indexOf('\n')) !== -1) {
+                        options.onLine(pending.slice(0, newline));
+                        pending = pending.slice(newline + 1);
+                    }
+                }
+            });
+            stream.on('end', () => {
+                if (options.onLine && pending) options.onLine(pending);
+            });
+        };
+
+        mirror(child.stdout, process.stdout);
+        mirror(child.stderr, process.stderr);
+
+        if (options.input !== undefined) child.stdin.end(options.input);
+        else child.stdin.end();
+
+        const forward = (signal) => {
+            forwarded = signal;
+            try {
+                child.kill(signal);
+            } catch {
+                // The child may have exited between the signal and this call.
+            }
+        };
+        const onInterrupt = () => forward('SIGINT');
+        const onTerminate = () => forward('SIGTERM');
+        process.on('SIGINT', onInterrupt);
+        process.on('SIGTERM', onTerminate);
+
+        const cleanup = () => {
+            process.removeListener('SIGINT', onInterrupt);
+            process.removeListener('SIGTERM', onTerminate);
+        };
+        const closeLog = () => new Promise((done) => {
+            if (!logStream) {
+                done();
+                return;
+            }
+            logStream.end(done);
+        });
+
+        child.on('error', async (error) => {
+            cleanup();
+            await closeLog();
+            reject(error);
+        });
+        child.on('close', async (code, signal) => {
+            cleanup();
+            await closeLog();
+
+            const cancelled = forwarded === 'SIGINT' || forwarded === 'SIGTERM';
+            const status = cancelled ? 130 : (code ?? (signal ? 1 : 0));
+            const result = { status, signal: signal || forwarded, logFile };
+
+            if (status !== 0 && !cancelled && !options.allowFailure) {
+                reject(new Error(
+                    `${path.basename(file)} failed (${status}): ${args.join(' ')}`
+                    + (logFile ? `\nLog: ${logFile}` : ''),
+                ));
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
 /** Runs a `.bat`/`.cmd` wrapper through cmd.exe with proper quoting. */
 function runBatch(batch, args = [], options = {}) {
     return run(process.env.COMSPEC || 'cmd.exe', ['/d', '/c', batch, ...args], options);
@@ -239,6 +348,11 @@ function runBatch(batch, args = [], options = {}) {
 
 function runBatchStreaming(batch, args = [], options = {}) {
     return runStreaming(process.env.COMSPEC || 'cmd.exe', ['/d', '/c', batch, ...args], options);
+}
+
+/** `runTee` for a `.bat`/`.cmd` wrapper. */
+function runBatchTee(batch, args = [], options = {}) {
+    return runTee(process.env.COMSPEC || 'cmd.exe', ['/d', '/c', batch, ...args], options);
 }
 
 function which(command) {
@@ -392,8 +506,10 @@ module.exports = {
     run,
     runBatch,
     runBatchStreaming,
+    runBatchTee,
     runMain,
     runStreaming,
+    runTee,
     say,
     sleep,
     step,
