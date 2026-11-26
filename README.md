@@ -1,8 +1,14 @@
-<h1><img src="resources/icon.png" width="32"/> <code>PDFr</code> <sub><code>(com.karako.pdfr)</code></sub></h1>
+# `PDFr`
 
-📱 PDF reader for Android.
+#### `com.karako.pdfr`
 
+![](resources/icon.png)
+
+## 📱 PDF reader for Android.
+
+<br/>
 <hr/>
+<br/>
 
 ## 👀 Privacy
 
@@ -12,7 +18,9 @@
 - 🔒 no data collection.
 - 🗂️ documents are copied into the app's private cache only while they are open.
 
+<br/>
 <hr/>
+<br/>
 
 ## 👇  download (direct URLs - latest release)
 
@@ -27,6 +35,7 @@
 - [![](resources/txt.png)version.txt](https://github.com/eladkarako/pdfr/releases/latest/download/version.txt) - latest version.
 
 
+<br/>
 <br/>
 <br/>
 <hr/>
