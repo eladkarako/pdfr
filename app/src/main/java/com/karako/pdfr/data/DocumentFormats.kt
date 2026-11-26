@@ -396,8 +396,7 @@ object DocumentFormats {
 
     private fun hasBinarySignature(bytes: ByteArray, length: Int): Boolean {
         fun startsWith(vararg values: Int): Boolean {
-            if (length < values.size) return false
-            return values.indices.all { (bytes[it].toInt() and 0xFF) == values[it] }
+            return length >= values.size && values.indices.all { (bytes[it].toInt() and 0xFF) == values[it] }
         }
         return startsWith(0x25, 0x50, 0x44, 0x46) || // %PDF
                 startsWith(0x50, 0x4B, 0x03, 0x04) || // ZIP, EPUB, CBZ

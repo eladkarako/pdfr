@@ -80,7 +80,6 @@ object PlainText {
         lineCount.coerceAtLeast(1).toString().length.coerceAtLeast(1)
 
     private fun startsWith(bytes: ByteArray, vararg prefix: Int): Boolean {
-        if (bytes.size < prefix.size) return false
-        return prefix.indices.all { (bytes[it].toInt() and 0xFF) == prefix[it] }
+        return bytes.size >= prefix.size && prefix.indices.all { (bytes[it].toInt() and 0xFF) == prefix[it] }
     }
 }

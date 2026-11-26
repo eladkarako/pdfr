@@ -126,8 +126,7 @@ class MuPdfDocument private constructor(
      * (EPUB, FB2, ...). Fixed-layout documents keep their own page sizes.
      */
     fun layout(widthPt: Float, heightPt: Float, em: Float): Boolean = synchronized(this) {
-        if (closed || !isReflowable) return false
-        return runCatching {
+        return !(closed || !isReflowable) && runCatching {
             document.layout(
                 widthPt.coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
                 heightPt.coerceAtLeast(MuPdfConfig.MIN_LAYOUT_PT),
@@ -178,7 +177,7 @@ class MuPdfDocument private constructor(
 
         val page = runCatching { document.loadPage(index) }.getOrNull() ?: return null
         try {
-            val rect = runCatching { page.getBounds() }.getOrNull() ?: return null
+            val rect = runCatching { page.bounds }.getOrNull() ?: return null
             val bounds = PageBounds(rect.x0, rect.y0, rect.x1, rect.y1)
             if (bounds.width <= 0f || bounds.height <= 0f) return null
             pageBounds[index] = bounds
@@ -384,7 +383,7 @@ class MuPdfDocument private constructor(
         text: StructuredText,
         quads: MutableList<SelectionQuad>?,
     ): String {
-        val blocks = text.getBlocks() ?: return ""
+        val blocks = text.blocks ?: return ""
         val copy = StringBuilder()
 
         for (block in blocks) {
@@ -394,7 +393,7 @@ class MuPdfDocument private constructor(
                 // newline at the end of a line), which would turn the
                 // highlight into a page-sized rectangle.
                 val bbox = line.bbox
-                if (quads != null && bbox != null && !bbox.isEmpty() && bbox.isValid()) {
+                if (quads != null && bbox != null && !bbox.isEmpty && bbox.isValid) {
                     quads.add(bbox.toSelectionQuad())
                 }
                 for (ch in line.chars) {
