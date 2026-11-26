@@ -100,26 +100,45 @@ class AccessibilityInstrumentedTest {
 
     @Test
     fun tabReachesTheOverflowMenuAndOpensIt() {
+        // The class has a Hebrew test; make sure this one starts from the
+        // default language even if JUnit runs them in a different order.
+        AppSettings.setLanguageTag(context, AppSettings.SYSTEM_LANGUAGE)
         ActivityScenario.launch(MainActivity::class.java).use {
-            var root = waitForAppWindow()
+            // A picker or another app left in front would consume the Tab keys,
+            // so wait until PDFr owns the active window before traversing.
+            waitForAppWindow()
+            instrumentation.waitForIdleSync()
             val menuLabel = context.getString(R.string.more_options)
 
-            fun focusedMenu(): Boolean =
-                findNode(root) { it.isFocused }?.contentDescription?.toString() == menuLabel
+            // Read the focus from a fresh snapshot every time. A snapshot taken
+            // right after a Tab can still report the node that is about to lose
+            // focus, and pressing OK then lands on the wrong button.
+            fun focusedLabel(): String? {
+                val root = instrumentation.uiAutomation.rootInActiveWindow ?: return null
+                if (root.packageName != context.packageName) return null
+                return findNode(root) { it.isFocused }?.contentDescription?.toString()
+            }
 
-            var reached = focusedMenu()
-            for (attempt in 1..8) {
-                if (reached) break
+            var reached = false
+            for (attempt in 0..12) {
+                if (focusedLabel() == menuLabel) {
+                    // Require the same reading twice; Compose can publish focus
+                    // a frame before the input focus really arrives.
+                    Thread.sleep(150)
+                    if (focusedLabel() == menuLabel) {
+                        reached = true
+                        break
+                    }
+                }
                 instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
-                root = waitForAppWindow()
-                reached = focusedMenu()
+                instrumentation.waitForIdleSync()
+                Thread.sleep(100)
             }
             assertTrue("Tab never reached '$menuLabel'", reached)
 
             // KEYCODE_DPAD_CENTER is the select button on a TV remote. Compose
             // activates a focused button on the key-up, so send the pair with a
-            // short gap; a single sendKeyDownUpSync can be swallowed while the
-            // popup window is still gaining focus.
+            // short gap rather than a single sendKeyDownUpSync.
             val exitLabel = context.getString(R.string.exit)
             var opened: AccessibilityNodeInfo? = null
             repeat(5) {
