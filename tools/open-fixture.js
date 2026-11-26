@@ -552,6 +552,9 @@ async function main(argv) {
     if (!name) {
         throw new Error('Usage: open-fixture.bat <file-name-or-path> [mime-type]');
     }
+    // The batch wrapper has always accepted the MIME type as a second
+    // positional argument; keep that working beside -Mime.
+    const positionalMime = options._positional[1] || '';
     if (!['auto', 'intent', 'picker'].includes(options.Method)) {
         throw new Error(`Unknown -Method '${options.Method}'. Use auto, intent or picker.`);
     }

@@ -20,13 +20,13 @@ Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/q
 
 - [![](resources/android.png)![](resources/arm64.png)app-arm64-v8a-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-arm64-v8a-release.apk) - about ~16MB (new devices)
 - [![](resources/android.png)![](resources/arm7.png)app-armeabi-v7a-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-armeabi-v7a-release.apk) - about ~12MB (old devices)
-- [![](resources/android.png)![](resources/32.png)app-x86-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-x86-release.apk) - about ~60MB (32bit emulator)
+- [![](resources/android.png)![](resources/32.png)app-x86-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-x86-release.apk) - about ~17MB (32bit emulator)
 - [![](resources/android.png)![](resources/64.png)app-x86_64-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-x86_64-release.apk) - about ~17MB (64bit emulator)
-- [![](resources/android.png)![](resources/all.png)app-universal-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-universal-release.apk) - about ~17MB (everything in one APK, best if you need to install on multiple platforms)
+- [![](resources/android.png)![](resources/all.png)app-universal-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-universal-release.apk) - about ~60MB (everything in one APK, best if you need to install on multiple platforms, otherwise choose the first one `app-arm64-v8a-release.apk`)
 
-- [![](resources/txt.png)output-metadata.json](https://github.com/eladkarako/pdfr/releases/latest/download/output-metadata.json) - current release meta-data.
-- [![](resources/txt.png)changelog.txt](https://github.com/eladkarako/pdfr/releases/latest/download/changelog.txt) - list of changes.
-- [![](resources/txt.png)version.txt](https://github.com/eladkarako/pdfr/releases/latest/download/version.txt) - current version.
+- [![](resources/txt.png)output-metadata.json](https://github.com/eladkarako/pdfr/releases/latest/download/output-metadata.json) - release information.
+- [![](resources/txt.png)changelog.txt](https://github.com/eladkarako/pdfr/releases/latest/download/changelog.txt) - latest list of changes.
+- [![](resources/txt.png)version.txt](https://github.com/eladkarako/pdfr/releases/latest/download/version.txt) - latest version.
 
 <hr/>
 
