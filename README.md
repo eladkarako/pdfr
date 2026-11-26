@@ -1,4 +1,4 @@
-<h1>📄 <code>PDFr</code> <sub><code>com.karako.pdfr</code></sub></h1>
+<h1><img src="resources/icon.png" width="48"/> <code>PDFr</code> <sub><code>com.karako.pdfr</code></sub></h1>
 
 📱 PDF reader for Android.
 
@@ -70,6 +70,174 @@ without a password and without editing restrictions.
 choose, using the same format and filename. The cached bytes are copied
 verbatim, so rewrites, embedded metadata and the original date/time stay
 intact wherever the target provider allows its timestamp to be updated.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>📱 screenshots (click to see larger screenshot)</h2></summary>
+
+### classic buttons (like in Windows 98)
+
+clear and accessible, you won't wonder if a word is clickable with those buttons, and they are everywhere across the app (including dialogs).
+
+<img width="300" src="resources/classic_buttons.png" />
+
+<hr/>
+
+### main
+
+simple, clean, straight-forward, accessible interface.
+
+<img width="300" src="resources/main.png" />
+
+<img width="300" src="resources/main_hebrew.png" />
+
+### menu
+
+some are available only for PDF, and TIFF (formats with pages).
+
+<img width="300" src="resources/menu.png" />
+
+### fixing PDF
+
+this is a feature that is available even before reading a file,  
+since sometime you won't be able to open a corrupted PDF file,  
+if you haven't opened an actual file, you'll be asked to choose from the storage the file to fix,  
+
+other entries will be grayed-out/disabled until you'll open a file.  
+
+<img width="300" src="resources/menu_empty.png" />
+
+<img width="300" src="resources/menu_empty_hebrew.png" />
+
+<hr/>
+
+### "i" - view and modify meta-data
+
+file, as well as document properties when available.
+few common ones are shown (even if empty) so you'll be able to easily add them.
+
+<img width="300" src="resources/main_info.png" />
+
+you can enter the date-time signature manually or use the button below (every date-time related meta-data)  
+to set it with ease.
+
+<img width="200" src="resources/main_info_date.png" />
+
+<img width="200" src="resources/main_info_time.png" />
+
+for file properties and meta-data that are date-related,  
+the timezone is pre-calculated from the file, stripped and shown as your device's timezone,  
+when you edit any of the date-time related properties or meta-data,  
+the values are converted to UTC, and stored like this.
+
+you can easily remove private information from pictures, and pdf with this feature, as well as fix missing values.
+
+<hr/>
+
+### settings
+
+you can override the language and the toolbar directions through here
+
+<img width="300" src="resources/menu_settings.png" />
+
+<img width="300" src="resources/menu_settings_hebrew.png" />
+
+<hr/>
+
+### current page number, total page number is a static toolbar
+
+- the order `current page`/`total` can be switched through settings,  
+by default it will match the language, if your language is left to right, by default is on the left.
+- the current page input gets updated as you scroll, and you can manually edit the number and click the "ENTER" on your device's keyboard, or click the little button next to it to jump to that page ("goto").
+
+<img width="300" src="resources/input-total-total-input-settings.png" />
+
+<hr/>
+
+## modifying the PDF (!)
+
+`PDFr` (with `MuPDF` and `qPDF`) allows you some very useful PDF modifications,  
+those are not "presentation-only" it creates a new PDF with your modifications, which you can share, email, print,...
+
+### 180° page rotation, with range. 
+this is very useful if you've scanned or received a PDF that is upside-down. you can specify the exact range to rotate, leaving other pages unchanged. this only shows in file format that have pages such as PDF (and sometimes TIFF).
+
+<img width="300" src="resources/menu_rotate_180deg.png" />
+
+<hr/>
+
+### page re-order.
+you can delete page, duplicate pages, and change the order. all by specifying the pages ranges.
+
+<img width="300" src="resources/menu_reorder_pages.png" />
+
+<hr/>
+
+### set page size.
+you can override the page size, to a range of pages,  
+very helpful if you've got a non-standard size and you want to pre-normalize it's size before printing it,  
+at least you'll see how it looks like. there isn't any explicit border or aspect-ratio keeping,  
+so the size you'll enter is the size you'll get,  
+at first it will try to populate the size from the actual page you are in,  
+and you can set, and choose range of any page,  
+you can choose from a standard size (ISO) for example A4, or type the length using a measurement-unit of your choice.
+
+<img width="300" src="resources/menu_page_size.png" />
+
+<hr/>
+
+### normalize PDF
+
+one of the biggest features in this app's PDF modification,  
+using the `qPDF` lib, it can re-compress and truly linearize PDF,  
+as well as try to generate somewhat compatible PDF/A-2b (it does not convert attachments).
+
+except the JPEG re-compression, all of the features are loose-less and are set to the maximum possible,  
+it means they are slow (compressing streams with maximum compression level), but you won't loose any details.  
+
+you can safely enable all of those, they can save you few MB from the result file.
+
+as this screen is quite large you can click the image below to see it full-size
+
+<img width="300" src="resources/menu_normalize_pdf.png" />
+
+
+</details>
+
+<hr/>
+
+<details><summary><h2>🌐🔡 multi-language support</h2></summary>
+
+`PDFr` (through `MuPDF` rendering) supports opening and displaying many text encodings and languages,  
+as for the `PDFr` application interface,  
+I have a complete (machine) translation to 17 languages:
+
+(ordered A-Z)
+
+| Language code | Language name in English | Language name in its language |
+|---|---|---|
+| `ar` | Arabic | العربية |
+| `de` | German | Deutsch |
+| `en` | English | English |
+| `en-GB` | English (United Kingdom) | English (United Kingdom) |
+| `es` | Spanish | Español |
+| `es-419` | Spanish (Latin America) | Español (Latinoamérica) |
+| `fr` | French | Français |
+| `fr-CA` | French (Canada) | Français canadien |
+| `he` (actually `iw`)| Hebrew | עברית |
+| `hi` | Hindi | हिन्दी |
+| `ja` | Japanese | 日本語 |
+| `ko` | Korean | 한국어 |
+| `pt` | Portuguese | Português |
+| `pt-BR` | Portuguese (Brazil) | Português do Brasil |
+| `ru` | Russian | Русский |
+| `zh-CN` | Chinese (Simplified) | 简体中文 |
+| `zh-TW` | Chinese (Traditional) | 繁體中文 |
+
+this can be changed through the language settings.
+by default the value `system` would match your device's language (or fallback to `English`).
 
 </details>
 
