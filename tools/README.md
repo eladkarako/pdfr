@@ -907,3 +907,29 @@ Without `-OutFile` it writes
 
 Result: the banner used by the leanback launcher. Re-run it after changing the
 app's colours or name, then rebuild the APK.
+
+### `png-selftest.bat`
+
+Checks the bundled PNG reader and writer in `tools/lib/png.js` without a device,
+network or npm package.
+
+```bat
+tools\png-selftest.bat
+```
+
+The fixtures are built by the test itself with an independent chunk writer and
+an independent scanline-filter encoder, so a mistake shared by the reader and
+the writer cannot make a round trip pass by accident. The checks cover:
+
+- an RGBA write/read round trip and the exact bytes written by the Sub filter;
+- all five PNG scanline filters, grey, RGB, palette, grey+alpha and RGBA;
+- the `tRNS` colour key for grey and RGB and the palette alpha table;
+- malformed input: a missing palette, an out-of-range palette index, a flipped
+  byte that invalidates a CRC, a missing `IEND`, a short image stream and a
+  decompression bomb;
+- rejected bit depths, interlaced files and mismatched `encodePng` data.
+
+Result: one `[OK]` line per check and a non-zero exit code on failure. The
+reader expands every supported colour type to RGBA and refuses anything that
+would silently produce wrong pixels, so the drawing helpers can keep assuming
+the `{ width, height, data }` shape.

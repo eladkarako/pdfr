@@ -212,13 +212,14 @@ object ImageMetadata {
     fun read(
         file: File,
         iccProfileLabel: (Int) -> String = { "ICC profile ($it bytes)" },
+        timeZone: TimeZone = TimeZone.getDefault(),
     ): List<MetadataField> {
         val exif = open(file)
         val xmpText = runCatching { exif?.getAttribute(ExifInterface.TAG_XMP) }.getOrNull()
         val xmp = xmpText?.let { Xmp.read(it) }.orEmpty()
         val iptcEntries = IptcMetadata.readJpeg(file)
         val iptc = iptcEntries.associateBy { it.dataset }
-        val pngFields = PngMetadata.read(file)
+        val pngFields = PngMetadata.read(file, timeZone)
         val icc = IccProfile.read(file)
 
         val consumedXmp = mutableSetOf<String>()

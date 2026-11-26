@@ -3,6 +3,7 @@ package com.karako.pdfr.data
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.TimeZone
 import java.util.zip.CRC32
@@ -39,7 +40,10 @@ object PngMetadata {
         }
     }.getOrDefault(false)
 
-    fun read(file: File): List<MetadataField> {
+    fun read(
+        file: File,
+        timeZone: TimeZone = TimeZone.getDefault(),
+    ): List<MetadataField> {
         val bytes = runCatching { file.readBytes() }.getOrNull() ?: return emptyList()
         if (!isPng(bytes)) return emptyList()
 
@@ -89,12 +93,27 @@ object PngMetadata {
                     val hour = bytes[dataStart + 4].toInt() and 0xFF
                     val minute = bytes[dataStart + 5].toInt() and 0xFF
                     val second = bytes[dataStart + 6].toInt() and 0xFF
+                    // tIME is stored in UTC, but the editor shows local time so
+                    // that a value written from the editor reads back unchanged.
+                    val local = runCatching {
+                        LocalDateTime.of(year, month, day, hour, minute, second)
+                            .toInstant(ZoneOffset.UTC)
+                            .atZone(timeZone.toZoneId())
+                            .toLocalDateTime()
+                    }.getOrNull() ?: LocalDateTime.of(
+                        year, month, day, hour, minute, second
+                    )
                     fields += MetadataField(
                         TIME_KEY,
                         String.format(
                             java.util.Locale.US,
                             "%04d-%02d-%02dT%02d:%02d:%02d",
-                            year, month, day, hour, minute, second,
+                            local.year,
+                            local.monthValue,
+                            local.dayOfMonth,
+                            local.hour,
+                            local.minute,
+                            local.second,
                         ),
                         MetadataValueKind.DATE_TIME,
                     )

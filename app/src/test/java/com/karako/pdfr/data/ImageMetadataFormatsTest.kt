@@ -37,7 +37,7 @@ class ImageMetadataFormatsTest {
             ),
         )
 
-        val before = PngMetadata.read(png).associateBy { it.key }
+        val before = PngMetadata.read(png, utc).associateBy { it.key }
         assertEquals("PDFr", before["png:tEXt:Software"]?.value)
         assertEquals("2025-12-31T23:58:59", before["png:tIME"]?.value)
 
@@ -54,7 +54,7 @@ class ImageMetadataFormatsTest {
         )
         assertTrue(written)
 
-        val after = PngMetadata.read(png).associateBy { it.key }
+        val after = PngMetadata.read(png, utc).associateBy { it.key }
         assertEquals("PDFr 26.11.11", after["png:tEXt:Software"]?.value)
         assertEquals("hello", after["png:tEXt:Comment"]?.value)
         assertEquals("300 x 300, unit 1", after["png:pHYs"]?.value)
@@ -68,7 +68,7 @@ class ImageMetadataFormatsTest {
 
         assertTrue(PngMetadata.write(png, listOf(MetadataField("png:tEXt:Comment", "")), utc))
 
-        assertTrue(PngMetadata.read(png).none { it.key == "png:tEXt:Comment" })
+        assertTrue(PngMetadata.read(png, utc).none { it.key == "png:tEXt:Comment" })
     }
 
     @Test
