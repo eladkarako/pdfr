@@ -1,4 +1,4 @@
-<h1><img src="resources/icon.png" width="32"/> <code>PDFr</code> &nbsp; <sub><sub><code>com.karako.pdfr</code></sub></sub></h1>
+<h1><img src="resources/icon.png" width="32"/> <code>PDFr</code> <sub><code>(com.karako.pdfr)</code></sub></h1>
 
 📱 PDF reader for Android.
 
