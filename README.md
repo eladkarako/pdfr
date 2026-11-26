@@ -1,10 +1,8 @@
-<h1><img src="resources/icon.png" width="48"/> <code>PDFr</code> <sub><code>com.karako.pdfr</code></sub></h1>
+<h1><img src="resources/icon.png" width="32"/> <code>PDFr</code> <sup><sub><code>com.karako.pdfr</code></sub></sup></h1>
 
 📱 PDF reader for Android.
 
-Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/qpdf/qpdf).
-
-📓 Release notes and commit references live in [`changelog.txt`](changelog.txt).
+<hr/>
 
 ## 👀 Privacy
 
@@ -28,6 +26,9 @@ Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/q
 - [![](resources/txt.png)changelog.txt](https://github.com/eladkarako/pdfr/releases/latest/download/changelog.txt) - latest list of changes.
 - [![](resources/txt.png)version.txt](https://github.com/eladkarako/pdfr/releases/latest/download/version.txt) - latest version.
 
+
+<br/>
+<br/>
 <hr/>
 
 <details><summary><h2>📱 screenshots (click to see larger screenshot)</h2></summary>
