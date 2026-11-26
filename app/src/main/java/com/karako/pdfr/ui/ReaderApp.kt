@@ -391,7 +391,7 @@ fun ReaderApp(
                                         onDismissRequest = { showOverflowMenu = false },
                                         modifier = Modifier.heightIn(
                                             max = screenHeightDp *
-                                                ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
+                                                    ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
                                         ),
                                     ) {
                                         val ready = state as? ReaderState.Ready
