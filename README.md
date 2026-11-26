@@ -785,3 +785,13 @@ Berkenbilt and contributors. libjpeg-turbo: https://libjpeg-turbo.org/ -
 IJG/BSD-style licenses. Both are linked statically into `libqpdfjni.so`.
 
 </details>
+
+<hr/>
+<br/>
+<br/>
+
+https://paypal.me/31adkarak0
+
+<br/>
+<br/>
+<br/>
