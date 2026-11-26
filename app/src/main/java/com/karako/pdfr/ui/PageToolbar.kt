@@ -1,11 +1,8 @@
 package com.karako.pdfr.ui
 
-import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
@@ -206,14 +201,11 @@ private fun PageButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val hovered by interaction.collectIsHoveredAsState()
-    val active = enabled && (focused || hovered)
     val color = if (enabled) {
         LocalContentColor.current
     } else {
         LocalContentColor.current.copy(alpha = 0.38f)
     }
-    val shape = RoundedCornerShape(6.dp)
 
     Box(
         modifier = Modifier
@@ -232,11 +224,9 @@ private fun PageButton(
             .padding(4.dp)
             .classicButton(
                 interaction = interaction,
-                shape = shape,
                 enabled = enabled,
-                active = active,
-            )
-            .clip(shape),
+                active = focused,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -257,7 +247,6 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
     val pageCount = controller.pageCount
     val current = controller.currentPage
     val focusManager = LocalFocusManager.current
-    val shape = RoundedCornerShape(6.dp)
     val currentLabel = stringResource(R.string.page_current)
     val totalLabel = stringResource(R.string.page_total)
     var editing by remember { mutableStateOf(false) }
@@ -280,8 +269,7 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
         modifier = Modifier
             .height(28.dp)
             .widthIn(min = 88.dp)
-            .clip(shape)
-            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .classicField(enabled = enabled)
             .padding(horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -374,26 +362,21 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
 private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val hovered by interaction.collectIsHoveredAsState()
-    val active = focused || hovered
-    val shape = RoundedCornerShape(4.dp)
 
     Box(
         modifier = Modifier
             .size(22.dp)
-            .classicButton(
-                interaction = interaction,
-                shape = shape,
-                enabled = enabled,
-                active = active,
-            )
-            .clip(shape)
             .clickable(
                 interactionSource = interaction,
-                indication = LocalIndication.current,
+                indication = null,
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
+            )
+            .classicButton(
+                interaction = interaction,
+                enabled = enabled,
+                active = focused,
             )
             .semantics(mergeDescendants = true) {},
         contentAlignment = Alignment.Center,

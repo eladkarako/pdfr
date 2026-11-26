@@ -43,7 +43,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -55,7 +54,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -392,7 +390,8 @@ fun ReaderApp(
                                         expanded = showOverflowMenu,
                                         onDismissRequest = { showOverflowMenu = false },
                                         modifier = Modifier.heightIn(
-                                            max = screenHeightDp * ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
+                                            max = screenHeightDp *
+                                                ReaderConfig.DIALOG_MAX_HEIGHT_FRACTION,
                                         ),
                                     ) {
                                         val ready = state as? ReaderState.Ready
@@ -965,15 +964,16 @@ private fun ReorderPagesDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClassicButton(
                 onClick = ::apply,
                 enabled = pages != null && pages.isNotEmpty(),
+                default = true,
             ) {
                 Text(stringResource(R.string.reorder_apply))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -1039,15 +1039,16 @@ private fun RotatePagesDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClassicButton(
                 onClick = ::apply,
                 enabled = pages != null && pages.isNotEmpty(),
+                default = true,
             ) {
                 Text(stringResource(R.string.rotate_apply))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -1220,15 +1221,16 @@ private fun NormalizeDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClassicButton(
                 onClick = { onApply(options) },
                 enabled = canApply,
+                default = true,
             ) {
                 Text(stringResource(R.string.normalize_apply))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -1889,15 +1891,30 @@ private fun SelectionBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (selection.hasText) {
-                TextButton(onClick = onCopy, enabled = enabled) {
+                ClassicButton(
+                    onClick = onCopy,
+                    enabled = enabled,
+                    minWidth = 0.dp,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                ) {
                     Text(stringResource(R.string.copy))
                 }
             } else {
-                TextButton(onClick = onSelectAll, enabled = enabled) {
+                ClassicButton(
+                    onClick = onSelectAll,
+                    enabled = enabled,
+                    minWidth = 0.dp,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                ) {
                     Text(stringResource(R.string.select_all))
                 }
             }
-            TextButton(onClick = onCopyAll, enabled = enabled) {
+            ClassicButton(
+                onClick = onCopyAll,
+                enabled = enabled,
+                minWidth = 0.dp,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+            ) {
                 Text(stringResource(R.string.copy_all))
             }
         }
@@ -2042,12 +2059,12 @@ private fun PasswordDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = submit, enabled = password.isNotEmpty()) {
+            ClassicButton(onClick = submit, enabled = password.isNotEmpty(), default = true) {
                 Text(stringResource(R.string.unlock))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         },
@@ -2096,15 +2113,16 @@ private fun OwnerPasswordDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClassicButton(
                 onClick = submit,
                 enabled = password.isNotEmpty() && !busy,
+                default = true,
             ) {
                 Text(stringResource(R.string.remove_restrictions))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !busy) {
+            ClassicButton(onClick = onDismiss, enabled = !busy) {
                 Text(stringResource(R.string.keep_restrictions))
             }
         },
@@ -2215,7 +2233,7 @@ private fun MessagePane(
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onAction) {
+        ClassicButton(onClick = onAction, default = true) {
             Text(actionLabel)
         }
     }

@@ -571,6 +571,15 @@ function getActionRect(description) {
     return getNodeRect(node);
 }
 
+/**
+ * Insets past the classic 2 px bevel and the touch padding around it, so ink
+ * checks see the icon or caption only. A disabled key keeps a full raised
+ * border in the Windows 98 style, which would otherwise count as dark ink.
+ */
+function insetOf(rect) {
+    return Math.round(Math.min(rect.width, rect.height) * 0.25);
+}
+
 function testPackageVisible(packageName) {
     const xml = getUiXml();
     return descendants(xml, 'node').some((node) => equalsIgnoreCase(attr(node, 'package'), packageName));
@@ -834,12 +843,25 @@ function testEmptyState() {
     const image = new PdfrImage(shot);
     const openRect = getActionRect('Open document');
     testCheck('Open document icon is visible', (
-        image.inkCount(openRect.left, openRect.top, openRect.right, openRect.bottom) > 200
+        image.inkCount(
+            openRect.left + insetOf(openRect),
+            openRect.top + insetOf(openRect),
+            openRect.right - insetOf(openRect),
+            openRect.bottom - insetOf(openRect),
+        ) > 200
     ));
 
     for (const action of ['Share document', 'Document info', 'Save as']) {
         const rect = getActionRect(action);
-        const ink = image.inkCount(rect.left, rect.top, rect.right, rect.bottom);
+        // Measure the middle of the cap, not the classic bevel: a disabled
+        // key keeps its black and grey border, which is ink but not content.
+        const inset = insetOf(rect);
+        const ink = image.inkCount(
+            rect.left + inset,
+            rect.top + inset,
+            rect.right - inset,
+            rect.bottom - inset,
+        );
         testCheck(`${action} looks faded`, ink < 50, `ink pixels: ${ink}`);
     }
 
@@ -968,9 +990,15 @@ function testPlainTextSettings() {
     toggleMenuItem('Single page');
     testEqual('single page can be turned off', getMenuLabel('Single page'), 'Single page: off');
     const paged = getUiXml();
-    const badge = descendants(paged, 'node')
-        .find((node) => matches(attr(node, 'text'), '^\\d+ / \\d+$')) || null;
-    testCheck('paged mode shows the page badge', Boolean(badge), badge ? attr(badge, 'text') : 'no badge');
+    const currentPage = findNode('^Current page$', paged);
+    const totalPages = findNode('^Total pages$', paged);
+    testCheck(
+        'paged mode shows the page bar',
+        Boolean(currentPage && totalPages),
+        currentPage && totalPages
+            ? `${attr(currentPage, 'text')} of ${attr(totalPages, 'text')}`
+            : 'no page bar',
+    );
 
     toggleMenuItem('Single page');
     testEqual('single page can be restored', getMenuLabel('Single page'), 'Single page: on');
@@ -1196,10 +1224,9 @@ function testMetadata() {
         !visibleText.some((text) => matches(text, 'Encrypt|Password')),
     );
     testCheck(
-        'empty standard slots are still offered',
-        containsIgnoreCase(visibleText, 'Title') &&
-        containsIgnoreCase(visibleText, 'Author') &&
-        containsIgnoreCase(visibleText, 'Producer'),
+        'the metadata section is offered',
+        containsIgnoreCase(visibleText, 'Document metadata') &&
+        visibleText.some((text) => matches(text, '^All document properties are listed')),
     );
 
     const dialogHeight = getDialogHeight(dialog);

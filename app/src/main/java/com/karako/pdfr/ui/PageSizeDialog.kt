@@ -16,9 +16,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -141,7 +139,7 @@ internal fun PageSizeDialog(
                 )
                 Spacer(Modifier.height(4.dp))
                 Box {
-                    OutlinedButton(
+                    ClassicButton(
                         onClick = { paperMenuOpen = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -212,7 +210,7 @@ internal fun PageSizeDialog(
                         keyboardActions = KeyboardActions(onDone = { apply() }),
                     )
                     Box {
-                        OutlinedButton(onClick = { unitMenuOpen = true }) {
+                        ClassicButton(onClick = { unitMenuOpen = true }) {
                             Text(unit.suffix)
                         }
                         DropdownMenu(
@@ -258,15 +256,16 @@ internal fun PageSizeDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            ClassicButton(
                 onClick = ::apply,
                 enabled = sizeValid && pages != null && pages.isNotEmpty(),
+                default = true,
             ) {
                 Text(stringResource(R.string.page_size_apply))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
         },

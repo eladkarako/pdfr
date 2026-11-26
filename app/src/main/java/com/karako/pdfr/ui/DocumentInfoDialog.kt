@@ -3,6 +3,7 @@ package com.karako.pdfr.ui
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
@@ -99,12 +99,13 @@ internal fun DocumentInfoDialog(
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.titleLarge,
                     )
-                    TextButton(onClick = onCancel) {
+                    ClassicButton(onClick = onCancel) {
                         Text(stringResource(R.string.cancel))
                     }
-                    TextButton(
+                    ClassicButton(
                         onClick = onApply,
                         enabled = draft.isValid && !busy,
+                        default = true,
                     ) {
                         Text(stringResource(R.string.apply))
                     }
@@ -414,17 +415,27 @@ private fun DateTimeField(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { picker = PickerMode.DATE }) {
+            ClassicButton(
+                onClick = { picker = PickerMode.DATE },
+                minWidth = 0.dp,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+            ) {
                 Text(stringResource(R.string.pick_date))
             }
-            TextButton(
+            ClassicButton(
                 onClick = { picker = PickerMode.TIME },
                 enabled = millis != null,
+                minWidth = 0.dp,
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Text(stringResource(R.string.pick_time))
             }
             if (value.isNotEmpty()) {
-                TextButton(onClick = { onChange("") }) {
+                ClassicButton(
+                    onClick = { onChange("") },
+                    minWidth = 0.dp,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                ) {
                     Text(stringResource(R.string.clear_value))
                 }
             }
@@ -440,7 +451,7 @@ private fun DateTimeField(
             DatePickerDialog(
                 onDismissRequest = { picker = null },
                 confirmButton = {
-                    TextButton(
+                    ClassicButton(
                         onClick = {
                             val selected = state.selectedDateMillis ?: toUtcDate(base)
                             onChange(
@@ -448,12 +459,13 @@ private fun DateTimeField(
                             )
                             picker = null
                         },
+                        default = true,
                     ) {
                         Text(stringResource(R.string.ok))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { picker = null }) {
+                    ClassicButton(onClick = { picker = null }) {
                         Text(stringResource(R.string.cancel))
                     }
                 },
@@ -475,7 +487,7 @@ private fun DateTimeField(
                 title = { Text(stringResource(R.string.time_picker_title)) },
                 text = { TimePicker(state = state) },
                 confirmButton = {
-                    TextButton(
+                    ClassicButton(
                         onClick = {
                             onChange(
                                 DocumentDates.formatIso(
@@ -484,12 +496,13 @@ private fun DateTimeField(
                             )
                             picker = null
                         },
+                        default = true,
                     ) {
                         Text(stringResource(R.string.ok))
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { picker = null }) {
+                    ClassicButton(onClick = { picker = null }) {
                         Text(stringResource(R.string.cancel))
                     }
                 },

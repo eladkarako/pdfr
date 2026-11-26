@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -30,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,13 +39,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -127,7 +127,7 @@ internal fun SettingsDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            ClassicButton(onClick = onDismiss, default = true) {
                 Text(stringResource(R.string.close))
             }
         },
@@ -250,7 +250,7 @@ private fun DirectionCombo(
     }
 }
 
-/** The shared closed-combo trigger: border, focus ring and dropdown arrow slot. */
+/** The shared closed-combo trigger: classic bevel, focus dots and arrow slot. */
 @Composable
 private fun ComboButton(
     onClick: () -> Unit,
@@ -258,30 +258,23 @@ private fun ComboButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
-    val hovered by interaction.collectIsHoveredAsState()
-    val active = focused || hovered
-    val shape = RoundedCornerShape(10.dp)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(shape)
-            .background(
-                if (active) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                else Color.Transparent,
-                shape,
-            )
-            .border(
-                width = if (active) 2.dp else 1.dp,
-                color = if (active) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outline,
-                shape = shape,
-            )
+            .defaultMinSize(minHeight = 48.dp)
+            .semantics(mergeDescendants = true) {}
             .clickable(
                 interactionSource = interaction,
-                indication = LocalIndication.current,
+                indication = null,
                 role = Role.DropdownList,
                 onClick = onClick,
+            )
+            .padding(horizontal = 2.dp, vertical = 5.dp)
+            .classicButton(
+                interaction = interaction,
+                enabled = true,
+                active = focused,
             )
             .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
