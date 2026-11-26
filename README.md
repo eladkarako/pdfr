@@ -14,64 +14,19 @@ Powered by 🧩 [MuPDF](https://mupdf.com/) and 🔧 [qPDF](https://github.com/q
 - 🔒 no data collection.
 - 🗂️ documents are copied into the app's private cache only while they are open.
 
-<details><summary><h2>📚 Formats supported</h2></summary>
-
-| Format | Extension(s) | Definition | Key traits |
-|--------|--------------|------------|------------|
-| 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
-| 📘 EPUB | `.epub` | An open, reflowable ebook standard maintained by the IDPF. It is a ZIP container holding HTML, CSS, images, and metadata. | The most widely supported ebook format, and the one most publishers use. Text adapts to the screen, and readers can change fonts and sizes. |
-| 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
-| 🦸 CBZ / CBT (comic book archive) | `.cbz`, `.cbt` | A comic archive: a ZIP (CBZ) or TAR (CBT) file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
-| 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
-| 📚 MOBI / PalmDoc | `.mobi`, `.prc`, `.pdb` | Older Amazon and Palm ebook containers, including the Mobipocket format that predates KF8 and AZW3. | Readable but reflowed without DRM support. Most modern Kindle books use AZW3/KFX, which MuPDF does not open. |
-| 📝 Markdown | `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn` | Plain text with lightweight heading, list, link and code syntax. | Reflows to the screen width. MuPDF converts it to HTML before layout; longer suffixes are handled through a temporary `.md` copy. |
-| 🖼️ Images and PNM/PAM | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.jp2`, `.jpx`, `.jxr`, `.wdp`, `.hdp`, `.psd`, `.pnm`, `.pbm`, `.pgm`, `.ppm`, `.pam`, `.pfm`, `.jb2` | Single-page raster or vector images. PNM/PAM is a family of simple, uncompressed image formats. | Each image opens as a one-page document. SVG is handled as a vector page and stays sharp when zoomed. |
-| 🌐 HTML, XHTML and SVG | `.html`, `.htm`, `.xhtml`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
-| 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
-| 🧾 Source, config and data | `.cfg`, `.ini`, `.conf`, `.properties`, `.yaml`, `.yml`, `.toml`, `.json`, `.jsonl`, `.csv`, `.tsv`, `.xml`, `.c`, `.h`, `.cpp`, `.hpp`, `.cs`, `.java`, `.kt`, `.js`, `.ts`, `.py`, `.rb`, `.go`, `.rs`, `.php`, `.sh`, `.bat`, `.ps1`, `.sql`, `.css` and similar | Text files written for a program rather than for a reader: configuration, structured data and source code. | Shown as reflowable plain text with the monospace toggle. MuPDF has no handler for these suffixes, so PDFr opens a temporary `.txt` copy; the copy is byte-for-byte identical and no byte-order mark is added. MuPDF's content detector still treats a file whose first line starts with `# ` as Markdown, so such a comment may render as a heading without the marker. A file with an entirely unknown suffix is also detected from its bytes and opened as text when MuPDF cannot handle it. |
-
-💡 note: Fixed-layout documents are rasterised page by page. Reflowable documents
-(EPUB, MOBI, FB2, Markdown, HTML and text) are laid out to the current screen
-width. Plain text gets its own Compose view with line numbers, wrapping, RTL
-alignment and a continuous or paged layout, so it can select across paragraphs
-with the native text toolbar. Office files (DOCX/XLSX/PPTX/HWPX) are not
-supported.
-
-📄 PDFr advertises the `text/*` family plus the common application text types
-(JSON, XML, YAML, TOML, JavaScript, shell, SQL and others) for **Open with** and
-**Share**, so configuration and source files do not need a PDFr-specific entry
-for each extension. The in-app picker also offers `text/*` and
-`application/octet-stream`; text detection fills in providers that report no
-useful MIME type.
-
-</details>
-
 <hr/>
 
-<details><summary><h2>📥 How opening works</h2></summary>
+## 👇  download (direct URLs - latest release)
 
-📨 A document received from another app is usually a `content://` URI that only
-PDFr can read. `DocumentStore` copies the bytes once into
-`cacheDir/documents/<import-id>/`, using a staging file renamed into place only
-after the copy succeeds. Everything else - the reader, the info dialog and the
-share sheet - uses that cached file. `FileProvider` exposes only the
-`documents/` tree.
+- [![](resources/android.png)![](resources/arm64.png)app-arm64-v8a-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-arm64-v8a-release.apk) - about ~16MB (new devices)
+- [![](resources/android.png)![](resources/arm7.png)app-armeabi-v7a-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-armeabi-v7a-release.apk) - about ~12MB (old devices)
+- [![](resources/android.png)![](resources/32.png)app-x86-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-x86-release.apk) - about ~60MB (32bit emulator)
+- [![](resources/android.png)![](resources/64.png)app-x86_64-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-x86_64-release.apk) - about ~17MB (64bit emulator)
+- [![](resources/android.png)![](resources/all.png)app-universal-release.apk](https://github.com/eladkarako/pdfr/releases/latest/download/app-universal-release.apk) - about ~17MB (everything in one APK, best if you need to install on multiple platforms)
 
-🔄 Reordering, rotating, normalizing or fixing writes a new PDF into a
-fresh subdirectory of the same cache, opens it, and then deletes the previous
-copy.
-There is deliberately no undo stack and no original PDF kept around: use the
-**Open** toolbar button (or the system picker) to go back to the source file.
-⚠️ Opening an encrypted PDF writes a decrypted cache copy (the source file is
-untouched), and every rewrite saves without encryption, so the copy opens
-without a password and without editing restrictions.
-
-💾 **Save as** copies the document that is currently open to a location you
-choose, using the same format and filename. The cached bytes are copied
-verbatim, so rewrites, embedded metadata and the original date/time stay
-intact wherever the target provider allows its timestamp to be updated.
-
-</details>
+- [![](resources/txt.png)output-metadata.json](https://github.com/eladkarako/pdfr/releases/latest/download/output-metadata.json) - current release meta-data.
+- [![](resources/txt.png)changelog.txt](https://github.com/eladkarako/pdfr/releases/latest/download/changelog.txt) - list of changes.
+- [![](resources/txt.png)version.txt](https://github.com/eladkarako/pdfr/releases/latest/download/version.txt) - current version.
 
 <hr/>
 
@@ -203,6 +158,67 @@ as this screen is quite large you can click the image below to see it full-size
 
 <img width="300" src="resources/menu_normalize_pdf.png" />
 
+
+</details>
+
+<hr/>
+
+<details><summary><h2>📚 Formats supported</h2></summary>
+
+| Format | Extension(s) | Definition | Key traits |
+|--------|--------------|------------|------------|
+| 📕 PDF (Portable Document Format) | `.pdf` | A fixed-layout format, created by Adobe, that preserves the exact look of a page, including fonts, images, and layout, on any device. | Best for scanned or designed documents. It reflows poorly on small e-reader screens, though newer readers handle it better. |
+| 📘 EPUB | `.epub` | An open, reflowable ebook standard maintained by the IDPF. It is a ZIP container holding HTML, CSS, images, and metadata. | The most widely supported ebook format, and the one most publishers use. Text adapts to the screen, and readers can change fonts and sizes. |
+| 📄 XPS / OXPS | `.xps`, `.oxps` | XML Paper Specification, a fixed-layout page format from Microsoft. It is a ZIP package of XML descriptions of each page. OpenXPS is the open version of the same idea. | Designed as a document-exchange format, similar in purpose to PDF. It is rarely used for books today. |
+| 🦸 CBZ / CBT (comic book archive) | `.cbz`, `.cbt` | A comic archive: a ZIP (CBZ) or TAR (CBT) file containing the pages as image files (usually JPEG or PNG), named in reading order. | There is no text layer or reflow. Comic readers display the images in sequence, so the format is simple and easy to create. |
+| 📖 FB2 (FictionBook) | `.fb2` | An XML-based ebook format, FictionBook 2.0, that describes a book's structure and metadata, such as title, author, and chapters, rather than its appearance. | Easy to process and index for collection management. It is common in some non-English markets, especially Russian-speaking ones, but has little support in English. |
+| 📚 MOBI / PalmDoc | `.mobi`, `.prc`, `.pdb` | Older Amazon and Palm ebook containers, including the Mobipocket format that predates KF8 and AZW3. | Readable but reflowed without DRM support. Most modern Kindle books use AZW3/KFX, which MuPDF does not open. |
+| 📝 Markdown | `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn` | Plain text with lightweight heading, list, link and code syntax. | Reflows to the screen width. MuPDF converts it to HTML before layout; longer suffixes are handled through a temporary `.md` copy. |
+| 🖼️ Images and PNM/PAM | `.png`, `.jpg`, `.jpeg`, `.gif`, `.bmp`, `.tif`, `.tiff`, `.jp2`, `.jpx`, `.jxr`, `.wdp`, `.hdp`, `.psd`, `.pnm`, `.pbm`, `.pgm`, `.ppm`, `.pam`, `.pfm`, `.jb2` | Single-page raster or vector images. PNM/PAM is a family of simple, uncompressed image formats. | Each image opens as a one-page document. SVG is handled as a vector page and stays sharp when zoomed. |
+| 🌐 HTML, XHTML and SVG | `.html`, `.htm`, `.xhtml`, `.svg` | HTML is the web's markup language for text, links, and styling. SVG (Scalable Vector Graphics) is an XML format for vector images that scale without losing quality. | Standalone HTML is rarely used as an ebook because it splits across many files. HTML and SVG are mostly used inside EPUB files, where SVG can supply scalable illustrations or fixed-layout pages. |
+| 📝 Plain text | `.txt`, `.text`, `.nfo`, `.log` | A file containing only characters, with no fonts, images, colours, or styling. .nfo files are text files, often with ASCII art, traditionally used to describe software or media releases. | The most portable format, readable on almost any device. The original ebooks, such as Project Gutenberg texts, were plain text. Line endings and character encoding (usually UTF-8) can cause display problems. |
+| 🧾 Source, config and data | `.cfg`, `.ini`, `.conf`, `.properties`, `.yaml`, `.yml`, `.toml`, `.json`, `.jsonl`, `.csv`, `.tsv`, `.xml`, `.c`, `.h`, `.cpp`, `.hpp`, `.cs`, `.java`, `.kt`, `.js`, `.ts`, `.py`, `.rb`, `.go`, `.rs`, `.php`, `.sh`, `.bat`, `.ps1`, `.sql`, `.css` and similar | Text files written for a program rather than for a reader: configuration, structured data and source code. | Shown as reflowable plain text with the monospace toggle. MuPDF has no handler for these suffixes, so PDFr opens a temporary `.txt` copy; the copy is byte-for-byte identical and no byte-order mark is added. MuPDF's content detector still treats a file whose first line starts with `# ` as Markdown, so such a comment may render as a heading without the marker. A file with an entirely unknown suffix is also detected from its bytes and opened as text when MuPDF cannot handle it. |
+
+💡 note: Fixed-layout documents are rasterised page by page. Reflowable documents
+(EPUB, MOBI, FB2, Markdown, HTML and text) are laid out to the current screen
+width. Plain text gets its own Compose view with line numbers, wrapping, RTL
+alignment and a continuous or paged layout, so it can select across paragraphs
+with the native text toolbar. Office files (DOCX/XLSX/PPTX/HWPX) are not
+supported.
+
+📄 PDFr advertises the `text/*` family plus the common application text types
+(JSON, XML, YAML, TOML, JavaScript, shell, SQL and others) for **Open with** and
+**Share**, so configuration and source files do not need a PDFr-specific entry
+for each extension. The in-app picker also offers `text/*` and
+`application/octet-stream`; text detection fills in providers that report no
+useful MIME type.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>📥 How opening works</h2></summary>
+
+📨 A document received from another app is usually a `content://` URI that only
+PDFr can read. `DocumentStore` copies the bytes once into
+`cacheDir/documents/<import-id>/`, using a staging file renamed into place only
+after the copy succeeds. Everything else - the reader, the info dialog and the
+share sheet - uses that cached file. `FileProvider` exposes only the
+`documents/` tree.
+
+🔄 Reordering, rotating, normalizing or fixing writes a new PDF into a
+fresh subdirectory of the same cache, opens it, and then deletes the previous
+copy.
+There is deliberately no undo stack and no original PDF kept around: use the
+**Open** toolbar button (or the system picker) to go back to the source file.
+⚠️ Opening an encrypted PDF writes a decrypted cache copy (the source file is
+untouched), and every rewrite saves without encryption, so the copy opens
+without a password and without editing restrictions.
+
+💾 **Save as** copies the document that is currently open to a location you
+choose, using the same format and filename. The cached bytes are copied
+verbatim, so rewrites, embedded metadata and the original date/time stay
+intact wherever the target provider allows its timestamp to be updated.
 
 </details>
 
@@ -600,9 +616,36 @@ APK for their device.
 
 <hr/>
 
-<details><summary><h2>🕵️ Checking That an App Has No Internet Access</h2></summary>
+<details><summary><h2>🔍🧑‍🔬 reverse-engineer friendly</h2></summary>
 
-this app is provided with this file `/app/src/main/res/xml/network_security_config.xml`  
+- I do not want or need to obfuscate or rename the classes since this is an opensource code, I want to make reverse engineering from APK to source easier for inspection.
+- the pro-guard rules keeps generic signatures, nested-class links and checked exceptions in the dex, without these attributes a decompiler sees erased types and synthetic names, which makes the un-obfuscated build much harder to read. The cost is a few kilobytes, not runtime performance.
+- keep source file names and line numbers so stack traces and decompiled output point back to the original Kotlin file. This is a deliberate readability trade-off, it allows easier crash diagnostics.
+
+I don't chain github actions, directly to release,  
+nor do I build on any market just yet,  
+I build on my own PC then upload it manually when the list of changes is significant enough,  
+so you don't really should trust the APK.
+
+you can build it yourself, from source, you'll need the Android SDK, and NDK if you wish to rebuild the JNI bridge as well,  
+or use a nice tool such as APKTool - https://github.com/iBotPeaches/Apktool/ (I use it all the time),  
+to get a smalli and resources you can debug/inspect.
+
+get a newer build of APKTool from:  
+
+https://github.com/iBotPeaches/Apktool/actions/workflows/build.yml?query=is%3Asuccess+branch%3Amain+actor%3AiBotPeaches+event%3Apush
+
+<hr/>
+
+I would probably, eventually upload it to F-Droid, and Google App Store.
+
+</details>
+
+<hr/>
+
+<details><summary><h2>🕵️ Checking That this App Has No Internet Access</h2></summary>
+
+this app is provided with this file (`/app/src/main/res/xml/network_security_config.xml`):  
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -616,11 +659,16 @@ this app is provided with this file `/app/src/main/res/xml/network_security_conf
 </network-security-config>
 ```
 
-meaning you can wire-up a packet inspection application,  
-to make sure there are no requests generated from the app,  
-this includes opening up HTML files! (but I should test it).
+it allows you to use a packet inspection application,  
+install its CA-certificate,  
+and inspect any connection from this application (there should not be any),  
+including HTTPS traffic (..should not be any).
 
-this most likely be moved to debug builds, but for now I'll keep in in the release too.
+one good choice is `Burp` suite, it is free and easy to set up.  
+essentially it acts as a proxy, combined with trusting its CA-certificate,  
+you'll be able to inspect pretty much everything this app does (shouldn't be anything..)
+
+below are some generic set of instructions, to help you set it up.
 
 <hr/>
 
