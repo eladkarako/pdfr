@@ -103,12 +103,36 @@ class AccessibilityInstrumentedTest {
         // The class has a Hebrew test; make sure this one starts from the
         // default language even if JUnit runs them in a different order.
         AppSettings.setLanguageTag(context, AppSettings.SYSTEM_LANGUAGE)
-        ActivityScenario.launch(MainActivity::class.java).use {
-            // A picker or another app left in front would consume the Tab keys,
-            // so wait until PDFr owns the active window before traversing.
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            // A previous scenario can still be finishing, so the active window
+            // may be its stale one and injected keys would go nowhere. Wait for
+            // this activity to own the input focus before traversing.
+            waitForWindowFocus(scenario)
+            Thread.sleep(300)
             waitForAppWindow()
             instrumentation.waitForIdleSync()
             val menuLabel = context.getString(R.string.more_options)
+
+            // An overflow popup left open by an earlier test is its own window
+            // and would receive the Tab keys, so close it before traversing.
+            val exitLabel = context.getString(R.string.exit)
+            if (waitForNode(attempts = 3) { it.text?.toString() == exitLabel } != null) {
+                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+                assertTrue(
+                    "a leftover overflow menu did not close",
+                    waitForNodeGone { it.text?.toString() == exitLabel },
+                )
+            }
+
+            // Wait until the empty state has settled and the menu reports
+            // enabled, so the first Tab cannot land before the toolbar is
+            // interactive.
+            assertNotNull(
+                "the overflow button never became enabled",
+                waitForNode(attempts = 50) {
+                    it.contentDescription?.toString() == menuLabel && it.isEnabled
+                },
+            )
 
             // Read the focus from a fresh snapshot every time. A snapshot taken
             // right after a Tab can still report the node that is about to lose
@@ -119,30 +143,60 @@ class AccessibilityInstrumentedTest {
                 return findNode(root) { it.isFocused }?.contentDescription?.toString()
             }
 
-            var reached = false
-            for (attempt in 0..12) {
-                if (focusedLabel() == menuLabel) {
-                    // Require the same reading twice; Compose can publish focus
-                    // a frame before the input focus really arrives.
-                    Thread.sleep(150)
-                    if (focusedLabel() == menuLabel) {
-                        reached = true
-                        break
+            fun focusedInfo(): String {
+                val root = instrumentation.uiAutomation.rootInActiveWindow ?: return "no-root"
+                if (root.packageName != context.packageName) return "other:${root.packageName}"
+                val found = mutableListOf<String>()
+                fun walk(node: AccessibilityNodeInfo) {
+                    if (node.isFocused) {
+                        val rect = android.graphics.Rect()
+                        node.getBoundsInScreen(rect)
+                        found += "${node.className}/${node.contentDescription}/$rect"
+                    }
+                    for (index in 0 until node.childCount) {
+                        node.getChild(index)?.let { walk(it) }
                     }
                 }
-                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
-                instrumentation.waitForIdleSync()
-                Thread.sleep(100)
+                walk(root)
+                return if (found.isEmpty()) "none" else found.joinToString(" | ")
             }
-            assertTrue("Tab never reached '$menuLabel'", reached)
 
-            // KEYCODE_DPAD_CENTER is the select button on a TV remote. Compose
-            // activates a focused button on the key-up, so send the pair with a
-            // short gap rather than a single sendKeyDownUpSync.
-            val exitLabel = context.getString(R.string.exit)
+            // Record what Tab visits so a failure says whether traversal moved
+            // at all or merely skipped the menu.
+            val visited = mutableListOf<String>()
+
+            // The accessibility tree reports the new focus before the window
+            // really receives it, and the node can flicker out for a frame.
+            // Pressing Enter in that window activates the previous button (the
+            // Open document picker), so require the label to stay put for a
+            // moment first.
+            fun waitForMenuFocus(timeoutMs: Long = 1500): Boolean {
+                val deadline = System.currentTimeMillis() + timeoutMs
+                var stableSince = 0L
+                while (System.currentTimeMillis() < deadline) {
+                    if (focusedLabel() == menuLabel) {
+                        if (stableSince == 0L) stableSince = System.currentTimeMillis()
+                        if (System.currentTimeMillis() - stableSince >= 300) return true
+                    } else {
+                        stableSince = 0L
+                    }
+                    Thread.sleep(80)
+                }
+                return false
+            }
+
+            var reached = false
             var opened: AccessibilityNodeInfo? = null
-            repeat(5) {
-                if (opened == null) {
+            for (attempt in 0..12) {
+                // A finishing scenario can steal focus between iterations.
+                waitForWindowFocus(scenario)
+                val info = focusedInfo()
+                visited += "#$attempt $info focus=${hasWindowFocus(scenario)}"
+                val label = focusedLabel()
+                if (label == menuLabel && waitForMenuFocus()) {
+                    reached = true
+                    // KEYCODE_DPAD_CENTER is the select button on a TV remote.
+                    waitForWindowFocus(scenario)
                     instrumentation.sendKeySync(
                         KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER),
                     )
@@ -150,10 +204,15 @@ class AccessibilityInstrumentedTest {
                     instrumentation.sendKeySync(
                         KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER),
                     )
-                    opened = waitForNode(attempts = 30) { it.text?.toString() == exitLabel }
+                    opened = waitForNode(attempts = 20) { it.text?.toString() == exitLabel }
+                    if (opened != null) break
                 }
+                waitForWindowFocus(scenario)
+                instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_TAB)
+                instrumentation.waitForIdleSync()
+                Thread.sleep(100)
             }
-
+            assertTrue("Tab never reached '$menuLabel'; visited $visited", reached)
             assertNotNull("the overflow menu did not open from the keyboard", opened)
         }
     }
@@ -201,6 +260,14 @@ class AccessibilityInstrumentedTest {
                 "the Hebrew overflow menu is missing '$exitLabel'",
                 popup,
             )
+
+            // The popup is its own window and outlives the scenario for a
+            // moment. Close it here so the next test starts from the toolbar.
+            instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_BACK)
+            assertTrue(
+                "the Hebrew overflow menu did not close",
+                waitForNodeGone { it.text?.toString() == exitLabel },
+            )
         }
     }
 
@@ -211,6 +278,21 @@ class AccessibilityInstrumentedTest {
             Thread.sleep(100)
         }
         error("the PDFr window did not become active")
+    }
+
+    /** Waits until [scenario]'s activity, not a finishing one, has input focus. */
+    private fun waitForWindowFocus(scenario: ActivityScenario<MainActivity>) {
+        repeat(100) {
+            if (hasWindowFocus(scenario)) return
+            Thread.sleep(100)
+        }
+        error("the PDFr activity did not gain window focus")
+    }
+
+    private fun hasWindowFocus(scenario: ActivityScenario<MainActivity>): Boolean {
+        var focused = false
+        scenario.onActivity { focused = it.hasWindowFocus() }
+        return focused
     }
 
     /**
@@ -236,6 +318,18 @@ class AccessibilityInstrumentedTest {
             Thread.sleep(100)
         }
         return null
+    }
+
+    /** Waits until [predicate] matches nothing in any window the app owns. */
+    private fun waitForNodeGone(
+        attempts: Int = 40,
+        predicate: (AccessibilityNodeInfo) -> Boolean,
+    ): Boolean {
+        repeat(attempts) {
+            if (waitForNode(attempts = 1, predicate = predicate) == null) return true
+            Thread.sleep(100)
+        }
+        return false
     }
 
     private fun findNode(
