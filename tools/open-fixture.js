@@ -304,31 +304,41 @@ function scrollGrid(adb) {
     const x = Math.round(size.width / 2);
     const start = Math.round(size.height * 0.78);
     const end = Math.round(size.height * 0.32);
-    adbShell(adb, `input swipe ${x} ${start} ${x} ${end} 350`);
-    sleep(500);
+    // A slower swipe carries less momentum, so the next dump lands on settled
+    // bounds instead of mid-fling coordinates that make the following tap miss.
+    adbShell(adb, `input swipe ${x} ${start} ${x} ${end} 600`);
+    sleep(900);
 }
 
-function findGridEntry(adb, name, attempts = 8) {
+/** Returns the title node for a grid entry, exact name first, then a prefix. */
+function gridEntry(nodes, name) {
+    const exact = nodes.find((node) => (
+        visible(node)
+        && node['resource-id'] === 'android:id/title'
+        && node.text === name
+    ));
+    if (exact) return exact;
+
+    // Long names can be ellipsized in the caption while `text` stays full, but
+    // some DocumentsUI builds truncate both; match the visible prefix.
+    const prefix = name.length > 18 ? name.slice(0, 18) : name;
+    return nodes.find((node) => (
+        visible(node)
+        && node['resource-id'] === 'android:id/title'
+        && node.text
+        && node.text.startsWith(prefix)
+    )) || null;
+}
+
+function findGridEntry(adb, name, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt += 1) {
-        const nodes = dumpUi(adb);
-        const exact = nodes.find((node) => (
-            visible(node)
-            && node['resource-id'] === 'android:id/title'
-            && node.text === name
-        ));
-        if (exact) return exact;
-
-        // Long names can be ellipsized in the caption while `text` stays full,
-        // but some DocumentsUI builds truncate both; match the visible prefix.
-        const prefix = name.length > 18 ? name.slice(0, 18) : name;
-        const loose = nodes.find((node) => (
-            visible(node)
-            && node['resource-id'] === 'android:id/title'
-            && node.text
-            && node.text.startsWith(prefix)
-        ));
-        if (loose) return loose;
-
+        const found = gridEntry(dumpUi(adb), name);
+        if (found) {
+            // The grid can still be settling after a scroll. Read the bounds a
+            // second time so the tap uses the row's final position.
+            sleep(500);
+            return gridEntry(dumpUi(adb), name) || found;
+        }
         if (attempt < attempts - 1) scrollGrid(adb);
     }
     throw new Error(`Could not find '${name}' in the document picker.`);
@@ -405,35 +415,56 @@ function ensureDownloadsRoot(adb) {
 function enterFolder(adb, name) {
     const entry = findGridEntry(adb, name);
     tap(adb, entry);
+    // `header_title` keeps the root name ("Files in Downloads") even inside a
+    // subfolder, so the breadcrumb is the reliable signal. Builds without
+    // breadcrumbs fall back to the folder row disappearing from the grid,
+    // which also proves the tap navigated instead of missing.
     waitFor(
         adb,
-        (current) => folderName(current) === name,
+        (current) => {
+            const crumbs = breadcrumbs(current);
+            if (crumbs.length > 0) return crumbs[crumbs.length - 1] === name;
+            return !current.some((node) => (
+                visible(node)
+                && node['resource-id'] === 'android:id/title'
+                && node.text === name
+            ));
+        },
         `the ${name} folder`,
         8000,
     );
-    sleep(500);
+    sleep(700);
+}
+
+const DOCUMENT_ERROR = /couldn'?t open|could not open|can'?t open|cannot open|no access|permission deni|not allowed/i;
+
+function documentState(nodes) {
+    const appNodes = nodes.filter((node) => node.package === APP_ID && visible(node));
+    return {
+        error: appNodes.find((node) => DOCUMENT_ERROR.test(label(node))) || null,
+        // The page-number field only exists once a document is laid out. A
+        // password prompt also has an EditText, which still means the document
+        // itself opened.
+        ready: appNodes.some((node) => (
+            node.class === 'android.widget.EditText'
+            || node['content-desc'] === 'Current page'
+        )),
+    };
 }
 
 function waitForDocument(adb, timeoutMs = 25000) {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
-        const nodes = dumpUi(adb);
-        const appNodes = nodes.filter((node) => node.package === APP_ID);
-        if (appNodes.length > 0) {
-            const refusal = appNodes.find((node) => (
-                /can.?t open|cannot open|no access|permission denied|not allowed/i.test(label(node))
-            ));
-            if (refusal) {
-                throw new Error(`The app refused the document: ${label(refusal)}`);
-            }
-            // The page-number field only exists once a document is laid out.
-            // A password prompt also has an EditText, which still means the
-            // document itself opened.
-            const ready = appNodes.some((node) => (
-                node.class === 'android.widget.EditText'
-                || node['content-desc'] === 'Current page'
-            ));
-            if (ready) return true;
+        const state = documentState(dumpUi(adb));
+        if (state.error) return false;
+        if (state.ready) {
+            // The toolbar composes for a moment while a URI is being read. If
+            // that read is refused, the error pane replaces it, so confirm the
+            // page field is still there before reporting success.
+            sleep(1500);
+            const settled = documentState(dumpUi(adb));
+            if (settled.error) return false;
+            if (settled.ready) return true;
         }
         if (Date.now() >= deadline) return false;
         sleep(500);
@@ -461,19 +492,23 @@ function restartApp(adb) {
 }
 
 function tapOpenButton(adb) {
-    const node = waitFor(
-        adb,
-        (nodes) => nodes.find((candidate) => (
-            visible(candidate)
-            && (candidate['content-desc'] === 'Open document'
-                || candidate['content-desc'] === 'Open a document'
-                || candidate.text === 'Open a document')
-        )),
-        'the Open document button',
-        8000,
-    );
+    const findOpen = (nodes) => nodes.find((candidate) => (
+        visible(candidate)
+        && (candidate['content-desc'] === 'Open document'
+            || candidate['content-desc'] === 'Open a document'
+            || candidate.text === 'Open a document')
+    ));
+    const node = waitFor(adb, findOpen, 'the Open document button', 8000);
     tap(adb, node);
-    waitFor(adb, isDocumentsUi, 'the system document picker', 10000);
+    try {
+        waitFor(adb, isDocumentsUi, 'the system document picker', 15000);
+    } catch {
+        // A tap during the launch animation can be swallowed, especially on a
+        // loaded emulator; tap the button again before giving up.
+        const retry = waitFor(adb, findOpen, 'the Open document button', 5000);
+        tap(adb, retry);
+        waitFor(adb, isDocumentsUi, 'the system document picker', 15000);
+    }
 }
 
 /** Tries the shared-storage document URI, which needs no picker interaction. */

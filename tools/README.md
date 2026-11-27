@@ -312,12 +312,19 @@ tools\reader-checks.bat -Section gestures -SkipRoot
 Sections: `empty`, `text`, `selection`, `metadata`, `gestures`, `exit`
 (default `all`). It checks the disabled toolbar with no document, plain-text
 defaults and toggles, native selection plus the Copy/Copy all touch menu, the
-editable info dialog, and pinch behaviour. Copy all is checked through the
-clipboard against `long.txt`, which is taller than the viewport.
+editable info dialog, and pinch behaviour. Selection is long-pressed in the
+wrapped, paged and horizontally scrolled layouts, and the clipboard is read
+back through the filename field: Copy must yield one word, while Copy all must
+start at the first line, skip line numbers and reach `L040` of `long.txt`,
+which is taller than the viewport. A check also proves the two copies read
+back different text, so a stale field cannot make both pass.
 
 Reads Compose through `uiautomator dump --windows` (the text context menu is its
 own popup window, so the app and popup hierarchies are merged) and compares
-screenshots for the pixel-only checks. `-SkipRoot` avoids an `adb root` restart
+screenshots for the pixel-only checks. A long press is injected as one
+`input swipe x y x y 1500`: separate `input motionevent` calls each start a new
+gesture, so Compose ends the hold immediately and never begins a selection.
+`-SkipRoot` avoids an `adb root` restart
 that can resize the viewport between screenshots; `-KeepOpen` leaves the app on
 whatever the last check opened. Screen coordinates default to 1080x2340; use
 `-ScreenWidth`, `-ScreenHeight` and `-EventDevice` on another device.
@@ -643,7 +650,11 @@ size is verified before opening. The preferred route sends the app a
 `content://com.android.externalstorage.documents/...` URI for that file. If the
 platform refuses the grant, the script restarts PDFr and drives the system
 picker: **Open document**, **Show roots**, **Downloads**, the fixture folder,
-then the file. `-Method intent` or `-Method picker` forces one route.
+then the file. Success means the page field is still on screen after a short
+settle, so the toolbar that composes during a refused read cannot be mistaken
+for an opened document; an error pane falls back to the picker instead. The
+picker tap is retried once because a tap during the launch animation can be
+swallowed. `-Method intent` or `-Method picker` forces one route.
 
 Result: PDFr opens the fixture in the reader, and the same file stays in the
 device's Downloads for a manual open. Run it before any `reader-actions.js`,
@@ -724,7 +735,7 @@ the same route, in order, for a full manual pass:
     plain-text view shows one continuous page, line numbers and wrapped lines;
     the overflow menu starts with **Copy all**, then a divider, then the
     settings: single page, line wrap, alignment, line numbers, text size and
-    monospace. Long-press selects text across paragraphs and shows a touch menu
+    monospace. Long-press selects the text on one line and shows a touch menu
     with **Copy** (the selection, greyed out when empty) and **Copy all** (the
     whole document, whatever is selected); there is no **Select all**. Text
     size is 5-40 pt and starts at 12 pt.

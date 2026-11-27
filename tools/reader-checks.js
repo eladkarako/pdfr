@@ -505,6 +505,22 @@ function tapPattern(pattern) {
     tapNode(findNode(pattern));
 }
 
+/**
+ * Long-presses the centre of the first node matching [pattern].
+ *
+ * A single `input swipe` keeps one pointer down for the whole hold. A
+ * DOWN/MOVE/UP sequence of separate `input motionevent` calls cannot: each
+ * call starts its own gesture, so Compose ends the hold immediately and text
+ * selection never begins.
+ */
+function longPressNode(pattern) {
+    const node = findNode(pattern);
+    if (!node) throw new Error(`Long-press target '${pattern}' is not on screen.`);
+    const rect = getNodeRect(node);
+    invokeAdb(['shell', 'input', 'swipe', rect.x, rect.y, rect.x, rect.y, 1500]);
+    sleep(1200);
+}
+
 function waitForPattern(pattern, timeoutMs = 8000) {
     const deadline = Date.now() + timeoutMs;
     do {
@@ -689,21 +705,47 @@ function openEmptyApp() {
     waitForPattern('^Nothing open$', 12000);
 }
 
+function dismissOpenDialog() {
+    // A leftover info dialog hides the toolbar, so the Share probe below would
+    // never see the reader. BACK first hides the IME if it is up, then closes
+    // the dialog; retry because the first press can be consumed by the IME.
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+        let dialogOpen = false;
+        try {
+            dialogOpen = Boolean(findNode('^Apply$') && findNode('^Cancel$'));
+        } catch {
+            dialogOpen = false;
+        }
+        if (!dialogOpen) return;
+        invokeAdb(['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+        sleep(600);
+    }
+}
+
 function openDoc(name) {
+    dismissOpenDialog();
     const opener = path.join(__dirname, 'open-fixture.bat');
-    const result = runBatch(opener, [name], { allowFailure: true });
-    if (result.status !== 0) {
-        throw new Error(`open-fixture.bat failed for '${name}'.`);
+    // The system picker occasionally lands on a stale task after a long suite.
+    // One clean retry is cheaper than a false failure.
+    let lastOutput = '';
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        const result = runBatch(opener, [name], { allowFailure: true });
+        lastOutput = `${result.stdout || ''}${result.stderr || ''}`.trim();
+        if (result.status === 0) {
+            sleep(2000);
+            const deadline = Date.now() + 12000;
+            do {
+                if (testActionEnabled('Share document') === true) return;
+                sleep(400);
+            } while (Date.now() < deadline);
+        }
+        invokeAdb(['shell', 'am force-stop com.android.documentsui']);
+        sleep(1000);
     }
 
-    sleep(2000);
-    const deadline = Date.now() + 12000;
-    do {
-        if (testActionEnabled('Share document') === true) return;
-        sleep(400);
-    } while (Date.now() < deadline);
-
-    throw new Error(`The reader did not open '${name}'.`);
+    throw new Error(
+        `The reader did not open '${name}'.${lastOutput ? `\n${lastOutput}` : ''}`,
+    );
 }
 
 function getEditNodes(xml) {
@@ -720,6 +762,39 @@ function setEditText(node, value) {
         invokeAdb(['shell', `input text ${value}`]);
     }
     sleep(500);
+}
+
+/**
+ * Pastes the clipboard into the filename field of the document-info dialog and
+ * returns what the field received.
+ *
+ * The dialog is nearly screen height, so the keyboard scrolls its content to
+ * the end and the filename field leaves the dumped hierarchy. Hiding the IME
+ * and dragging the dialog back to the top makes the field readable again.
+ */
+function pasteIntoFirstField() {
+    const dialog = openInfoDialog();
+    const edits = getEditNodes(dialog);
+    if (edits.length === 0) {
+        throw new Error('The document-info dialog has no text field.');
+    }
+
+    setEditText(edits[0], '');
+    invokeAdb(['shell', 'input', 'keycombination', 113, 50]);
+    sleep(1200);
+    invokeAdb(['shell', 'input', 'keyevent', 'KEYCODE_BACK']);
+    sleep(800);
+
+    const x = Math.round(options.ScreenWidth * 0.5);
+    invokeAdb([
+        'shell', 'input', 'swipe',
+        x, Math.round(options.ScreenHeight * 0.35),
+        x, Math.round(options.ScreenHeight * 0.85),
+        400,
+    ]);
+    sleep(700);
+
+    return attr(getEditNodes(getUiXml())[0], 'text');
 }
 
 function openInfoDialog() {
@@ -1049,12 +1124,7 @@ function testSelection() {
     const numbersBefore = getNumericNodes(getUiXml());
     testCheck('line numbers are shown before selecting', numbersBefore.length >= 8, `found ${numbersBefore.length}`);
 
-    invokeAdb(['shell', 'input', 'motionevent', 'DOWN', 540, 900]);
-    sleep(900);
-    invokeAdb(['shell', 'input', 'motionevent', 'MOVE', 660, 900]);
-    sleep(300);
-    invokeAdb(['shell', 'input', 'motionevent', 'UP', 660, 900]);
-    sleep(900);
+    longPressNode('^PDFr plain text fixture$');
 
     const partial = saveShot('selection-partial');
     const partialImage = new PdfrImage(partial);
@@ -1080,53 +1150,72 @@ function testSelection() {
     // whole document, on the clipboard.
     tapPattern('^Copy$');
     sleep(4000);
+    testCheck('Copy closes the touch menu', !testMenuOpen());
 
-    let dialog = openInfoDialog();
-    let edits = getEditNodes(dialog);
-    if (edits.length >= 1) {
-        setEditText(edits[0], '');
-        invokeAdb(['shell', 'input', 'keycombination', 113, 50]);
-        sleep(900);
-        const selected = attr(getEditNodes(getUiXml())[0], 'text');
-        testCheck(
-            'touch-menu Copy copies the selection',
-            selected.length > 0 && !matches(selected, '^PDFr plain text fixture'),
-            `copied ${selected.length} characters`,
-        );
-        closeInfoDialog('Cancel');
-    }
+    const selected = pasteIntoFirstField();
+    testCheck(
+        'touch-menu Copy copies the selection',
+        selected.length > 0 && !matches(selected, '^PDFr plain text fixture'),
+        `copied ${selected.length} characters`,
+    );
+    // A per-line container can only ever select one logical line. The copied
+    // text must therefore be a single word: a newline or a run of digits here
+    // would mean the selection leaked into the next line or the gutter.
+    testCheck(
+        'Copy copies one word without a line break',
+        matches(selected, '^\\S+$'),
+        selected ? `'${selected}'` : 'empty',
+    );
+    closeInfoDialog('Cancel');
 
     // Copy cleared the selection, so select again before testing Copy all.
-    invokeAdb(['shell', 'input', 'motionevent', 'DOWN', 540, 900]);
-    sleep(900);
-    invokeAdb(['shell', 'input', 'motionevent', 'MOVE', 660, 900]);
-    sleep(300);
-    invokeAdb(['shell', 'input', 'motionevent', 'UP', 660, 900]);
-    sleep(900);
+    longPressNode('^PDFr plain text fixture$');
 
     // Copy all ignores the partial selection and starts at the first line.
     tapPattern('^Copy all$');
     sleep(4000);
+    testCheck('Copy all closes the touch menu', !testMenuOpen());
 
-    dialog = openInfoDialog();
-    edits = getEditNodes(dialog);
-    if (edits.length >= 1) {
-        setEditText(edits[0], '');
-        invokeAdb(['shell', 'input', 'keycombination', 113, 50]);
-        sleep(900);
-        const pasted = attr(getEditNodes(getUiXml())[0], 'text');
-        testCheck(
-            'touch-menu Copy all starts at the first line',
-            matches(pasted, '^PDFr plain text fixture'),
-            pasted ? pasted.substring(0, Math.min(40, pasted.length)) : 'empty',
-        );
-        testCheck(
-            'touch-menu Copy all ignores the selection',
-            matches(pasted, 'quick brown fox'),
-            `pasted ${pasted.length} characters`,
-        );
-        closeInfoDialog('Cancel');
-    }
+    const pasted = pasteIntoFirstField();
+    testCheck(
+        'touch-menu Copy all starts at the first line',
+        matches(pasted, '^PDFr plain text fixture'),
+        pasted ? pasted.substring(0, Math.min(40, pasted.length)) : 'empty',
+    );
+    testCheck(
+        'touch-menu Copy all ignores the selection',
+        matches(pasted, 'quick brown fox'),
+        `pasted ${pasted.length} characters`,
+    );
+    // If the paste helper had read a stale field, both copies would look the
+    // same and the two checks above could pass on the wrong text.
+    testCheck(
+        'Copy and Copy all read back different clipboard text',
+        selected !== pasted,
+        `Copy ${selected.length} characters, Copy all ${pasted.length} characters`,
+    );
+    closeInfoDialog('Cancel');
+
+    // The touch menu must drop the highlight after Copy all, exactly like the
+    // overflow entry does further down.
+    const afterTouchCopy = new PdfrImage(saveShot('selection-after-copy-all'));
+    const afterTouchStats = afterTouchCopy.measureSelection(gutter);
+    testCheck(
+        'touch-menu Copy all draws no selection',
+        afterTouchStats.count < 500,
+        `selection pixels: ${afterTouchStats.count}`,
+    );
+
+    // Select again so the tap below clears a live selection instead of an
+    // already-empty screen.
+    longPressNode('^PDFr plain text fixture$');
+    const reselected = new PdfrImage(saveShot('selection-reselected'));
+    const reselectedStats = reselected.measureSelection(gutter);
+    testCheck(
+        'a second long-press selects text again',
+        reselectedStats.count >= 1000,
+        `selection pixels: ${reselectedStats.count}`,
+    );
 
     invokeAdb([
         'shell', 'input', 'tap',
@@ -1139,6 +1228,63 @@ function testSelection() {
     const clearedStats = clearedImage.measureSelection(gutter);
     testCheck('tapping clears the selection', clearedStats.count < 1000, `selection pixels: ${clearedStats.count}`);
     testCheck('the reader survives clearing the selection', Boolean(findNode('^PDFr plain text fixture$')));
+
+    // The per-line container lives in three different layouts. The checks above
+    // cover the continuous wrapped one; paging and horizontal scrolling use
+    // separate composables, so a long press must select there too.
+    toggleMenuItem('Single page');
+    testEqual('single page can be turned off before selecting', getMenuLabel('Single page'), 'Single page: off');
+    longPressNode('^PDFr plain text fixture$');
+    const pagedStats = new PdfrImage(saveShot('selection-paged')).measureSelection(gutter);
+    testCheck(
+        'long-press selects text in paged mode',
+        pagedStats.count >= 1000,
+        `selection pixels: ${pagedStats.count}`,
+    );
+    testCheck(
+        'the paged selection has handles',
+        pagedStats.dark >= 100,
+        `dark blue pixels: ${pagedStats.dark}`,
+    );
+    testCheck('the paged touch menu shows Copy all', Boolean(findNode('^Copy all$')));
+    invokeAdb([
+        'shell', 'input', 'tap',
+        Math.round(options.ScreenWidth * 0.5),
+        Math.round(options.ScreenHeight * 0.72),
+    ]);
+    sleep(700);
+    const pagedCleared = new PdfrImage(saveShot('selection-paged-cleared')).measureSelection(gutter);
+    testCheck(
+        'tapping clears the paged selection',
+        pagedCleared.count < 1000,
+        `selection pixels: ${pagedCleared.count}`,
+    );
+    toggleMenuItem('Single page');
+    testEqual('single page can be restored after selecting', getMenuLabel('Single page'), 'Single page: on');
+
+    toggleMenuItem('Line wrap');
+    testEqual('line wrap can be turned off before selecting', getMenuLabel('Line wrap'), 'Line wrap: off');
+    longPressNode('^PDFr plain text fixture$');
+    const unwrappedStats = new PdfrImage(saveShot('selection-unwrapped')).measureSelection(gutter);
+    testCheck(
+        'long-press selects text without wrapping',
+        unwrappedStats.count >= 1000,
+        `selection pixels: ${unwrappedStats.count}`,
+    );
+    testCheck(
+        'the unwrapped selection has handles',
+        unwrappedStats.dark >= 100,
+        `dark blue pixels: ${unwrappedStats.dark}`,
+    );
+    testCheck('the unwrapped touch menu shows Copy', Boolean(findNode('^Copy$')));
+    invokeAdb([
+        'shell', 'input', 'tap',
+        Math.round(options.ScreenWidth * 0.5),
+        Math.round(options.ScreenHeight * 0.72),
+    ]);
+    sleep(700);
+    toggleMenuItem('Line wrap');
+    testEqual('line wrap can be restored after selecting', getMenuLabel('Line wrap'), 'Line wrap: on');
 
     // "Copy all" must take the whole document from the model. The lazy list
     // only composes the rows near the viewport. A 40 pt text size keeps the
@@ -1178,28 +1324,36 @@ function testSelection() {
     );
     testCheck('Copy all closes the menu', !testMenuOpen());
 
-    // Paste into the filename field to inspect the clipboard. That field keeps
-    // 200 characters, which is about 40 five-character lines: far past what the
-    // 40 pt viewport composed.
-    dialog = openInfoDialog();
-    edits = getEditNodes(dialog);
-    if (edits.length >= 1) {
-        setEditText(edits[0], '');
-        invokeAdb(['shell', 'input', 'keycombination', 113, 50]);
-        sleep(900);
-        const pasted = attr(getEditNodes(getUiXml())[0], 'text');
-        testCheck(
-            'Copy all starts at the first line',
-            matches(pasted, '^L001'),
-            pasted ? pasted.substring(0, Math.min(40, pasted.length)) : 'empty',
-        );
-        testCheck(
-            'Copy all includes lines beyond the viewport',
-            matches(pasted, 'L030'),
-            `pasted ${pasted.length} characters`,
-        );
-        closeInfoDialog('Cancel');
-    }
+    // Paste into the filename field to inspect the clipboard. The field keeps
+    // far more than the 40 pt viewport composed, so reaching L030 proves the
+    // whole document was copied from the model.
+    const copiedAll = pasteIntoFirstField();
+    testCheck(
+        'Copy all starts at the first line',
+        matches(copiedAll, '^L001'),
+        copiedAll ? copiedAll.substring(0, Math.min(40, copiedAll.length)) : 'empty',
+    );
+    testCheck(
+        'Copy all includes lines beyond the viewport',
+        matches(copiedAll, 'L030'),
+        `pasted ${copiedAll.length} characters`,
+    );
+    // The filename field keeps 200 characters, which is exactly 40 five-byte
+    // lines, so L040 proves the whole field was filled from the clipboard.
+    testCheck(
+        'Copy all reaches the end of the filename field',
+        matches(copiedAll, 'L040'),
+        `pasted ${copiedAll.length} characters`,
+    );
+    // Line numbers are wrapped in DisableSelection. If that broke, the paste
+    // would contain bare integers between the document lines.
+    const copiedLines = copiedAll.split('\n').filter((line) => line.length > 0);
+    testCheck(
+        'Copy all contains only document lines, never line numbers',
+        copiedLines.length >= 30 && copiedLines.every((line) => matches(line, '^L\\d{3}$')),
+        `${copiedLines.length} lines, last '${copiedLines[copiedLines.length - 1] || ''}'`,
+    );
+    closeInfoDialog('Cancel');
 }
 
 function testMetadata() {
@@ -1207,7 +1361,7 @@ function testMetadata() {
     waitForPattern('^PDFr plain text fixture$', 12000);
 
     const dialog = openInfoDialog();
-    const edits = getEditNodes(dialog);
+    let edits = getEditNodes(dialog);
     testCheck('the filename and extension are editable', edits.length >= 4, `found ${edits.length} fields`);
     if (edits.length >= 4) {
         testEqual('the filename starts as the document name', attr(edits[0], 'text'), 'notes');
@@ -1223,11 +1377,34 @@ function testMetadata() {
         'encryption details are not shown',
         !visibleText.some((text) => matches(text, 'Encrypt|Password')),
     );
+    // The explanatory hint is the last line of the scrollable content, so when
+    // the document has several metadata fields it starts below the fold. Swipe
+    // along the dialog's left margin (outside every text field) until it shows.
+    const swipeDialog = (up) => {
+        const x = Math.round(options.ScreenWidth * 0.13);
+        const from = Math.round(options.ScreenHeight * (up ? 0.63 : 0.37));
+        const to = Math.round(options.ScreenHeight * (up ? 0.37 : 0.63));
+        invokeAdb(['shell', 'input', 'swipe', x, from, x, to, 400]);
+        sleep(600);
+    };
+    const headerShown = containsIgnoreCase(visibleText, 'Document metadata');
+    let hintShown = false;
+    for (let attempt = 0; attempt < 5 && !hintShown; attempt += 1) {
+        hintShown = descendants(getUiXml(), 'node')
+            .some((node) => matches(attr(node, 'text'), '^All document properties are listed'));
+        if (!hintShown) swipeDialog(true);
+    }
     testCheck(
         'the metadata section is offered',
-        containsIgnoreCase(visibleText, 'Document metadata') &&
-        visibleText.some((text) => matches(text, '^All document properties are listed')),
+        headerShown && hintShown,
+        headerShown ? 'section header seen' : 'no section header',
     );
+
+    // Return to the top before tapping the filename field below.
+    for (let attempt = 0; attempt < 6 && !findNode('^notes$'); attempt += 1) {
+        swipeDialog(false);
+    }
+    edits = getEditNodes(getUiXml());
 
     const dialogHeight = getDialogHeight(dialog);
     testCheck(
@@ -1237,7 +1414,9 @@ function testMetadata() {
     );
 
     if (edits.length >= 3) {
-        setEditText(edits[0], 'draftname');
+        const fileNameField = findNode('^notes$');
+        if (!fileNameField) throw new Error('The filename field did not return to the top of the dialog.');
+        setEditText(fileNameField, 'draftname');
         dismissDialog();
         testCheck('dismissing keeps the draft', Boolean(waitForGone('^Apply$', 5000)));
 
