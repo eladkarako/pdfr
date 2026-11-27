@@ -7,7 +7,6 @@ import android.os.SystemClock
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -21,6 +20,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.abs
 
 /**
  * Exercises the same toolbar through every input a phone or a TV offers.
@@ -224,12 +224,11 @@ class InputInstrumentedTest {
             Thread.sleep(500)
             val after = screenshot()
 
-            val beforeInk = ringInk(before, bounds)
-            val afterInk = ringInk(after, bounds)
+            val changed = ringChange(before, after, bounds)
             assertTrue(
                 "hovering '$menuLabel' did not paint the dotted focus ring " +
-                    "(ink $beforeInk -> $afterInk)",
-                afterInk > beforeInk + 40,
+                    "($changed pixels changed in the ring band)",
+                changed > 40,
             )
             assertNull(
                 "hover must not click the button",
@@ -491,15 +490,17 @@ class InputInstrumentedTest {
     }
 
     /**
-     * Counts dark pixels in the narrow band where [classicButton] paints the
-     * dotted focus rectangle. The band starts outside the one-pixel bevel and
-     * ends before the centred icon, so only the ring can change it.
+     * Counts pixels that changed between the two screenshots in the narrow band
+     * where [classicButton] paints the dotted focus rectangle. The band starts
+     * outside the one-pixel bevel and ends before the centred icon, so only the
+     * ring can change it. Comparing pixels instead of counting dark ones keeps
+     * the check working on the dark and AMOLED themes, where the ring is white.
      */
-    private fun ringInk(bitmap: Bitmap, bounds: Rect): Int {
+    private fun ringChange(before: Bitmap, after: Bitmap, bounds: Rect): Int {
         val density = context.resources.displayMetrics.density
         val low = (7 * density).toInt()
         val high = (12 * density).toInt()
-        var count = 0
+        var changed = 0
         for (y in bounds.top until bounds.bottom) {
             for (x in bounds.left until bounds.right) {
                 val edge = minOf(
@@ -509,13 +510,15 @@ class InputInstrumentedTest {
                     bounds.bottom - 1 - y,
                 )
                 if (edge < low || edge > high) continue
-                val color = bitmap.getPixel(x, y)
-                if (Color.red(color) + Color.green(color) + Color.blue(color) < 300) {
-                    count += 1
-                }
+                val first = before.getPixel(x, y)
+                val second = after.getPixel(x, y)
+                val delta = abs(Color.red(first) - Color.red(second)) +
+                    abs(Color.green(first) - Color.green(second)) +
+                    abs(Color.blue(first) - Color.blue(second))
+                if (delta > 60) changed += 1
             }
         }
-        return count
+        return changed
     }
 
     private fun waitForWindowFocus(scenario: ActivityScenario<MainActivity>) {
