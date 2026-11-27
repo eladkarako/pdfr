@@ -65,11 +65,12 @@ import kotlinx.coroutines.launch
  * are deliberately absent: text size and wrapping are explicit menu choices
  * instead, so the layout never has to repaginate under a gesture.
  *
- * The text sits inside a single [SelectionContainer], so selection can span
- * paragraphs rather than only one row. Line numbers are excluded with
- * [DisableSelection] and never end up on the clipboard. Manual selection is
- * only meant for a few lines: the lazy list composes just the rows near the
- * viewport, so the text context menu offers "Copy all" next to Copy. It
+ * Selection is per line: wrapping the lazy list in one [SelectionContainer] is
+ * undefined behaviour in Compose, and its long-press would not start at all.
+ * Each line therefore owns its own container, so a selection stays within one
+ * line. That is enough for copying a fragment; "Copy all" covers the rest.
+ * Line numbers are excluded with [DisableSelection] and never end up on the
+ * clipboard. The text context menu offers "Copy all" next to Copy. It
  * copies the full decoded document directly, whatever the current selection
  * is, and the overflow menu offers the same action. There is deliberately no
  * Select all: selecting everything only existed to then copy it.
@@ -192,28 +193,26 @@ internal fun PlainTextReader(
                 LaunchedEffect(singlePage) {
                     pageController.setPages(1, 0)
                 }
-                SelectionContainer {
-                    if (lineWrap) {
-                        ContinuousWrappedLines(
-                            lines = lines,
-                            style = lineStyle,
-                            numberStyle = numberStyle,
-                            alignment = alignment,
-                            gutterWidth = gutterWidth,
-                            showLineNumbers = lineNumbers,
-                            padding = padding,
-                        )
-                    } else {
-                        ContinuousUnwrappedLines(
-                            lines = lines,
-                            style = lineStyle,
-                            numberStyle = numberStyle,
-                            alignment = alignment,
-                            gutterWidth = gutterWidth,
-                            showLineNumbers = lineNumbers,
-                            padding = padding,
-                        )
-                    }
+                if (lineWrap) {
+                    ContinuousWrappedLines(
+                        lines = lines,
+                        style = lineStyle,
+                        numberStyle = numberStyle,
+                        alignment = alignment,
+                        gutterWidth = gutterWidth,
+                        showLineNumbers = lineNumbers,
+                        padding = padding,
+                    )
+                } else {
+                    ContinuousUnwrappedLines(
+                        lines = lines,
+                        style = lineStyle,
+                        numberStyle = numberStyle,
+                        alignment = alignment,
+                        gutterWidth = gutterWidth,
+                        showLineNumbers = lineNumbers,
+                        padding = padding,
+                    )
                 }
             } else {
                 PagedLines(
@@ -301,14 +300,18 @@ private fun ContinuousUnwrappedLines(
         Box(modifier = Modifier.horizontalScroll(horizontal)) {
             Column {
                 lines.forEach { line ->
-                    Text(
-                        text = line.ifEmpty { " " },
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        style = style.copy(textAlign = alignment),
-                        softWrap = false,
-                        maxLines = 1,
-                        overflow = TextOverflow.Visible,
-                    )
+                    // One container per line; wrapping the scrolling parent
+                    // would make Compose's selection undefined.
+                    SelectionContainer {
+                        Text(
+                            text = line.ifEmpty { " " },
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            style = style.copy(textAlign = alignment),
+                            softWrap = false,
+                            maxLines = 1,
+                            overflow = TextOverflow.Visible,
+                        )
+                    }
                 }
             }
         }
@@ -348,55 +351,55 @@ private fun PagedLines(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        SelectionContainer {
-            VerticalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize(),
-            ) { pageIndex ->
-                val page = pages[pageIndex]
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                ) {
-                    if (wrap) {
-                        Column {
-                            repeat(page.count) { offset ->
-                                val index = page.start + offset
-                                PlainTextLine(
-                                    number = if (showLineNumbers) index + 1 else null,
-                                    text = lines.getOrElse(index) { "" },
-                                    style = style,
-                                    numberStyle = numberStyle,
-                                    alignment = alignment,
-                                    gutterWidth = gutterWidth,
-                                    wrap = true,
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-                            }
+        VerticalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize(),
+        ) { pageIndex ->
+            val page = pages[pageIndex]
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+            ) {
+                if (wrap) {
+                    Column {
+                        repeat(page.count) { offset ->
+                            val index = page.start + offset
+                            PlainTextLine(
+                                number = if (showLineNumbers) index + 1 else null,
+                                text = lines.getOrElse(index) { "" },
+                                style = style,
+                                numberStyle = numberStyle,
+                                alignment = alignment,
+                                gutterWidth = gutterWidth,
+                                wrap = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
-                    } else {
-                        Row {
-                            if (showLineNumbers) {
-                                DisableSelection {
-                                    Column(modifier = Modifier.padding(horizontal = 4.dp)) {
-                                        repeat(page.count) { offset ->
-                                            val index = page.start + offset
-                                            Text(
-                                                text = (index + 1).toString(),
-                                                modifier = Modifier.width(gutterWidth),
-                                                style = numberStyle.copy(textAlign = alignment),
-                                                softWrap = false,
-                                                maxLines = 1,
-                                            )
-                                        }
+                    }
+                } else {
+                    Row {
+                        if (showLineNumbers) {
+                            DisableSelection {
+                                Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                                    repeat(page.count) { offset ->
+                                        val index = page.start + offset
+                                        Text(
+                                            text = (index + 1).toString(),
+                                            modifier = Modifier.width(gutterWidth),
+                                            style = numberStyle.copy(textAlign = alignment),
+                                            softWrap = false,
+                                            maxLines = 1,
+                                        )
                                     }
                                 }
                             }
-                            Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                                Column {
-                                    repeat(page.count) { offset ->
-                                        val index = page.start + offset
+                        }
+                        Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                            Column {
+                                repeat(page.count) { offset ->
+                                    val index = page.start + offset
+                                    SelectionContainer {
                                         Text(
                                             text = lines.getOrElse(index) { "" }.ifEmpty { " " },
                                             modifier = Modifier.padding(horizontal = 4.dp),
@@ -439,16 +442,18 @@ private fun PlainTextLine(
                 )
             }
         }
-        Text(
-            text = text.ifEmpty { " " },
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 4.dp),
-            style = style.copy(textAlign = alignment),
-            softWrap = wrap,
-            maxLines = if (wrap) Int.MAX_VALUE else 1,
-            overflow = if (wrap) TextOverflow.Clip else TextOverflow.Visible,
-        )
+        SelectionContainer(
+            modifier = Modifier.weight(1f),
+        ) {
+            Text(
+                text = text.ifEmpty { " " },
+                modifier = Modifier.padding(horizontal = 4.dp),
+                style = style.copy(textAlign = alignment),
+                softWrap = wrap,
+                maxLines = if (wrap) Int.MAX_VALUE else 1,
+                overflow = if (wrap) TextOverflow.Clip else TextOverflow.Visible,
+            )
+        }
     }
 }
 
