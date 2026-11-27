@@ -3,6 +3,7 @@ package com.karako.pdfr.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -201,6 +202,7 @@ private fun PageButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
     val color = if (enabled) {
         LocalContentColor.current
     } else {
@@ -225,7 +227,7 @@ private fun PageButton(
             .classicButton(
                 interaction = interaction,
                 enabled = enabled,
-                active = focused,
+                active = focused || hovered,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -362,6 +364,7 @@ private fun PageNumberBox(controller: PageController, enabled: Boolean) {
 private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         modifier = Modifier
@@ -376,7 +379,7 @@ private fun PageJumpButton(enabled: Boolean, onClick: () -> Unit) {
             .classicButton(
                 interaction = interaction,
                 enabled = enabled,
-                active = focused,
+                active = focused || hovered,
             )
             .semantics(mergeDescendants = true) {},
         contentAlignment = Alignment.Center,

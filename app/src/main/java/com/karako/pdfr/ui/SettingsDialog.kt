@@ -258,6 +258,7 @@ private fun ComboButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
 
     Row(
         modifier = Modifier
@@ -274,7 +275,7 @@ private fun ComboButton(
             .classicButton(
                 interaction = interaction,
                 enabled = true,
-                active = focused,
+                active = focused || hovered,
             )
             .padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

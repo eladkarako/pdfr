@@ -72,6 +72,7 @@ internal fun AccessibleIconButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
     val contentColor = LocalContentColor.current
 
     Box(
@@ -93,7 +94,7 @@ internal fun AccessibleIconButton(
             .classicButton(
                 interaction = interaction,
                 enabled = enabled,
-                active = focused,
+                active = focused || hovered,
             ),
         contentAlignment = Alignment.Center,
     ) {
@@ -228,6 +229,7 @@ internal fun ClassicButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
     val contentColor = LocalContentColor.current
 
     Box(
@@ -245,7 +247,7 @@ internal fun ClassicButton(
             .classicButton(
                 interaction = interaction,
                 enabled = enabled,
-                active = focused,
+                active = focused || hovered,
                 default = default,
             )
             .padding(contentPadding),
