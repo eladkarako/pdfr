@@ -593,7 +593,7 @@ async function main(argv) {
     // path even when the caller used /sdcard.
     remote = remote.replace(/^\/sdcard\//, '/storage/emulated/0/');
 
-    const mime = options.Mime || mimeFor(remote);
+    const mime = options.Mime || positionalMime || mimeFor(remote);
     if (!ensureIndexed(adb, remote)) {
         warn(`MediaStore has not indexed ${remote}; the system picker may not list it.`);
     }
